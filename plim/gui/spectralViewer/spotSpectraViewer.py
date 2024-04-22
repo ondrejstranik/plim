@@ -82,6 +82,13 @@ class SpotSpectraViewer(XYWViewer):
             self.viewer.window._qt_window.tabifyDockWidget(self.dockWidgetParameter,dw)
         self.dockWidgetParameter = dw
 
+    def setImage(self, image):
+        ''' set the image '''
+        
+        # update the spotSpectra image first
+        self.spotSpectra.wxyImage = self.xywImage
+        super().setImage(image)
+
 
     def calculateSpectra(self):
         ''' calculate spectra at the given points'''
@@ -163,11 +170,7 @@ class SpotSpectraViewer(XYWViewer):
 
 
 if __name__ == "__main__":
-        
-    im = np.random.rand(10,100,100)
-    wavelength = np.arange(im.shape[0])*1.3+ 10
-    sViewer = SpotSpectraViewer(im, wavelength)
-    sViewer.run()
+    pass
 
 
 
