@@ -51,7 +51,7 @@ class Sample3(Sample2):
         diameter=DEFAULT['spotDiameter'] if spotDiameter is None else spotDiameter
         aMax=DEFAULT['absorbanceMax'] if absorbanceMax is None else absorbanceMax   
 
-        size = aSize*2*diameter
+        size = aSize*4*diameter
         _sample = np.zeros((self.wavelength.shape[0],*size))
 
         xIdx, yIdx = np.meshgrid(np.arange(aSize[1]), np.arange(aSize[0]))
@@ -63,6 +63,7 @@ class Sample3(Sample2):
 
             rr, cc = disk((_disk[0],_disk[1]), _disk[2], shape=_sample.shape[1:])
             _sample[:,rr,cc] = aMax*np.exp(-(self.wavelength-self.peak)**2/2/self.sigma**2)[:,None]
+            _sample[:,rr,cc] += aMax/4/(1 + np.exp(self.wavelength-self.peak))[:,None] + aMax/10
 
 
         self.data = _sample
