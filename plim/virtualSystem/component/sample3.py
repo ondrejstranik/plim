@@ -59,11 +59,17 @@ class Sample3(Sample2):
 
 
         for ii in range(np.prod(aSize)):
-            _disk = [diameter + 4*positionIdx[ii,0]*diameter, diameter+ 4*positionIdx[ii,1]*diameter, diameter]
+            _disk = np.array([diameter + 4*positionIdx[ii,0]*diameter, diameter+ 4*positionIdx[ii,1]*diameter, diameter])
+
+            # add small variation
+            _disk[0] += np.random.rand(1)*2 - 1
+            _disk[1] += np.random.rand(1)*2 - 1
+            _disk[2] += (np.random.rand(1)*2 - 1 )*0.1*_disk[2]
+            _peak = self.peak + (np.random.rand(1)*2-1)*10
 
             rr, cc = disk((_disk[0],_disk[1]), _disk[2], shape=_sample.shape[1:])
-            _sample[:,rr,cc] = aMax*np.exp(-(self.wavelength-self.peak)**2/2/self.sigma**2)[:,None]
-            _sample[:,rr,cc] += aMax/4/(1 + np.exp(self.wavelength-self.peak))[:,None] + aMax/10
+            _sample[:,rr,cc] = aMax*np.exp(-(self.wavelength-_peak)**2/2/self.sigma**2)[:,None]
+            _sample[:,rr,cc] += aMax/4/(1 + np.exp(self.wavelength-_peak))[:,None] + aMax/10
 
 
         self.data = _sample

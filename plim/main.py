@@ -46,6 +46,7 @@ class Plim():
         sCamera.setParameter('calibrationData',sCal)
         sCamera.setParameter('threadingNow',True)
 
+        # stage
         stage = VirtualStage('stage')
         stage.connect()
 
@@ -54,7 +55,7 @@ class Plim():
         vM.setVirtualDevice(sCamera=sCamera, camera2=camera2,stage=stage)
         vM.connect()
 
-        # main event loop
+        # set GUIs
         viscope = Viscope(name='plim')
         viewer  = AllDeviceGUI(viscope)
         viewer.setDevice([stage,camera,camera2])
@@ -62,6 +63,7 @@ class Plim():
         newGUI  = STViewerGUI(viscope,vWindow=_vWindow)
         newGUI.setDevice(sCamera)
 
+        # main event loop
         viscope.run()
 
         sCamera.disconnect()

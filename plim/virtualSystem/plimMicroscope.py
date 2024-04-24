@@ -18,7 +18,10 @@ import napari
 
 class PlimMicroscope(BaseSystem):
     ''' class to emulate microscope '''
-    DEFAULT = {'photonFlux':1e6}
+    DEFAULT = {'photonFlux':1e6,
+                'lampWavelength': np.arange(400,800,10), # nm
+                'lampPeak': 800 , #nm
+    }
                
     
     def __init__(self,*args, **kwargs):
@@ -28,6 +31,10 @@ class PlimMicroscope(BaseSystem):
         # set default spectral sample
         self.sample = Sample3()
         self.sample.setPlasmonArray(arraySize=np.array([7,7]))
+
+        # set lamp spectrum
+        self.lampWavelength = self.DEFAULT['lampWavelength']
+        self.lampSpectrum = np.exp(-(self.DEFAULT['lampWavelength']-self.DEFAULT['lampPeak'])**2/2/400**2)
 
 
     def setVirtualDevice(self,sCamera=None, camera2=None,stage=None):
@@ -57,8 +64,13 @@ class PlimMicroscope(BaseSystem):
 
 
         #convert absorbance to photon flux
-        oFrame = self.DEFAULT['photonFlux']/np.exp(oFrame)
+        # adjust the lamp spectrum
+        self.lampSpectrum = Component2.spectraRangeAdjustment(self.lampSpectrum,self.lampWavelength,self.device['sCamera'].getWavelength())
+        self.lampSpectrum /= np.max(self.lampSpectrum)
 
+        oFrame = self.DEFAULT['photonFlux']*self.lampSpectrum[:,None,None]/np.exp(oFrame)
+
+        # disperse the image
         (oFrame, position00) = Component2.disperseIntoLines(oFrame, gridVector = sCal.gridVector)
     
         iFramePosition = sCal.position00 - position00 
@@ -96,7 +108,11 @@ class PlimMicroscope(BaseSystem):
 
 
         #convert absorbance to photon flux
-        oFrame = self.DEFAULT['photonFlux']/np.exp(oFrame)
+        # adjust the lamp spectrum
+        self.lampSpectrum = Component2.spectraRangeAdjustment(self.lampSpectrum,self.lampWavelength,self.device['sCamera'].getWavelength())
+        self.lampSpectrum /= np.max(self.lampSpectrum)
+
+        oFrame = self.DEFAULT['photonFlux']*self.lampSpectrum[:,None,None]/np.exp(oFrame)
 
         # sum wavelength
         oFrame = np.sum(oFrame, axis= 0)
