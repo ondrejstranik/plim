@@ -3,6 +3,7 @@ class for viewing spots's plasmon resonance
 '''
 from spectralCamera.gui.spectralViewer.xywViewer import XYWViewer
 from spectralCamera.algorithm.spotSpectra import SpotSpectra
+from plim.algorithm.spotIdentification import SpotIdentification
 
 import napari
 import time
@@ -74,19 +75,43 @@ class SpotSpectraViewer(XYWViewer):
             self.showRawSpectra = showRawSpectra
             self.updateSpectra()
 
-        self.spectraParameterGui = spectraParameterGui
+        #automatic identification of spots
+        @magicgui
+        def spotIdentGui():
+            # identify the spot
+            sI = SpotIdentification(self.xywImage)
+            myPosition = sI.getPosition()
+            myRadius = sI.getRadius()
+
+            # update the spectra parameter
+            self.pointLayer.data = myPosition
+            self.spotSpectra.pxAve = myRadius
+
+            # update spectra
+            self.updateSpectra()
 
         # add widget setParameterGui
+        self.spectraParameterGui = spectraParameterGui
         dw = self.viewer.window.add_dock_widget(self.spectraParameterGui, name ='view param', area='bottom')
         if self.dockWidgetParameter is not None:
             self.viewer.window._qt_window.tabifyDockWidget(self.dockWidgetParameter,dw)
         self.dockWidgetParameter = dw
 
+        # add widget spotIdentGui
+        self.spotIdentGui = spotIdentGui
+        dw = self.viewer.window.add_dock_widget(self.spotIdentGui, name ='spot Ident', area='bottom')
+        if self.dockWidgetParameter is not None:
+            self.viewer.window._qt_window.tabifyDockWidget(self.dockWidgetParameter,dw)
+        self.dockWidgetParameter = dw
+
+
     def setImage(self, image):
         ''' set the image '''
         
         # update the spotSpectra image first
-        self.spotSpectra.wxyImage = self.xywImage
+        # TODO: check if the correction is right
+        #self.spotSpectra.wxyImage = self.xywImage
+        self.spotSpectra.wxyImage = image
         super().setImage(image)
 
 
