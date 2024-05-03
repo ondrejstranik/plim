@@ -2,7 +2,7 @@
 class for viewing spots's plasmon resonance
 '''
 from spectralCamera.gui.spectralViewer.xywViewer import XYWViewer
-from spectralCamera.algorithm.spotSpectra import SpotSpectra
+from plim.algorithm.spotSpectra import SpotSpectra
 from plim.algorithm.spotIdentification import SpotIdentification
 
 import napari
@@ -28,13 +28,12 @@ class SpotSpectraViewer(XYWViewer):
         super().__init__(xywImage=xywImage, wavelength= wavelength, **kwargs)
 
         # calculated parameters
+        self.spotSpectra = SpotSpectra(self.xywImage)
 
         #gui parameters
         self.maskLayer = None # layer of the mask with spots and bcg area
         self.showRawSpectra = True
         self.spectraParameterGui = None
-
-        self.spotSpectra = SpotSpectra(self.xywImage)
 
         # set gui
         SpotSpectraViewer._setWidget(self)
@@ -70,10 +69,15 @@ class SpotSpectraViewer(XYWViewer):
             ):
 
             self.spotSpectra.pxAve = pxAve
+            spectraParameterGui.pxAve.value = pxAve
             self.spotSpectra.pxBcg = pxBcg
+            spectraParameterGui.pxBcg.value = pxBcg
             self.spotSpectra.pxSpace = pxSpace
+            spectraParameterGui.pxSpace.value = pxSpace
             self.showRawSpectra = showRawSpectra
             self.updateSpectra()
+
+
 
         #automatic identification of spots
         @magicgui
@@ -82,13 +86,11 @@ class SpotSpectraViewer(XYWViewer):
             sI = SpotIdentification(self.xywImage)
             myPosition = sI.getPosition()
             myRadius = sI.getRadius()
+            print(f'myRadius {myRadius}')
 
             # update the spectra parameter
             self.pointLayer.data = myPosition
-            self.spotSpectra.pxAve = myRadius
-
-            # update spectra
-            self.updateSpectra()
+            self.spectraParameterGui(pxAve=int(myRadius))
 
         # add widget setParameterGui
         self.spectraParameterGui = spectraParameterGui

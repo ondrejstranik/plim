@@ -68,7 +68,9 @@ class Sample3(Sample2):
             _peak = self.peak + (np.random.rand(1)*2-1)*10
 
             rr, cc = disk((_disk[0],_disk[1]), _disk[2], shape=_sample.shape[1:])
+            # gauss peak
             _sample[:,rr,cc] = aMax*np.exp(-(self.wavelength-_peak)**2/2/self.sigma**2)[:,None]
+            # heviside + constant offset
             _sample[:,rr,cc] += aMax/4/(1 + np.exp(self.wavelength-_peak))[:,None] + aMax/10
 
 
@@ -79,12 +81,5 @@ class Sample3(Sample2):
 #%%
 
 if __name__ == '__main__':
-
-    import napari
-
-    sample = Sample3()
-    sample.setPlasmonArray()
-    # load multichannel image in one line
-    viewer = napari.view_image(sample.get())
-    napari.run()
+    pass
 
