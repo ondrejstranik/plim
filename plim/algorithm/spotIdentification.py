@@ -64,25 +64,7 @@ class SpotIdentification:
         return self.spotRadius
 
 if __name__ == "__main__":
-
-    import napari
-    from plim.virtualSystem.component.sample3 import Sample3
-
-    sample = Sample3()
-    sample.setPlasmonArray()
-    spImage = 1 - sample.get()
-
-    # identify the spot
-    sI = SpotIdentification(spImage)
-    myPosition = sI.getPosition()
-    myRadius = sI.getRadius()
-
-    # show the result
-    viewer = napari.Viewer()
-    viewer.add_image(spImage)
-    viewer.add_points(myPosition, face_color= 'red', size=1)
-
-    napari.run()
+    pass
 
 
 

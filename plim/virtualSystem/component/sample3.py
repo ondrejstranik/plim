@@ -70,8 +70,8 @@ class Sample3(Sample2):
             rr, cc = disk((_disk[0],_disk[1]), _disk[2], shape=_sample.shape[1:])
             # gauss peak
             _sample[:,rr,cc] = aMax*np.exp(-(self.wavelength-_peak)**2/2/self.sigma**2)[:,None]
-            # heviside + constant offset
-            _sample[:,rr,cc] += aMax/4/(1 + np.exp(self.wavelength-_peak))[:,None] + aMax/10
+            # sigmoid + constant offset
+            _sample[:,rr,cc] += aMax/4/(1 + np.exp((self.wavelength-_peak)/self.sigma))[:,None] + aMax/10
 
 
         self.data = _sample

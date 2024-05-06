@@ -1,8 +1,7 @@
 '''
 class for calculating spot spectra from 3D spectral cube
 '''
-import sys, os
-sys.path.append(os.getcwd() + '\\code')
+#%%
 
 
 import numpy as np
@@ -10,22 +9,27 @@ import numpy as np
 
 class SpotSpectra:
     ''' class for calculating spot spectra '''
+    DEFAULT = {'pxBcg': 3, # thickness of the backroung shell
+                'pxAve': 3, # radius of the spot
+                'pxSpace': 1} # space between spot and background
 
-    def __init__(self,wxyImage,spotPosition=[]):
+
+    def __init__(self,wxyImage=None,spotPosition= [],**kwarg):
         ''' initialization of the parameters '''
 
-        # parameters of the mask
-        self.pxBcg = 3
-        self.pxAve = 3
-        self.pxSpace = 1
+        if wxyImage is not None: self.wxyImage = wxyImage  # spectral Image
+        if spotPosition is not []: self.spotPosition = spotPosition
 
-        self.wxyImage = wxyImage  # spectral Image
+        # parameters of the mask
+        self.pxBcg= int(kwarg['pxBcg']) if 'pxBcg' in kwarg else  self.DEFAULT['pxBcg']
+        self.pxAve= int(kwarg['pxAve']) if 'pxAve' in kwarg else  self.DEFAULT['pxAve']
+        self.pxSpace= int(kwarg['pxSpace']) if 'pxSpace' in kwarg else  self.DEFAULT['pxSpace']
+
         self.maskSize = None # total size of the mask
         self.maskSpot = None # weights for calculation of spots spectra
         self.maskBcg = None # weight for calculation of background spectra
-        self.maskImage = None
-        self.spotPosition = spotPosition
-
+        self.maskImage = None # for visualisation only
+ 
         self.spectraRawSpot = []
         self.spectraRawBcg = []
         self.spectraSpot = []
@@ -38,11 +42,11 @@ class SpotSpectra:
         ''' set the geometry of spots and bcg mask  and calculate spectra'''
 
         if pxAve is not None:
-            self.pxAve = pxAve
+            self.pxAve = int(pxAve)
         if pxBcg is not None:
-            self.pxBcg = pxBcg
+            self.pxBcg = int(pxBcg)
         if pxSpace is not None:
-            self.pxSpace = pxSpace
+            self.pxSpace = int(pxSpace)
         self.maskSize = int(2*(self.pxBcg + self.pxAve + self.pxSpace) + 1 )
 
         xx, yy = np.meshgrid(np.arange(self.maskSize) - self.maskSize//2, (np.arange(self.maskSize) - self.maskSize//2))
@@ -71,7 +75,7 @@ class SpotSpectra:
         self.spotPosition = spotPosition
 
         self.setMask()
-        self.calculateSpectra()
+        #self.calculateSpectra()
 
     def setImage(self, wxyImage):
         ''' set the spectra image and calculate image and calculate spectra'''
@@ -109,57 +113,22 @@ class SpotSpectra:
             self.spectraSpot.append(spectraSpot)  
 
 
-      
-
     def getMask(self):
-        ''' return the image of the mask of spots and backgound '''
+        ''' return the image of the mask of spots and background '''
         return self.maskImage
 
     def getT(self):
-        ''' return trasmission spectra of the spots '''
+        ''' return transmission spectra of the spots '''
         return self.spectraSpot
 
     def getA(self):
         ''' return absorption spectra of the spots '''
         return (1 - np.array(self.spectraSpot)).tolist()
 
-
-
+#%%
 
 if __name__ == "__main__":
-
-        # load the image
-        container = np.load(os.getcwd() + '\\code\\Data\\plasmonicArray.npz')
-        wxyImage = container['arr_0']
-        w = container['arr_1']
-        mySpot = [[118,113], [151,108]]
-
-        mySS = SpotSpectra(wxyImage,spotPosition=mySpot)
-
-        # show images
-        import napari
-        viewer = napari.Viewer()
-        viewer.add_image(np.sum(wxyImage, axis=0))
-        viewer.add_image(mySS.maskImage)
-        napari.run()
-
-
-        # show spectra
-        import matplotlib.pyplot as plt
-        fig, ax = plt.subplots()
-        ax.plot(w, np.array(mySS.spectraSpot).T)
-        ax.set_title('Spectra')
-
-        fig, ax = plt.subplots()
-        ax.plot(w, np.array(mySS.spectraRawSpot).T)
-        ax.plot(w, np.array(mySS.spectraRawBcg).T)
-
-        ax.set_title('Raw Spectra')
-
-
-
-
-        plt.show()
+    pass
 
 
 
@@ -175,3 +144,5 @@ if __name__ == "__main__":
 
 
 
+
+# %%

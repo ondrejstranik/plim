@@ -7,6 +7,8 @@ class for live viewing spectral images
 from viscope.main import Viscope
 from viscope.gui.allDeviceGUI import AllDeviceGUI 
 from plim.gui.stViewerGUI import STViewerGUI
+from plim.gui.plasmonViewerGUI import PlasmonViewerGUI
+
 
 from viscope.instrument.virtual.virtualCamera import VirtualCamera
 from spectralCamera.algorithm.calibrateIFImage import CalibrateIFImage
@@ -60,7 +62,7 @@ class Plim():
         viewer  = AllDeviceGUI(viscope)
         viewer.setDevice([stage,camera,camera2])
         _vWindow = viscope.addViewerWindow()
-        newGUI  = STViewerGUI(viscope,vWindow=_vWindow)
+        newGUI  = PlasmonViewerGUI(viscope,vWindow=_vWindow)
         newGUI.setDevice(sCamera)
 
         # main event loop

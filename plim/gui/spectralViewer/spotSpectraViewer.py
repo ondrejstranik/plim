@@ -68,6 +68,7 @@ class SpotSpectraViewer(XYWViewer):
             pxSpace: int = self.spotSpectra.pxSpace
             ):
 
+            spectraParameterGui._auto_call = False
             self.spotSpectra.pxAve = pxAve
             spectraParameterGui.pxAve.value = pxAve
             self.spotSpectra.pxBcg = pxBcg
@@ -76,7 +77,7 @@ class SpotSpectraViewer(XYWViewer):
             spectraParameterGui.pxSpace.value = pxSpace
             self.showRawSpectra = showRawSpectra
             self.updateSpectra()
-
+            spectraParameterGui._auto_call = True
 
 
         #automatic identification of spots

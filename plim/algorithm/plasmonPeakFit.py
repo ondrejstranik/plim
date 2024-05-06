@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 """
+set of functions to fit a curve
+
+
 Created on Tue Nov 19 13:12:23 2019
 
 @author: OStranik
@@ -74,7 +77,10 @@ def get_peakcenter(f,peakwidth =80, ini_guess = 550):
     lstart = get_peakstart(f,peakwidth, ini_guess)
     nom = integrate.quad( lambda xx:f(xx)*xx,lstart,lstart+peakwidth)[0]
     denom = integrate.quad( lambda xx:f(xx),lstart,lstart+peakwidth)[0]
-    peakcenter = nom/denom
+    if denom != 0:
+        peakcenter = nom/denom
+    else:
+        peakcenter = 0
     return peakcenter
 
 def get_statistics(x,y,fitfun,ffvar,peakfun, pfvar, Nave = 1):
