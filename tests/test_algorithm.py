@@ -100,3 +100,18 @@ def test_plamonFit():
     ax.set_title('Position')
     
     plt.show()
+
+@pytest.mark.GUI
+def test_spotData():
+    from plim.algorithm.spotData import SpotData
+    import numpy as np
+
+    sD = SpotData()
+
+    sD.setData(np.random.rand(50,5))
+    sD.addDataValue(np.random.rand(5))
+    (signal, time) = sD.getData()
+    print(f'signal {signal}')
+    print(f'time {time}')
+
+    assert signal.shape[0]==51
