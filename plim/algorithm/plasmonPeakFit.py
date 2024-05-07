@@ -8,7 +8,6 @@ Created on Tue Nov 19 13:12:23 2019
 @author: OStranik
 """
 import sys
-from matplotlib import pylab as plt
 import numpy as np
 from scipy.optimize import minimize
 from scipy.optimize import nnls
@@ -119,6 +118,10 @@ def TDataGen(x0 = np.arange(450,650,1, dtype=float),
     return (Tideal,Tdata)
 
 def plotsummary(x0,y0,x,y,peakfits,peaklines,peakstd,myleg):
+    from matplotlib import pylab as plt
+
+    plt.close('all')
+
     f=plt.figure(figsize=(10,4))
     cm = plt.get_cmap('gist_rainbow')
     mycolors = [cm(1.*i/len(myleg)) for i in range(len(myleg))]
@@ -140,6 +143,7 @@ def plotsummary(x0,y0,x,y,peakfits,peaklines,peakstd,myleg):
     ax3.set_xlabel('fit type')
     plt.setp(ax3.xaxis.get_majorticklabels(), rotation=70 )
     plt.show()
+    plt.tight_layout()
     return f
 
 #%% start of the program 
@@ -220,9 +224,9 @@ if __name__== "__main__":
 
 
 #%% display results
-    plt.close('all')
+
     f = plotsummary(x0,y0,x,y[:,0],peakfits,peaklines,peakstd,myleg)
     f.suptitle('Photoncounts = {0}, parameters = {1}, datapoints = {2}'.format(
             Photoncounts,Nparameters, Ndatapoints))
-    plt.tight_layout()
+
 

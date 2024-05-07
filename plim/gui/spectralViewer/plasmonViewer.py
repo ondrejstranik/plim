@@ -35,7 +35,7 @@ class PlasmonViewer(SpotSpectraViewer):
         self.lineplotList3 = [] # fit line
         self.lineplotList4 = [] # peak vertical line
         self.fitParameterGui = None
-        self.peakPositionGraph = None
+
 
         # set gui
         PlasmonViewer._setWidget(self)

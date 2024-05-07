@@ -4,11 +4,14 @@ class for live viewing spectral images
 #%%
 from spectralCamera.gui.xywViewerGUI import XYWViewerGui
 from plim.gui.spectralViewer.plasmonViewer import PlasmonViewer
+from qtpy.QtCore import Signal
+
 
 class PlasmonViewerGUI(XYWViewerGui):
     ''' main class to show  plasmonViewer'''
 
     DEFAULT = {'nameGUI': 'PlasmonViewer'}
+    sigPlasmonPeak = Signal(list)
 
     def __init__(self, viscope, **kwargs):
         ''' initialise the class '''
@@ -30,6 +33,7 @@ class PlasmonViewerGUI(XYWViewerGui):
         # napari
         self.PlasmonViewer.setWavelength(self.device.wavelength)
         self.PlasmonViewer.setImage(self.device.sImage)
+        self.sigPlasmonPeak.emit(self.PlasmonViewer.pF.getPosition())
 
 
 

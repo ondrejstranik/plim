@@ -47,24 +47,37 @@ class PositionTrackGUI(BaseGUI):
         self.positionTrackGui.setLabel('bottom', 'time', units= 's')
         self.dw = self.vWindow.addParameterGui(self.positionTrackGui,name=self.DEFAULT['nameGUI'])
         
+    def setDataSignal(self,signal):
+        ''' set a signal, which connect new Data arrival with graph update '''  
+        signal.connect(self.updateGraph)
 
-    def guiUpdateTimed(self):
-        ''' update gui according the update time '''
-        timeNow = timer()
-        if (timeNow -self.lastUpdateTime) > self.guiUpdateTime:
-            self.updateGui()
-            self.lastUpdateTime = timeNow    
+    #TODO: finish this function !!!
+    def updateGraph(self,newData):
+        ''' update Graph with plasmon position '''
+        try:
+            self.positionTrackGui.clear()
+            self.lineplotList5 = []
 
-    def setDataSource(self,source):
-        # connect signals
-        self.device.worker.yielded.connect(self.guiUpdateTimed)
-        self.vWindow.setWindowTitle(self.device.name)
+            npPosition = np.array(self.positionList)
+
+            for ii in np.arange(npPosition.shape[1]):
+                mypen = QPen(QColor.fromRgbF(*list(
+                    self.pointLayer.face_color[ii])))
+                mypen.setWidth(0)
+                lineplot = self.positionTrackGui.plot(pen= mypen)
+                lineplot.setData(self.timeList,
+                    npPosition[:,ii],
+                    symbol ='o',
+                    symbolSize = 14,
+                    symbolBrush = QColor.fromRgbF(*list(self.pointLayer.face_color[ii])),
+                    pen= mypen)
+                self.lineplotList5.append(lineplot)
+        except:
+             print('error occurred in drawPeakPositionGraph') 
 
 
-    def updateGui(self):
-        ''' update the data in gui '''
-        # napari
-        self.rawLayer.data = self.device.rawImage
+
+
 
 
 if __name__ == "__main__":
