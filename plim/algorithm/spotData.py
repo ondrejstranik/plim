@@ -15,6 +15,7 @@ class SpotData:
 
         self.signal = None # numpy array, each column represent signal from one spot
         
+        
         if signal is not None: self.signal = np.array(signal)  # position of plasmon peaks 
         if time is not None: self.time = time # corresponding time
 
@@ -37,7 +38,7 @@ class SpotData:
 
     def getData(self):
         ''' return the signal and time '''
-        if self.signal.shape[1] == self.time.shape[0]:
+        if (hasattr(self,'time')  and self.signal.shape[1] == self.time.shape[0]):
             return (self.signal,self.time)
         else:
             return (self.signal,np.arange(self.signal.shape[0]))
