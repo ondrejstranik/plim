@@ -13,7 +13,7 @@ import numpy as np
 from plim.algorithm.spotData import SpotData
 
 
-class SignalViewer(QWidget):
+class SignalWidget(QWidget):
     ''' main class for viewing signal'''
 
     def __init__(self,signal=None, time= None, **kwargs):
@@ -26,7 +26,7 @@ class SignalViewer(QWidget):
         self.alignTime = 0
 
         # set this gui of this class
-        SignalViewer._setWidget(self)
+        SignalWidget._setWidget(self)
 
         self.drawGraph()
 
@@ -103,12 +103,12 @@ class SignalViewer(QWidget):
 
 
 if __name__ == "__main__":
-    from plim.gui.signalViewer.signalViewer import SignalViewer
+    from plim.gui.signalViewer.signalWidget import SignalWidget
     import numpy as np
 
     app = QApplication([])
 
-    sV = SignalViewer(np.random.rand(50,4))
+    sV = SignalWidget(np.random.rand(50,4))
     sV.show()
     app.exec()
 
