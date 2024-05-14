@@ -30,7 +30,7 @@ class PlasmonFit:
         self.wavelengthGuess = self.DEFAULT['wavelengthGuess']
         self.wRange = None
 
-        # caluclated values
+        # calculated values
         self.fitSpectra = []
         self.peakPosition = []
 
@@ -44,7 +44,7 @@ class PlasmonFit:
 
     def setFitParameter(self,wavelengthGuess=None,peakWidth=None,orderFit=None,
             wavelengthStopFit= None, wavelengthStartFit=None):
-        ''' set fiting parameters '''
+        ''' set fitting parameters '''
 
         if wavelengthGuess is not None: self.wavelengthGuess = wavelengthGuess
         if peakWidth is not None: self.peakWidth = peakWidth

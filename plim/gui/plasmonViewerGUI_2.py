@@ -7,7 +7,7 @@ from plim.gui.spectralViewer.plasmonViewer import PlasmonViewer
 from qtpy.QtCore import Signal
 
 
-class PlasmonViewerGUI(XYWViewerGui):
+class PlasmonViewerGUI_2(XYWViewerGui):
     ''' main class to show  plasmonViewer'''
 
     DEFAULT = {'nameGUI': 'PlasmonViewer'}
@@ -18,7 +18,7 @@ class PlasmonViewerGUI(XYWViewerGui):
         super().__init__(viscope, **kwargs)
 
         # prepare the gui of the class
-        PlasmonViewerGUI.__setWidget(self) 
+        PlasmonViewerGUI_2.__setWidget(self) 
 
     def __setWidget(self):
         ''' prepare the gui '''
@@ -30,17 +30,20 @@ class PlasmonViewerGUI(XYWViewerGui):
 
     def setDevice(self,device):
         super().setDevice(device)
+        self.plasmonViewer.pF = self.device.pF
+        self.plasmonViewer.spotSpectra = self.device.spotSpectra
         # connect signals
         self.device.worker.yielded.connect(self.guiUpdateTimed)
         self.vWindow.setWindowTitle(self.device.name)
 
-
     def updateGui(self):
         ''' update the data in gui '''
         # napari
-        self.plasmonViewer.setWavelength(self.device.wavelength)
-        self.plasmonViewer.setImage(self.device.sImage)
-        self.sigPlasmonPeak.emit(self.plasmonViewer.pF.getPosition())
+        #self.plasmonViewer.setWavelength(self.device.wavelength)
+        self.plasmonViewer.xywImage = self.device.spotSpectra.wxyImage
+        self.plasmonViewer.wavelength = self.device.pF.wavelength
+        self.plasmonViewer.redraw()
+        #self.sigPlasmonPeak.emit(self.plasmonViewer.pF.getPosition())
 
 
 

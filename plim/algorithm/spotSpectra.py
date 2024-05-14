@@ -9,7 +9,7 @@ import numpy as np
 
 class SpotSpectra:
     ''' class for calculating spot spectra '''
-    DEFAULT = {'pxBcg': 3, # thickness of the backroung shell
+    DEFAULT = {'pxBcg': 3, # thickness of the background shell
                 'pxAve': 3, # radius of the spot
                 'pxSpace': 1} # space between spot and background
 
@@ -56,17 +56,18 @@ class SpotSpectra:
         self.maskBcg = (maskR>(self.pxAve+self.pxSpace)) & (maskR<self.pxAve+self.pxSpace + self.pxBcg)
         
         # set mask image (for visualisation only)
-        self.maskImage = 0*self.wxyImage[0,:,:]
-        for myspot in self.spotPosition:
-            try:
-                self.maskImage[int(myspot[0])-self.maskSize//2:int(myspot[0])+self.maskSize//2+1,
-                                int(myspot[1])-self.maskSize//2:int(myspot[1])+self.maskSize//2+1] = \
-                                self.maskSpot*2
-                self.maskImage[int(myspot[0])-self.maskSize//2:int(myspot[0])+self.maskSize//2+1,
-                                int(myspot[1])-self.maskSize//2:int(myspot[1])+self.maskSize//2+1] += \
-                                self.maskBcg*1
-            except:
-                pass
+        if hasattr(self,'wxyImage'):
+            self.maskImage = 0*self.wxyImage[0,:,:]
+            for myspot in self.spotPosition:
+                try:
+                    self.maskImage[int(myspot[0])-self.maskSize//2:int(myspot[0])+self.maskSize//2+1,
+                                    int(myspot[1])-self.maskSize//2:int(myspot[1])+self.maskSize//2+1] = \
+                                    self.maskSpot*2
+                    self.maskImage[int(myspot[0])-self.maskSize//2:int(myspot[0])+self.maskSize//2+1,
+                                    int(myspot[1])-self.maskSize//2:int(myspot[1])+self.maskSize//2+1] += \
+                                    self.maskBcg*1
+                except:
+                    pass
 
         self.calculateSpectra()
 

@@ -81,6 +81,14 @@ class PlasmonViewer(SpotSpectraViewer):
         super().setWavelength(wavelength)
         self.pF.setWavelength(wavelength)
 
+    def redraw(self):
+        ''' only redraw the images, spectra. It does not recalculate it '''
+        self.spectraLayer.data = self.xywImage
+        self.updateSpectraGraph()
+        self.updateHistogram()
+
+
+
     def drawSpectraGraph(self):
         ''' draw all new lines in the spectraGraph '''
         super().drawSpectraGraph()

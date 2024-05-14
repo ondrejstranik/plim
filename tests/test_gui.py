@@ -85,3 +85,37 @@ def test_plasmonViewerGUI():
 
     camera.disconnect()
     sCamera.disconnect()
+
+@pytest.mark.GUI
+def test_plasmonViewerGUI_2():
+    ''' testing the viewer with webcam'''
+
+    from viscope.main import Viscope
+    from viscope.gui.allDeviceGUI import AllDeviceGUI
+    from spectralCamera.instrument.sCamera.sCameraGenerator import RGBWebCamera
+    from plim.instrument.plasmonProcessor import PlasmonProcessor
+
+    from plim.gui.plasmonViewerGUI_2 import PlasmonViewerGUI_2
+
+    #spectral camera system
+    scs = RGBWebCamera()
+    camera = scs.camera
+    sCamera = scs.sCamera
+
+    # plasmon processor 
+    pP = PlasmonProcessor()
+    pP.connect(sCamera=sCamera)
+    pP.setParameter('threadingNow',True)
+
+    # add gui
+    viscope = Viscope()
+    viewer  = AllDeviceGUI(viscope)
+    viewer.setDevice(camera)
+    newGUI  = PlasmonViewerGUI_2(viscope)
+    newGUI.setDevice(pP)
+
+    # main event loop
+    viscope.run()
+
+    camera.disconnect()
+    sCamera.disconnect()
