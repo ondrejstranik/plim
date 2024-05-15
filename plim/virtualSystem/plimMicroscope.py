@@ -85,7 +85,7 @@ class PlimMicroscope(BaseSystem):
 
         #print(f'oFrame.shape {oFrame.shape}')
 
-        print('virtual Frame updated')
+        print('virtual Frame updated - camera')
 
         return oFrame
 
@@ -123,7 +123,7 @@ class PlimMicroscope(BaseSystem):
         oFrame *= self.device['camera2'].exposureTime/1e6
 
 
-        print('virtual Frame updated')
+        print('virtual Frame updated - camera2')
 
         return oFrame
 
@@ -132,18 +132,30 @@ class PlimMicroscope(BaseSystem):
     def loop(self):
         ''' infinite loop to carry out the microscope state update
         it is a state machine, which should be run in separate thread '''
+        plasmonShift0 = self.sample.getActualShift()
+        
         while True:
             yield 
+            # recalculate if sample is changed
+            plasmonShift = self.sample.getActualShift()
+            if plasmonShift != plasmonShift0:
+                #self.sample.setPlasmonShift(plasmonShift,np.arange(0,len(self.sample.peakList),2))
+                self.sample.setPlasmonShift(plasmonShift)
+                self.device['camera'].flagSetParameter.set()
+                self.device['camera2'].flagSetParameter.set()
+                plasmonShift0 = plasmonShift
+
             # recalculate cameras if stage moved
             if self.device['stage'].flagSetParameter.is_set():
                 self.device['camera'].flagSetParameter.set()
                 self.device['camera2'].flagSetParameter.set()
                 self.device['stage'].flagSetParameter.clear()
-
+            # recalculate camera parameters are changed
             if self.device['camera'].flagSetParameter.is_set():
                 print(f'calculate virtual frame - camera ')
                 self.device['camera'].virtualFrame = self.calculateVirtualFrameCamera()
                 self.device['camera'].flagSetParameter.clear()
+            # recalculate camera parameters are changed
             if self.device['camera2'].flagSetParameter.is_set():
                 print(f'calculate virtual frame - camera2')
                 self.device['camera2'].virtualFrame = self.calculateVirtualFrameCamera2()

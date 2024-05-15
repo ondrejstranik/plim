@@ -10,15 +10,19 @@ from skimage import data
 from skimage.transform import resize
 from spectralCamera.virtualSystem.component.sample2 import Sample2
 from skimage.draw import disk
+from timeit import default_timer as timer
 
 
 class Sample3(Sample2):
     ''' class to define a sample object of the microscope'''
-    DEFAULT = {}
+    DEFAULT = {'deltaTime': 5, #[s]
+                'deltaShift': 10} # [nm]
     
     def __init__(self,*args, **kwargs):
         ''' initialisation '''
         super().__init__(*args, **kwargs)
+
+        self.time0 = timer()
 
     def setPlasmonArray(self,samplePixelSize=None,
                         samplePosition = None,
@@ -46,10 +50,10 @@ class Sample3(Sample2):
         
         self.peak = DEFAULT['plasmonPeak'] if plasmonPeak is None else plasmonPeak       
         self.sigma = DEFAULT['plasmonSigma'] if plasmonSigma is None else plasmonSigma
+        self.aMax=DEFAULT['absorbanceMax'] if absorbanceMax is None else absorbanceMax 
 
         aSize=DEFAULT['arraySize'] if arraySize is None else arraySize
         diameter=DEFAULT['spotDiameter'] if spotDiameter is None else spotDiameter
-        aMax=DEFAULT['absorbanceMax'] if absorbanceMax is None else absorbanceMax   
 
         size = aSize*4*diameter
         _sample = np.zeros((self.wavelength.shape[0],*size))
@@ -58,6 +62,12 @@ class Sample3(Sample2):
         positionIdx = np.array([yIdx.ravel(),xIdx.ravel()]).T
 
 
+        # set the value in the samples
+
+        self.rrList = []
+        self.ccList = []
+        self.peakList = []
+        
         for ii in range(np.prod(aSize)):
             _disk = np.array([diameter + 4*positionIdx[ii,0]*diameter, diameter+ 4*positionIdx[ii,1]*diameter, diameter])
 
@@ -69,12 +79,47 @@ class Sample3(Sample2):
 
             rr, cc = disk((_disk[0],_disk[1]), _disk[2], shape=_sample.shape[1:])
             # gauss peak
-            _sample[:,rr,cc] = aMax*np.exp(-(self.wavelength-_peak)**2/2/self.sigma**2)[:,None]
+            _sample[:,rr,cc] = self.aMax*np.exp(-(self.wavelength-_peak)**2/2/self.sigma**2)[:,None]
             # sigmoid + constant offset
-            _sample[:,rr,cc] += aMax/4/(1 + np.exp((self.wavelength-_peak)/self.sigma))[:,None] + aMax/10
-
+            _sample[:,rr,cc] += self.aMax/4/(1 + np.exp((self.wavelength-_peak)/self.sigma))[:,None] + self.aMax/10
+            
+            self.rrList.append(rr)
+            self.ccList.append(cc)
+            self.peakList.append(_peak)
 
         self.data = _sample
+
+    def setPlasmonShift(self,shift, spot=None):
+        ''' set the plasmon shift in the array of spots
+        shift .. array of the relative shifts [nm]
+        spot .. indexes of the spots, which should be shifted'''
+
+        spot= np.array(spot) if spot is not None else np.arange(len(self.rrList))
+        
+        shift = np.array([shift]) if isinstance(shift, (int,float)) else np.array(shift)
+        if len(shift) != len(spot): shift = np.ones_like(spot)*shift
+
+        for idx in spot:
+            self.data[:,self.rrList[idx],self.ccList[idx]] = (
+            # gauss peak 
+            self.aMax*np.exp(-(self.wavelength-self.peakList[idx]-shift[idx])**2/2/self.sigma**2)[:,None] + 
+            # sigmoid 
+            self.aMax/4/(1 + np.exp((self.wavelength-self.peakList[idx]-shift[idx])/self.sigma))[:,None] + 
+            # constant offset
+            self.aMax/10)
+
+        print(f'new plasmonShift: {shift} nm')
+
+
+    def getActualShift(self):
+        ''' it temporary stepwise varies the refractive index '''
+        timeNow = timer()
+        return Sample3.DEFAULT['deltaShift']*round((timeNow -self.time0)%Sample3.DEFAULT['deltaTime']/Sample3.DEFAULT['deltaTime'])
+
+
+
+
+
 
 
 

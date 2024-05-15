@@ -65,7 +65,6 @@ class PlasmonProcessor(BaseProcessor):
         self.pF.calculateFit()
         newSignal = self.pF.getPosition()
         if newSignal != []:
-            print(f'newSignal {newSignal}')
             self.spotData.addDataValue(newSignal,time.time())
 
         
