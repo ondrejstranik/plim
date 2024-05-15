@@ -2,16 +2,16 @@
 class for live viewing spectral images
 '''
 #%%
-from spectralCamera.gui.xywViewerGUI import XYWViewerGui
+#from spectralCamera.gui.xywViewerGUI import XYWViewerGui
+from viscope.gui.baseGUI import BaseGUI
 from plim.gui.spectralViewer.plasmonViewer import PlasmonViewer
 from qtpy.QtCore import Signal
 
 
-class PlasmonViewerGUI(XYWViewerGui):
+class PlasmonViewerGUI(BaseGUI):
     ''' main class to show  plasmonViewer'''
 
     DEFAULT = {'nameGUI': 'PlasmonViewer'}
-    sigPlasmonPeak = Signal(list)
 
     def __init__(self, viscope, **kwargs):
         ''' initialise the class '''
@@ -30,17 +30,20 @@ class PlasmonViewerGUI(XYWViewerGui):
 
     def setDevice(self,device):
         super().setDevice(device)
+        # connect data container
+        self.plasmonViewer.pF = self.device.pF
+        self.plasmonViewer.spotSpectra = self.device.spotSpectra
         # connect signals
         self.device.worker.yielded.connect(self.guiUpdateTimed)
-        self.vWindow.setWindowTitle(self.device.name)
-
 
     def updateGui(self):
         ''' update the data in gui '''
         # napari
-        self.plasmonViewer.setWavelength(self.device.wavelength)
-        self.plasmonViewer.setImage(self.device.sImage)
-        self.sigPlasmonPeak.emit(self.plasmonViewer.pF.getPosition())
+        #self.plasmonViewer.setWavelength(self.device.wavelength)
+        self.plasmonViewer.xywImage = self.device.spotSpectra.wxyImage
+        self.plasmonViewer.wavelength = self.device.pF.wavelength
+        self.plasmonViewer.redraw()
+
 
 
 

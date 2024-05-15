@@ -69,10 +69,15 @@ class SignalWidget(QWidget):
 
     def drawGraph(self):
         ''' draw all new lines in the spectraGraph '''
-        # remove all lines
-        self.graph.clear()
 
         (signal, time) = self.sD.getData()
+
+        # if there is no signal then do not continue
+        if signal is None:
+            return
+
+        # remove all lines
+        self.graph.clear()
 
         if self.align:
             offSet = signal[np.argmin(np.abs(time - self.alignTime)),:]

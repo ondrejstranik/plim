@@ -3,14 +3,15 @@ class for tracking of plasmon peaks
 '''
 #%%
 #import napari
-from magicgui import magicgui
+#from magicgui import magicgui
 #from typing import Annotated, Literal
 
 #from qtpy.QtWidgets import QLabel, QSizePolicy
 #from qtpy.QtCore import Qt
 from viscope.gui.baseGUI import BaseGUI
+from plim.gui.signalViewer.signalWidget  import SignalWidget
 
-from timeit import default_timer as timer
+
 
 import numpy as np
 
@@ -26,12 +27,8 @@ class PositionTrackGUI(BaseGUI):
         ''' initialise the class '''
         super().__init__(viscope, **kwargs)
 
-        
-        self.lastUpdateTime = timer()
-        self.guiUpdateTime = 0.03
-
         # widget
-        self.positionTrackGui = None
+        self.positionTrack = None
 
         # prepare the gui of the class
         PositionTrackGUI.__setWidget(self) 
@@ -40,45 +37,21 @@ class PositionTrackGUI(BaseGUI):
         ''' prepare the gui '''
 
         # add widget positionTrackGui
-        self.positionTrackGui = pg.plot()
-        self.positionTrackGui.setTitle(f'Peak Position')
-        styles = {'color':'r', 'font-size':'20px'}
-        self.positionTrackGui.setLabel('left', 'Position', units='nm')
-        self.positionTrackGui.setLabel('bottom', 'time', units= 's')
-        self.dw = self.vWindow.addParameterGui(self.positionTrackGui,name=self.DEFAULT['nameGUI'])
+        self.positionTrack = SignalWidget()
+        self.dw = self.vWindow.addMainGUI(self.positionTrack,name=self.DEFAULT['nameGUI'])
+
+    def setDevice(self,device):
+        super().setDevice(device)
+        # connect data container
+        self.positionTrack.sD = self.device.spotData
         
-    def setDataSignal(self,signal):
-        ''' set a signal, which connect new Data arrival with graph update '''  
-        signal.connect(self.updateGraph)
+        # connect signals
+        self.device.worker.yielded.connect(self.guiUpdateTimed)
 
-    #TODO: finish this function !!!
-    def updateGraph(self,newData):
-        ''' update Graph with plasmon position '''
-        try:
-            self.positionTrackGui.clear()
-            self.lineplotList5 = []
-
-            npPosition = np.array(self.positionList)
-
-            for ii in np.arange(npPosition.shape[1]):
-                mypen = QPen(QColor.fromRgbF(*list(
-                    self.pointLayer.face_color[ii])))
-                mypen.setWidth(0)
-                lineplot = self.positionTrackGui.plot(pen= mypen)
-                lineplot.setData(self.timeList,
-                    npPosition[:,ii],
-                    symbol ='o',
-                    symbolSize = 14,
-                    symbolBrush = QColor.fromRgbF(*list(self.pointLayer.face_color[ii])),
-                    pen= mypen)
-                self.lineplotList5.append(lineplot)
-        except:
-             print('error occurred in drawPeakPositionGraph') 
-
-
-
-
-
+    def updateGui(self):
+        ''' update the data in gui '''
+        self.positionTrack.drawGraph()
+  
 
 if __name__ == "__main__":
         from viscope.instrument.virtual.virtualCamera import VirtualCamera

@@ -13,6 +13,7 @@ import numpy as np
 from viscope.instrument.base.baseProcessor import BaseProcessor
 from plim.algorithm.plasmonFit import PlasmonFit
 from plim.algorithm.spotSpectra import SpotSpectra
+from plim.algorithm.spotData import SpotData
 
 
 class PlasmonProcessor(BaseProcessor):
@@ -28,20 +29,16 @@ class PlasmonProcessor(BaseProcessor):
         # spectral camera
         self.sCamera = None
         
-        self.pF = None
-        self.spotSpectra = None
+        # data container
+        self.pF = PlasmonFit()
+        self.spotSpectra = SpotSpectra()
+        self.spotData = SpotData()
 
 
     def connect(self,sCamera=None):
         ''' connect data processor with the camera '''
-        if sCamera is not None:
-            super().connect(sCamera.flagLoop)
-            self.setParameter('sCamera',sCamera)
-            self.pF = PlasmonFit(wavelength = sCamera.getParameter('wavelength'))
-            self.spotSpectra = SpotSpectra(sCamera.sImage)
-
-        else:
-            super().connect()
+        super().connect()
+        if sCamera is not None: self.setParameter('sCamera',sCamera)
 
     def setParameter(self,name, value):
         ''' set parameter of the spectral camera'''
@@ -50,8 +47,6 @@ class PlasmonProcessor(BaseProcessor):
         if name== 'sCamera':
             self.sCamera = value
             self.flagToProcess = self.sCamera.flagLoop
-            self.pF = PlasmonFit(wavelength = self.sCamera.getParameter('wavelength'))
-            self.spotSpectra = SpotSpectra(self.sCamera.sImage)
 
     def getParameter(self,name):
         ''' get parameter of the camera '''
@@ -68,8 +63,12 @@ class PlasmonProcessor(BaseProcessor):
         self.pF.setSpectra(self.spotSpectra.getA())
         self.pF.setWavelength(self.sCamera.wavelength)
         self.pF.calculateFit()
-        print(self.pF.wavelength)
-        print(self.spotSpectra.getA())        
+        newSignal = self.pF.getPosition()
+        if newSignal != []:
+            print(f'newSignal {newSignal}')
+            self.spotData.addDataValue(newSignal,time.time())
+
+        
 
 
 #%%

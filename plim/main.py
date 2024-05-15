@@ -3,17 +3,18 @@ class for live viewing spectral images
 '''
 #%%
 
-#import numpy as np
 from viscope.main import Viscope
 from viscope.gui.allDeviceGUI import AllDeviceGUI 
-from plim.gui.stViewerGUI import STViewerGUI
 from plim.gui.plasmonViewerGUI import PlasmonViewerGUI
+from plim.gui.positionTrackGUI import PositionTrackGUI
 
 
 from viscope.instrument.virtual.virtualCamera import VirtualCamera
 from spectralCamera.algorithm.calibrateIFImage import CalibrateIFImage
 from spectralCamera.instrument.sCamera.sCamera import SCamera
 from viscope.instrument.virtual.virtualStage import VirtualStage
+from plim.instrument.plasmonProcessor import PlasmonProcessor
+
 
 from plim.virtualSystem.plimMicroscope import PlimMicroscope
 
@@ -52,6 +53,11 @@ class Plim():
         stage = VirtualStage('stage')
         stage.connect()
 
+        # plasmon data processo    
+        pP = PlasmonProcessor()
+        pP.connect(sCamera=sCamera)
+        pP.setParameter('threadingNow',True)
+
         # virtual microscope
         vM = PlimMicroscope()
         vM.setVirtualDevice(sCamera=sCamera, camera2=camera2,stage=stage)
@@ -61,9 +67,13 @@ class Plim():
         viscope = Viscope(name='plim')
         viewer  = AllDeviceGUI(viscope)
         viewer.setDevice([stage,camera,camera2])
+
         _vWindow = viscope.addViewerWindow()
         newGUI  = PlasmonViewerGUI(viscope,vWindow=_vWindow)
-        newGUI.setDevice(sCamera)
+        newGUI.setDevice(pP)
+
+        newGUI  = PositionTrackGUI(viscope)
+        newGUI.setDevice(pP)
 
         # main event loop
         viscope.run()
@@ -71,6 +81,7 @@ class Plim():
         sCamera.disconnect()
         camera.disconnect()
         camera2.disconnect()
+        pP.disconnect()
         vM.disconnect()
 
 
