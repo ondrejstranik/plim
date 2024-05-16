@@ -15,7 +15,7 @@ from timeit import default_timer as timer
 
 class Sample3(Sample2):
     ''' class to define a sample object of the microscope'''
-    DEFAULT = {'deltaTime': 5, #[s]
+    DEFAULT = {'deltaTime': 60, #[s]
                 'deltaShift': 10} # [nm]
     
     def __init__(self,*args, **kwargs):
@@ -108,7 +108,7 @@ class Sample3(Sample2):
             # constant offset
             self.aMax/10)
 
-        print(f'new plasmonShift: {shift} nm')
+        #print(f'new plasmonShift: {shift} nm')
 
 
     def getActualShift(self):

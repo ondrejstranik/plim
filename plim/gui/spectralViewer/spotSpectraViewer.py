@@ -110,10 +110,7 @@ class SpotSpectraViewer(XYWViewer):
 
     def setImage(self, image):
         ''' set the image '''
-        
         # update the spotSpectra image first
-        # TODO: check if the correction is right
-        #self.spotSpectra.wxyImage = self.xywImage
         self.spotSpectra.wxyImage = image
         super().setImage(image)
 
@@ -186,12 +183,15 @@ class SpotSpectraViewer(XYWViewer):
                 print('error occurred in updateSpectraGraph')
         else:
             try:
+                self.pointSpectra = self.spotSpectra.getA()
                 for ii in np.arange(len(self.pointSpectra)):
                     myline = self.lineplotList[ii]
                     mypen = QPen(QColor.fromRgbF(*list(
                         self.pointLayer.face_color[ii])))
                     mypen.setWidth(0)
+                    
                     myline.setData(self.wavelength,self.pointSpectra[ii], pen = mypen)
+
             except:
                 print('error occurred in updateSpectraGraph')
 

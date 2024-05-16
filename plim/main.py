@@ -53,7 +53,7 @@ class Plim():
         stage = VirtualStage('stage')
         stage.connect()
 
-        # plasmon data processo    
+        # plasmon data processor    
         pP = PlasmonProcessor()
         pP.connect(sCamera=sCamera)
         pP.setParameter('threadingNow',True)

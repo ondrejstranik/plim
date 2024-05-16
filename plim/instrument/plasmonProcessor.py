@@ -58,7 +58,7 @@ class PlasmonProcessor(BaseProcessor):
 
     def processData(self):
         ''' process newly arrived data '''
-        print(f"processing data from {self.DEFAULT['name']}")
+        #print(f"processing data from {self.DEFAULT['name']}")
         self.spotSpectra.setImage(self.sCamera.sImage)
         self.pF.setSpectra(self.spotSpectra.getA())
         self.pF.setWavelength(self.sCamera.wavelength)
