@@ -18,6 +18,7 @@ setuptools.setup(
         'PyQt5',
         'napari',
         'pytest',
+        'pyserial'
         #'spectralCamera @ git+ssh://git@github.com/ondrejstranik/spectralCamera.git',
         #'viscope @ git+ssh://git@github.com/ondrejstranik/viscope.git',
         ],
