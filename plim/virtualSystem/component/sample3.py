@@ -16,7 +16,9 @@ from timeit import default_timer as timer
 class Sample3(Sample2):
     ''' class to define a sample object of the microscope'''
     DEFAULT = {'deltaTime': 60, #[s]
-                'deltaShift': 10} # [nm]
+                'deltaShift': 10, # [nm]
+                'deltaVolume':30 # ul/min
+    } 
     
     def __init__(self,*args, **kwargs):
         ''' initialisation '''
@@ -92,29 +94,40 @@ class Sample3(Sample2):
     def setPlasmonShift(self,shift, spot=None):
         ''' set the plasmon shift in the array of spots
         shift .. array of the relative shifts [nm]
-        spot .. indexes of the spots, which should be shifted'''
+        spot .. indexes of the spots, which should be shifted
+                == 1/2 half of the spots are shifted'''
+
+        
+        if spot == 1/2:
+            spot= np.arange(0,len(self.rrList),2)
 
         spot= np.array(spot) if spot is not None else np.arange(len(self.rrList))
-        
+
         shift = np.array([shift]) if isinstance(shift, (int,float)) else np.array(shift)
         if len(shift) != len(spot): shift = np.ones_like(spot)*shift
 
-        for idx in spot:
+        for ii,idx  in enumerate(spot):
             self.data[:,self.rrList[idx],self.ccList[idx]] = (
             # gauss peak 
-            self.aMax*np.exp(-(self.wavelength-self.peakList[idx]-shift[idx])**2/2/self.sigma**2)[:,None] + 
+            self.aMax*np.exp(-(self.wavelength-self.peakList[idx]-shift[ii])**2/2/self.sigma**2)[:,None] + 
             # sigmoid 
-            self.aMax/4/(1 + np.exp((self.wavelength-self.peakList[idx]-shift[idx])/self.sigma))[:,None] + 
+            self.aMax/4/(1 + np.exp((self.wavelength-self.peakList[idx]-shift[ii])/self.sigma))[:,None] + 
             # constant offset
             self.aMax/10)
 
         #print(f'new plasmonShift: {shift} nm')
 
 
-    def getActualShift(self):
-        ''' it temporary stepwise varies the refractive index '''
-        timeNow = timer()
-        return Sample3.DEFAULT['deltaShift']*round((timeNow -self.time0)%Sample3.DEFAULT['deltaTime']/Sample3.DEFAULT['deltaTime'])
+    def getActualShift(self, totalFlow= None):
+        ''' stepwise varies the refractive index 
+         if totalFlow is None then it varies temporary
+         else depends on the volume of the totalFlow'''
+        
+        if totalFlow is None:
+            timeNow = timer()
+            return Sample3.DEFAULT['deltaShift']*round((timeNow -self.time0)%Sample3.DEFAULT['deltaTime']/Sample3.DEFAULT['deltaTime'])
+        else:
+            return Sample3.DEFAULT['deltaShift']*round((totalFlow)%Sample3.DEFAULT['deltaVolume']/Sample3.DEFAULT['deltaVolume'])
 
 
 

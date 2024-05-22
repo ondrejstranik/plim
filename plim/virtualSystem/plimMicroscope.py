@@ -36,14 +36,16 @@ class PlimMicroscope(BaseSystem):
         self.lampWavelength = self.DEFAULT['lampWavelength']
         self.lampSpectrum = np.exp(-(self.DEFAULT['lampWavelength']-self.DEFAULT['lampPeak'])**2/2/400**2)
 
+        # total liquid volume
+        self.totalFlow = 0
 
-    def setVirtualDevice(self,sCamera=None, camera2=None,stage=None):
+    def setVirtualDevice(self,sCamera=None, camera2=None,stage=None, pump=None):
         ''' set instruments of the microscope '''
         self.device['sCamera'] = sCamera
         self.device['camera'] = sCamera.camera
         self.device['camera2'] = camera2
         self.device['stage'] = stage
-
+        self.device['pump'] = pump
 
     def calculateVirtualFrameCamera(self):
         ''' update the virtual Frame of the spectral camera '''
@@ -132,15 +134,22 @@ class PlimMicroscope(BaseSystem):
     def loop(self):
         ''' infinite loop to carry out the microscope state update
         it is a state machine, which should be run in separate thread '''
-        plasmonShift0 = self.sample.getActualShift()
-        
+        plasmonShift0 = self.sample.getActualShift(totalFlow=self.totalFlow)
+        time0 = time.time()
+
         while True:
             yield 
+
+            # recalculate total volume
+            timeDelta = time.time() - time0
+            self.totalFlow += self.device['pump'].getParameter('flowRateReal')*timeDelta/60
+            time0 += timeDelta 
+
             # recalculate if sample is changed
-            plasmonShift = self.sample.getActualShift()
+            plasmonShift = self.sample.getActualShift(totalFlow=self.totalFlow)
             if plasmonShift != plasmonShift0:
                 #self.sample.setPlasmonShift(plasmonShift,np.arange(0,len(self.sample.peakList),2))
-                self.sample.setPlasmonShift(plasmonShift)
+                self.sample.setPlasmonShift(plasmonShift, spot=1/2)
                 self.device['camera'].flagSetParameter.set()
                 self.device['camera2'].flagSetParameter.set()
                 plasmonShift0 = plasmonShift

@@ -3,16 +3,18 @@ class for live viewing spectral images
 '''
 #%%
 
-from viscope.main import Viscope
+from viscope.main import viscope
 from viscope.gui.allDeviceGUI import AllDeviceGUI 
 from plim.gui.plasmonViewerGUI import PlasmonViewerGUI
 from plim.gui.positionTrackGUI import PositionTrackGUI
-
+from viscope.gui.cameraGUI import CameraGUI
+from viscope.gui.cameraViewGUI import CameraViewGUI
 
 from viscope.instrument.virtual.virtualCamera import VirtualCamera
 from spectralCamera.algorithm.calibrateIFImage import CalibrateIFImage
 from spectralCamera.instrument.sCamera.sCamera import SCamera
 from viscope.instrument.virtual.virtualStage import VirtualStage
+from viscope.instrument.virtual.virtualPump import VirtualPump
 from plim.instrument.plasmonProcessor import PlasmonProcessor
 
 
@@ -32,6 +34,9 @@ class Plim():
         #camera
         camera2 = VirtualCamera(name='BWCamera')
         camera2.connect()
+        camera2.setParameter('exposureTime', 300)
+        camera2.setParameter('nFrame', 3)
+
         camera2.setParameter('threadingNow',True)
 
         #spectral camera system
@@ -39,6 +44,8 @@ class Plim():
         VirtualCamera.DEFAULT['height']= 900
         camera = VirtualCamera(name='rawSpectralCamera')
         camera.connect()
+        camera.setParameter('exposureTime', 300)
+        camera.setParameter('nFrame', 3)
         camera.setParameter('threadingNow',True)
         #spectral camera
         CalibrateIFImage.DEFAULT['position00']= np.array([550,0])
@@ -53,27 +60,43 @@ class Plim():
         stage = VirtualStage('stage')
         stage.connect()
 
+        # pump
+        pump = VirtualPump('pump')
+        pump.connect()
+        pump.setParameter('flowRate',30)
+        pump.setParameter('flow',True)
+
         # plasmon data processor    
         pP = PlasmonProcessor()
-        pP.connect(sCamera=sCamera)
+        pP.connect(sCamera=sCamera, pump=pump)
         pP.setParameter('threadingNow',True)
 
         # virtual microscope
         vM = PlimMicroscope()
-        vM.setVirtualDevice(sCamera=sCamera, camera2=camera2,stage=stage)
+        vM.setVirtualDevice(sCamera=sCamera, camera2=camera2,stage=stage,pump=pump)
         vM.connect()
 
         # set GUIs
-        viscope = Viscope(name='plim')
         viewer  = AllDeviceGUI(viscope)
-        viewer.setDevice([stage,camera,camera2])
+        viewer.setDevice([stage,pump])
+        viewer.setDevice([stage])
 
-        _vWindow = viscope.addViewerWindow()
-        newGUI  = PlasmonViewerGUI(viscope,vWindow=_vWindow)
+        deviceGUI = CameraGUI(viscope,vWindow=viscope.vWindow)
+        deviceGUI.setDevice(camera)
+        deviceGUI = CameraViewGUI(viscope,vWindow='new')
+        deviceGUI.setDevice(camera)
+        deviceGUI = CameraGUI(viscope,vWindow=viscope.vWindow)
+        deviceGUI.setDevice(camera2)
+        deviceGUI = CameraViewGUI(viscope,vWindow='new')
+        deviceGUI.setDevice(camera2)
+        newGUI  = PlasmonViewerGUI(viscope,vWindow='new')
         newGUI.setDevice(pP)
+        newGUI2  = PositionTrackGUI(viscope,vWindow='new')
+        newGUI2.setDevice(pP)
 
-        newGUI  = PositionTrackGUI(viscope)
-        newGUI.setDevice(pP)
+        # carry out some GUI settings
+        #newGUI.plasmonViewer.spotIdentGui()
+
 
         # main event loop
         viscope.run()

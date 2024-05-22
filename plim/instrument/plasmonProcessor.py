@@ -77,11 +77,15 @@ class PlasmonProcessor(BaseProcessor):
         self.pF.calculateFit()
         newTime = time.time()
         newFlow = self.pump.getParameter('flowRateReal')
-        if newFlow is not None:
-            self.flowData.addDataValue([newFlow],newTime)
         newSignal = self.pF.getPosition()
         if newSignal != []:
-            self.spotData.addDataValue(newSignal,newTime)
+            t0 = self.spotData.addDataValue(newSignal,newTime)
+            if t0 is not None: 
+                self.flowData.clearData()
+                self.flowData.setT0(t0)
+        if newFlow is not None:
+            self.flowData.addDataValue([newFlow],newTime)
+
 
         
 
