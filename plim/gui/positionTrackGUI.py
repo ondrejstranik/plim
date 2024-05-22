@@ -2,21 +2,15 @@
 class for tracking of plasmon peaks
 '''
 #%%
-#import napari
-#from magicgui import magicgui
-#from typing import Annotated, Literal
 
-#from qtpy.QtWidgets import QLabel, QSizePolicy
-#from qtpy.QtCore import Qt
+
 from viscope.gui.baseGUI import BaseGUI
 from plim.gui.signalViewer.signalWidget  import SignalWidget
+from plim.gui.signalViewer.flowRateWidget import FlowRateWidget
+#from qtpy.QtWidgets import QVBoxLayout
 
 
 
-import numpy as np
-
-# TODO: plot the graph 
-# record the peak position at every time camera takes an image and not at GUI update time !!!
 class PositionTrackGUI(BaseGUI):
     ''' main class to show time evolution of plasmon peak position'''
 
@@ -29,6 +23,7 @@ class PositionTrackGUI(BaseGUI):
 
         # widget
         self.positionTrack = None
+        self.flowTrack = None
 
         # prepare the gui of the class
         PositionTrackGUI.__setWidget(self) 
@@ -36,36 +31,31 @@ class PositionTrackGUI(BaseGUI):
     def __setWidget(self):
         ''' prepare the gui '''
 
-        # add widget positionTrackGui
+        # add widgets 
         self.positionTrack = SignalWidget()
-        self.dw = self.vWindow.addMainGUI(self.positionTrack,name=self.DEFAULT['nameGUI'])
+        self.flowTrack = FlowRateWidget()
+
+        self.vWindow.addMainGUI(self.positionTrack,name=self.DEFAULT['nameGUI'])
+        self.dw = self.vWindow.addParameterGui(self.flowTrack,name=self.flowTrack.DEFAULT['nameGUI'])
+
+
 
     def setDevice(self,device):
         super().setDevice(device)
-        # connect data container
+        # connect data container with device container
         self.positionTrack.sD = self.device.spotData
-        
+        self.flowTrack.flowData = self.device.flowData
+
         # connect signals
         self.device.worker.yielded.connect(self.guiUpdateTimed)
 
     def updateGui(self):
         ''' update the data in gui '''
         self.positionTrack.drawGraph()
+        self.flowTrack.drawGraph()
   
 
 if __name__ == "__main__":
-        from viscope.instrument.virtual.virtualCamera import VirtualCamera
-        from viscope.main import Viscope
-
-        camera = VirtualCamera(name='camera1')
-        camera.connect()
-        camera.setParameter('threadingNow',True)
-
-        viscope = Viscope()
-        newGUI  = CameraViewGUI(viscope)
-        newGUI.setDevice(camera)
-        viscope.run()
-
-        camera.disconnect()
+    pass
 
 

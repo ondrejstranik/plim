@@ -14,10 +14,12 @@ from viscope.instrument.base.baseProcessor import BaseProcessor
 from plim.algorithm.plasmonFit import PlasmonFit
 from plim.algorithm.spotSpectra import SpotSpectra
 from plim.algorithm.spotData import SpotData
+from plim.algorithm.flowData import FlowData
 
 
 class PlasmonProcessor(BaseProcessor):
-    ''' class to control processing of spectral images to get plasmon signals'''
+    ''' class to control processing of spectral images to get plasmon signals
+    and collect flow rates from a pump'''
     DEFAULT = {'name': 'PlasmonProcessor'}
 
     def __init__(self, name=None, **kwargs):
@@ -28,17 +30,21 @@ class PlasmonProcessor(BaseProcessor):
         
         # spectral camera
         self.sCamera = None
+        # spectral camera
+        self.pump = None
         
         # data container
         self.pF = PlasmonFit()
         self.spotSpectra = SpotSpectra()
         self.spotData = SpotData()
+        self.flowData = FlowData()
 
 
-    def connect(self,sCamera=None):
-        ''' connect data processor with the camera '''
+    def connect(self,sCamera=None,pump=None):
+        ''' connect data processor with the camera, pump '''
         super().connect()
         if sCamera is not None: self.setParameter('sCamera',sCamera)
+        if pump is not None: self.setParameter('pump',pump)
 
     def setParameter(self,name, value):
         ''' set parameter of the spectral camera'''
@@ -48,6 +54,9 @@ class PlasmonProcessor(BaseProcessor):
             self.sCamera = value
             self.flagToProcess = self.sCamera.flagLoop
 
+        if name== 'pump':
+            self.pump = value
+
     def getParameter(self,name):
         ''' get parameter of the camera '''
         _value = super().getParameter(name)
@@ -56,6 +65,9 @@ class PlasmonProcessor(BaseProcessor):
         if name== 'sCamera':
             return self.sCamera
 
+        if name== 'pump':
+            return self.pump
+
     def processData(self):
         ''' process newly arrived data '''
         #print(f"processing data from {self.DEFAULT['name']}")
@@ -63,9 +75,13 @@ class PlasmonProcessor(BaseProcessor):
         self.pF.setSpectra(self.spotSpectra.getA())
         self.pF.setWavelength(self.sCamera.wavelength)
         self.pF.calculateFit()
+        newTime = time.time()
+        newFlow = self.pump.getParameter('flowRateReal')
+        if newFlow is not None:
+            self.flowData.addDataValue([newFlow],newTime)
         newSignal = self.pF.getPosition()
         if newSignal != []:
-            self.spotData.addDataValue(newSignal,time.time())
+            self.spotData.addDataValue(newSignal,newTime)
 
         
 

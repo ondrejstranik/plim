@@ -97,28 +97,32 @@ def test_plasmonViewerGUI():
 def test_positionTrackGUI():
     ''' testing the viewer with webcam'''
 
-    from viscope.main import Viscope
+    from viscope.main import viscope
     from viscope.gui.allDeviceGUI import AllDeviceGUI
-    from spectralCamera.instrument.sCamera.sCameraGenerator import RGBWebCamera
-    from plim.instrument.plasmonProcessor import PlasmonProcessor
-
     from plim.gui.plasmonViewerGUI import PlasmonViewerGUI
     from plim.gui.positionTrackGUI import PositionTrackGUI
+
+    from spectralCamera.instrument.sCamera.sCameraGenerator import RGBWebCamera
+    from plim.instrument.plasmonProcessor import PlasmonProcessor
+    from viscope.instrument.virtual.virtualPump import VirtualPump
 
     #spectral camera system
     scs = RGBWebCamera()
     camera = scs.camera
     sCamera = scs.sCamera
 
+    # pump
+    pump = VirtualPump()
+    pump.connect()
+
     # plasmon processor 
     pP = PlasmonProcessor()
-    pP.connect(sCamera=sCamera)
+    pP.connect(sCamera=sCamera, pump= pump)
     pP.setParameter('threadingNow',True)
 
     # add gui
-    viscope = Viscope()
     viewer  = AllDeviceGUI(viscope)
-    viewer.setDevice(camera)
+    viewer.setDevice([camera,pump])
     newGUI  = PlasmonViewerGUI(viscope)
     newGUI.setDevice(pP)
     _vWindow = viscope.addViewerWindow()
@@ -130,3 +134,4 @@ def test_positionTrackGUI():
 
     camera.disconnect()
     sCamera.disconnect()
+    pump.disconnect()

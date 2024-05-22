@@ -101,7 +101,6 @@ def test_plamonFit():
     
     plt.show()
 
-@pytest.mark.GUI
 def test_spotData():
     from plim.algorithm.spotData import SpotData
     import numpy as np
@@ -115,3 +114,19 @@ def test_spotData():
     print(f'time {time}')
 
     assert signal.shape[0]==51
+
+def test_flowData():
+    from plim.algorithm.flowData import FlowData
+    import numpy as np
+
+    fD = FlowData()
+
+    fD.addDataValue([1],1)
+    fD.addDataValue(np.random.rand(1),np.random.rand(1))
+    fD.setData(np.random.rand(50))
+ 
+    (signal, time) = fD.getData()
+    print(f'signal {signal}')
+    print(f'time {time}')
+
+    assert signal.shape[0]==50
