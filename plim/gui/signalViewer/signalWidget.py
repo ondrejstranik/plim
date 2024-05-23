@@ -2,11 +2,9 @@
 class for viewing signals from spots' plasmon resonance
 '''
 
-import napari
 import pyqtgraph as pg
 from PyQt5.QtGui import QColor, QPen
-from qtpy.QtWidgets import QLabel, QSizePolicy,QWidget, QApplication, QVBoxLayout
-from qtpy.QtCore import Qt
+from qtpy.QtWidgets import QWidget,QVBoxLayout
 from magicgui import magicgui
 
 import numpy as np
@@ -15,6 +13,7 @@ from plim.algorithm.spotData import SpotData
 
 class SignalWidget(QWidget):
     ''' main class for viewing signal'''
+    DEFAULT = {'nameGUI':'Signal'}
 
     def __init__(self,signal=None, time= None, **kwargs):
         ''' initialise the class '''
@@ -108,14 +107,7 @@ class SignalWidget(QWidget):
 
 
 if __name__ == "__main__":
-    from plim.gui.signalViewer.signalWidget import SignalWidget
-    import numpy as np
-
-    app = QApplication([])
-
-    sV = SignalWidget(np.random.rand(50,4))
-    sV.show()
-    app.exec()
+    pass
 
         
 

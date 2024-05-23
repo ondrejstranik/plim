@@ -35,8 +35,10 @@ class PositionTrackGUI(BaseGUI):
         self.positionTrack = SignalWidget()
         self.flowTrack = FlowRateWidget()
 
-        self.vWindow.addMainGUI(self.positionTrack,name=self.DEFAULT['nameGUI'])
-        self.dw = self.vWindow.addParameterGui(self.flowTrack,name=self.flowTrack.DEFAULT['nameGUI'])
+        #self.vWindow.addMainGUI(self.positionTrack,name=self.DEFAULT['nameGUI'])
+        self.vWindow.addParameterGui(self.positionTrack,name=self.positionTrack.DEFAULT['nameGUI'])
+        self.vWindow.addParameterGui(self.flowTrack,name=self.flowTrack.DEFAULT['nameGUI'])
+
 
 
 

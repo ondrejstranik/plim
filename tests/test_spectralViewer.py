@@ -1,4 +1,4 @@
-''' camera unitest '''
+''' test spectral viewer '''
 
 import pytest
 

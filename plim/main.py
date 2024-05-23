@@ -9,6 +9,7 @@ from plim.gui.plasmonViewerGUI import PlasmonViewerGUI
 from plim.gui.positionTrackGUI import PositionTrackGUI
 from viscope.gui.cameraGUI import CameraGUI
 from viscope.gui.cameraViewGUI import CameraViewGUI
+from plim.gui.saveDataGUI import SaveDataGUI
 
 from viscope.instrument.virtual.virtualCamera import VirtualCamera
 from spectralCamera.algorithm.calibrateIFImage import CalibrateIFImage
@@ -17,10 +18,10 @@ from viscope.instrument.virtual.virtualStage import VirtualStage
 from viscope.instrument.virtual.virtualPump import VirtualPump
 from plim.instrument.plasmonProcessor import PlasmonProcessor
 
-
 from plim.virtualSystem.plimMicroscope import PlimMicroscope
 
 import numpy as np
+from pathlib import Path
 
 class Plim():
     ''' base top class for control'''
@@ -31,12 +32,14 @@ class Plim():
     def run(cls):
         '''  set the all the parameter and then run the GUI'''
 
+        # some global settings
+        viscope.dataFolder = str(Path(__file__).parent.joinpath('DATA'))
+
         #camera
         camera2 = VirtualCamera(name='BWCamera')
         camera2.connect()
         camera2.setParameter('exposureTime', 300)
         camera2.setParameter('nFrame', 3)
-
         camera2.setParameter('threadingNow',True)
 
         #spectral camera system
@@ -83,20 +86,22 @@ class Plim():
 
         deviceGUI = CameraGUI(viscope,vWindow=viscope.vWindow)
         deviceGUI.setDevice(camera)
-        deviceGUI = CameraViewGUI(viscope,vWindow='new')
-        deviceGUI.setDevice(camera)
-        deviceGUI = CameraGUI(viscope,vWindow=viscope.vWindow)
-        deviceGUI.setDevice(camera2)
-        deviceGUI = CameraViewGUI(viscope,vWindow='new')
-        deviceGUI.setDevice(camera2)
+        #deviceGUI = CameraViewGUI(viscope,vWindow='new')
+        #deviceGUI.setDevice(camera)
+        #deviceGUI = CameraGUI(viscope,vWindow=viscope.vWindow)
+        #deviceGUI.setDevice(camera2)
+        #deviceGUI = CameraViewGUI(viscope,vWindow='new')
+        #deviceGUI.setDevice(camera2)
         newGUI  = PlasmonViewerGUI(viscope,vWindow='new')
         newGUI.setDevice(pP)
         newGUI2  = PositionTrackGUI(viscope,vWindow='new')
         newGUI2.setDevice(pP)
+        deviceGUI = SaveDataGUI(viscope,vWindow=newGUI2.vWindow)
+        deviceGUI.setDevice(pP)
+
 
         # carry out some GUI settings
         #newGUI.plasmonViewer.spotIdentGui()
-
 
         # main event loop
         viscope.run()
