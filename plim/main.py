@@ -29,7 +29,7 @@ class Plim():
     DEFAULT = {}
 
     @classmethod
-    def run(cls):
+    def runVirtual(cls):
         '''  set the all the parameter and then run the GUI'''
 
         # some global settings
@@ -115,6 +115,6 @@ class Plim():
 
 if __name__ == "__main__":
 
-    Plim.run()
+    Plim.runVirtual()
 
 
