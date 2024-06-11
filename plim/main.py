@@ -11,6 +11,8 @@ from viscope.gui.cameraGUI import CameraGUI
 from viscope.gui.cameraViewGUI import CameraViewGUI
 from plim.gui.saveDataGUI import SaveDataGUI
 
+from viscope.gui.saveImageGUI import SaveImageGUI
+
 import numpy as np
 from pathlib import Path
 
@@ -84,8 +86,7 @@ class Plim():
         # set GUIs
         viewer  = AllDeviceGUI(viscope)
         viewer.setDevice([stage,pump])
-        viewer.setDevice([stage])
-
+ 
         deviceGUI = CameraGUI(viscope,vWindow=viscope.vWindow)
         deviceGUI.setDevice(camera)
         #deviceGUI = CameraViewGUI(viscope,vWindow='new')
@@ -129,13 +130,6 @@ class Plim():
         # some global settings
         viscope.dataFolder = str(Path(__file__).parent.joinpath('DATA'))
 
-        #camera
-        camera2 = VirtualCamera(name='BWCamera')
-        camera2.connect()
-        camera2.setParameter('exposureTime', 300)
-        camera2.setParameter('nFrame', 3)
-        camera2.setParameter('threadingNow',True)
-
         #spectral camera system
         #camera
         VirtualCamera.DEFAULT['height']= 900
@@ -153,10 +147,6 @@ class Plim():
         sCamera.setParameter('calibrationData',sCal)
         sCamera.setParameter('threadingNow',True)
 
-        # stage
-        stage = VirtualStage('stage')
-        stage.connect()
-
         # pump
         pump = RegloICC('pump')
         pump.connect()
@@ -168,15 +158,9 @@ class Plim():
         pP.connect(sCamera=sCamera, pump=pump)
         pP.setParameter('threadingNow',True)
 
-        # virtual microscope
-        vM = PlimMicroscope()
-        vM.setVirtualDevice(sCamera=sCamera, camera2=camera2,stage=stage,pump=pump)
-        vM.connect()
-
         # set GUIs
         viewer  = AllDeviceGUI(viscope)
-        viewer.setDevice([stage,pump])
-        viewer.setDevice([stage])
+        viewer.setDevice([pump])
 
         deviceGUI = CameraGUI(viscope,vWindow=viscope.vWindow)
         deviceGUI.setDevice(camera)
@@ -202,17 +186,33 @@ class Plim():
 
         sCamera.disconnect()
         camera.disconnect()
-        camera2.disconnect()
         pP.disconnect()
-        vM.disconnect()
 
+    @classmethod
+    def runCalibrationReal(cls):
+        from spectralCamera.instrument.camera.milCamera.milCamera import MilCamera  
 
+        # some global settings
+        viscope.dataFolder = str(Path(__file__).parent.joinpath('DATA'))
 
+        camera = MilCamera(name='MilCamera')
+        camera.connect()
+        camera.setParameter('exposureTime', 5)
+        camera.setParameter('threadingNow',True)
 
+        newGUI  = AllDeviceGUI(viscope)
+        newGUI.setDevice(camera)
+        newGUI = SaveImageGUI(viscope)
+        newGUI.setDevice(camera)
+        viscope.run()
+
+        camera.disconnect()
 
 
 if __name__ == "__main__":
 
-    Plim.runVirtual()
+    #Plim.runVirtual()
+    Plim.runCalibrationReal()
+    
 
 
