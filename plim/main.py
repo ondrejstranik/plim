@@ -3,6 +3,7 @@ class for live viewing spectral images
 '''
 #%%
 
+import plim
 from viscope.main import viscope
 from viscope.gui.allDeviceGUI import AllDeviceGUI 
 from plim.gui.plasmonViewerGUI import PlasmonViewerGUI
@@ -35,9 +36,8 @@ class Plim():
         from plim.virtualSystem.plimMicroscope import PlimMicroscope
 
 
-
         # some global settings
-        viscope.dataFolder = str(Path(__file__).parent.joinpath('DATA'))
+        viscope.dataFolder = plim.dataFolder
 
         #camera
         camera2 = VirtualCamera(name='BWCamera')
@@ -120,27 +120,27 @@ class Plim():
     def runReal(cls):
         '''  set the all the parameter and then run the GUI'''
 
-        from viscope.instrument.virtual.virtualCamera import VirtualCamera
-        from spectralCamera.algorithm.calibrateIFImage import CalibrateIFImage
+        from spectralCamera.algorithm.calibrateFrom3Images import CalibrateFrom3Images
         from spectralCamera.instrument.sCamera.sCamera import SCamera
         from plim.instrument.pump.regloICC import RegloICC
         from plim.instrument.plasmonProcessor import PlasmonProcessor
+        from spectralCamera.instrument.camera.milCamera.milCamera import MilCamera
+        from viscope.instrument.virtual.virtualPump import VirtualPump  
 
 
         # some global settings
-        viscope.dataFolder = str(Path(__file__).parent.joinpath('DATA'))
+        viscope.dataFolder = plim.dataFolder
 
         #spectral camera system
         #camera
-        VirtualCamera.DEFAULT['height']= 900
-        camera = VirtualCamera(name='rawSpectralCamera')
+        camera = MilCamera(name='MilCamera')
         camera.connect()
-        camera.setParameter('exposureTime', 300)
-        camera.setParameter('nFrame', 3)
+        camera.setParameter('exposureTime', 5)
         camera.setParameter('threadingNow',True)
         #spectral camera
-        CalibrateIFImage.DEFAULT['position00']= np.array([550,0])
-        sCal = CalibrateIFImage(camera=camera)
+
+        sCal = CalibrateFrom3Images()
+        sCal = sCal.loadClass(classFile = r'C:\Users\ostranik\Documents\GitHub\spectralCamera\spectralCamera\DATA\CalibrateFrom3Images.obj')
         sCamera = SCamera(name='spectralCamera')
         sCamera.connect()
         sCamera.setParameter('camera',camera)
@@ -148,7 +148,8 @@ class Plim():
         sCamera.setParameter('threadingNow',True)
 
         # pump
-        pump = RegloICC('pump')
+        #pump = RegloICC('pump')
+        pump = VirtualPump('pump')
         pump.connect()
         pump.setParameter('flowRate',30)
         pump.setParameter('flow',False)
@@ -160,10 +161,10 @@ class Plim():
 
         # set GUIs
         viewer  = AllDeviceGUI(viscope)
-        viewer.setDevice([pump])
+        viewer.setDevice([pump,camera])
 
-        deviceGUI = CameraGUI(viscope,vWindow=viscope.vWindow)
-        deviceGUI.setDevice(camera)
+        #deviceGUI = CameraGUI(viscope,vWindow=viscope.vWindow)
+        #deviceGUI.setDevice(camera)
         #deviceGUI = CameraViewGUI(viscope,vWindow='new')
         #deviceGUI.setDevice(camera)
         #deviceGUI = CameraGUI(viscope,vWindow=viscope.vWindow)
@@ -188,31 +189,9 @@ class Plim():
         camera.disconnect()
         pP.disconnect()
 
-    @classmethod
-    def runCalibrationReal(cls):
-        from spectralCamera.instrument.camera.milCamera.milCamera import MilCamera  
-
-        # some global settings
-        viscope.dataFolder = str(Path(__file__).parent.joinpath('DATA'))
-
-        camera = MilCamera(name='MilCamera')
-        camera.connect()
-        camera.setParameter('exposureTime', 5)
-        camera.setParameter('threadingNow',True)
-
-        newGUI  = AllDeviceGUI(viscope)
-        newGUI.setDevice(camera)
-        newGUI = SaveImageGUI(viscope)
-        newGUI.setDevice(camera)
-        viscope.run()
-
-        camera.disconnect()
-
-
 if __name__ == "__main__":
 
-    #Plim.runVirtual()
-    Plim.runCalibrationReal()
+    Plim.runReal()
     
 
 
