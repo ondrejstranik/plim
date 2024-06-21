@@ -59,6 +59,7 @@ class Plim():
         sCal = CalibrateIFImage(camera=camera)
         sCamera = SCamera(name='spectralCamera')
         sCamera.connect()
+        sCamera.aberrationCorrection = True
         sCamera.setParameter('camera',camera)
         sCamera.setParameter('calibrationData',sCal)
         sCamera.setParameter('threadingNow',True)
@@ -136,6 +137,7 @@ class Plim():
         camera = MilCamera(name='MilCamera')
         camera.connect()
         camera.setParameter('exposureTime', 5)
+        camera.setParameter('nFrame', 24)
         camera.setParameter('threadingNow',True)
         #spectral camera
 
@@ -143,6 +145,7 @@ class Plim():
         sCal = sCal.loadClass(classFile = r'C:\Users\ostranik\Documents\GitHub\spectralCamera\spectralCamera\DATA\CalibrateFrom3Images.obj')
         sCamera = SCamera(name='spectralCamera')
         sCamera.connect()
+        sCamera.aberrationCorrection = True
         sCamera.setParameter('camera',camera)
         sCamera.setParameter('calibrationData',sCal)
         sCamera.setParameter('threadingNow',True)
@@ -193,5 +196,5 @@ if __name__ == "__main__":
 
     Plim.runReal()
     
-
+#%%
 
