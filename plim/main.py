@@ -142,7 +142,7 @@ class Plim():
         #spectral camera
 
         sCal = CalibrateFrom3Images()
-        sCal = sCal.loadClass(classFile = r'C:\Users\ostranik\Documents\GitHub\spectralCamera\spectralCamera\DATA\CalibrateFrom3Images.obj')
+        sCal = sCal.loadClass(classFile = r'C:\Users\ostranik\Documents\GitHub\spectralCamera\spectralCamera\DATA\24-06-26-calibration\CalibrateFrom3Images.obj')
         sCamera = SCamera(name='spectralCamera')
         sCamera.connect()
         sCamera.aberrationCorrection = True
@@ -151,8 +151,9 @@ class Plim():
         sCamera.setParameter('threadingNow',True)
 
         # pump
-        #pump = RegloICC('pump')
-        pump = VirtualPump('pump')
+        #pump = VirtualPump('pump')
+        RegloICC.DEFAULT['port'] = 'COM3'
+        pump = RegloICC('pump')
         pump.connect()
         pump.setParameter('flowRate',30)
         pump.setParameter('flow',False)
@@ -194,8 +195,8 @@ class Plim():
 
 if __name__ == "__main__":
 
-    #Plim.runReal()
-    Plim.runVirtual()
+    Plim.runReal()
+    #Plim.runVirtual()
     
 #%%
 

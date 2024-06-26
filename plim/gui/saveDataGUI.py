@@ -24,7 +24,8 @@ class SaveDataGUI(BaseGUI):
         ''' prepare the gui '''
 
         @magicgui(filePath={"label": "Saving file Path:","mode":'d'},
-                fileName={"label": "Saving file Name:"})
+                fileName={"label": "Saving file Name:"},
+                call_button="Save")
         def saveGui(filePath= Path(self.viscope.dataFolder), fileName: str = 'Experiment1'):
 
             np.savez(str(filePath / fileName) + '_spotData',self.device.spotData.signal,self.device.spotData.time)            
@@ -34,7 +35,7 @@ class SaveDataGUI(BaseGUI):
             self.device.spotSpectra.wxyImage,
             self.device.pF.wavelength)            
 
-        @magicgui()
+        @magicgui(call_button="Reset")
         def resetGui():
             self.device.spotData.clearData()
             self.device.flowData.clearData()
