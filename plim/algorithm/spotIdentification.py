@@ -32,7 +32,7 @@ class SpotIdentification:
         sumIm = ski.util.img_as_uint(gaussian(_sumIm))
 
         # use local otsu to threshold image
-        footprint = disk(2*self.DEFAULT['radius'])
+        footprint = disk(4*self.DEFAULT['radius'])
         local_otsu = rank.otsu(sumIm, footprint)
         mask = sumIm < local_otsu
 

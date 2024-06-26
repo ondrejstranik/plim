@@ -33,7 +33,6 @@ def test_spotIdentification():
     viewer.add_points(myPosition)
     napari.run()
 
-
 @pytest.mark.GUI
 def test_spotSpectra():
     ''' check if spectra are properly calculated'''
