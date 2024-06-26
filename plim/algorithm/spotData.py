@@ -59,6 +59,12 @@ class SpotData:
             return (None, None)
 
 
+    def clearData(self):
+        ''' clear the data '''
+        self.signal = None
+        self.time = None
+        self.time0 = 0
+
         
 #%%
 

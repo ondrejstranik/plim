@@ -194,7 +194,8 @@ class Plim():
 
 if __name__ == "__main__":
 
-    Plim.runReal()
+    #Plim.runReal()
+    Plim.runVirtual()
     
 #%%
 

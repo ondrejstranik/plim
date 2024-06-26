@@ -6,12 +6,12 @@ from pathlib import Path
 import numpy as np
 
 from viscope.gui.baseGUI import BaseGUI
-from magicgui import magicgui
+from magicgui import magicgui, widgets
 
 class SaveDataGUI(BaseGUI):
     ''' main class to save data'''
 
-    DEFAULT = {'nameGUI': 'Save Data'}
+    DEFAULT = {'nameGUI': 'Data'}
 
     def __init__(self, viscope, **kwargs):
         ''' initialise the class '''
@@ -34,10 +34,17 @@ class SaveDataGUI(BaseGUI):
             self.device.spotSpectra.wxyImage,
             self.device.pF.wavelength)            
 
+        @magicgui()
+        def resetGui():
+            self.device.spotData.clearData()
+            self.device.flowData.clearData()
 
         # add widgets 
-        self.saveGui = saveGui
-        self.vWindow.addParameterGui(self.saveGui,name=self.DEFAULT['nameGUI'])
+
+        container = widgets.Container(
+        widgets=[saveGui, resetGui], layout="vertical", labels=False)
+        self.dataGui = container
+        self.vWindow.addParameterGui(self.dataGui,name=self.DEFAULT['nameGUI'])
  
 
 if __name__ == "__main__":
