@@ -169,6 +169,8 @@ class Plim():
         # set GUIs
         viewer  = AllDeviceGUI(viscope)
         viewer.setDevice([pump,camera])
+        deviceGUI = SCameraGUI(viscope, vWindow=viscope.vWindow)
+        deviceGUI.setDevice(sCamera)
 
         #deviceGUI = CameraGUI(viscope,vWindow=viscope.vWindow)
         #deviceGUI.setDevice(camera)
@@ -198,8 +200,8 @@ class Plim():
 
 if __name__ == "__main__":
 
-    #Plim.runReal()
-    Plim.runVirtual()
+    Plim.runReal()
+    #Plim.runVirtual()
     
 #%%
 
