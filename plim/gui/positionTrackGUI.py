@@ -55,6 +55,7 @@ class PositionTrackGUI(BaseGUI):
         ''' update the data in gui '''
         self.positionTrack.drawGraph()
         self.flowTrack.drawGraph()
+
   
 
 if __name__ == "__main__":

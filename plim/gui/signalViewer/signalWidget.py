@@ -42,6 +42,12 @@ class SignalWidget(QWidget):
 
             self.drawGraph()
 
+        @magicgui(call_button=False,
+                  acquisitionTime = {'label':'acquisition Time',
+                                     'widget_type': 'Label'} )
+        def infoBox(acquisitionTime = 0):
+            self.infoBox.acquisitionTime.value = acquisitionTime
+
 
         # add graph
         self.graph = pg.plot()
@@ -53,9 +59,11 @@ class SignalWidget(QWidget):
 
         # fit parameter
         self.fitParameter = fitParameter
+        self.infoBox = infoBox
 
         layout = QVBoxLayout()
         layout.addWidget(self.graph)
+        layout.addWidget(self.infoBox.native)
         layout.addWidget(self.fitParameter.native)
         self.setLayout(layout)
 
@@ -95,12 +103,17 @@ class SignalWidget(QWidget):
         #except:
         #    print('error occurred in drawSpectraGraph - pointSpectra')
 
+        # display delta time
+        if len(time) >1:
+            self.infoBox(time[-1] - time[-2])
+
+
     def setData(self, signal,time=None):
         ''' set the data '''
         self.sD.setData(signal,time)
         self.drawGraph()
 
-    def addDataValue(valueVector,time):
+    def addDataValue(self,valueVector,time):
         ''' add new value '''        
         self.sD.addDataValue(valueVector,time)
         self.drawGraph()
