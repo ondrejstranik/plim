@@ -10,6 +10,7 @@ from plim.gui.plasmonViewerGUI import PlasmonViewerGUI
 from plim.gui.positionTrackGUI import PositionTrackGUI
 from viscope.gui.cameraGUI import CameraGUI
 from viscope.gui.cameraViewGUI import CameraViewGUI
+from spectralCamera.gui.sCameraGUI import SCameraGUI
 from plim.gui.saveDataGUI import SaveDataGUI
 
 from viscope.gui.saveImageGUI import SaveImageGUI
@@ -90,6 +91,8 @@ class Plim():
  
         deviceGUI = CameraGUI(viscope,vWindow=viscope.vWindow)
         deviceGUI.setDevice(camera)
+        deviceGUI = SCameraGUI(viscope, vWindow=viscope.vWindow)
+        deviceGUI.setDevice(sCamera)
         #deviceGUI = CameraViewGUI(viscope,vWindow='new')
         #deviceGUI.setDevice(camera)
         #deviceGUI = CameraGUI(viscope,vWindow=viscope.vWindow)
