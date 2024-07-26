@@ -76,7 +76,7 @@ class PlasmonProcessor(BaseProcessor):
         self.pF.setWavelength(self.sCamera.wavelength)
         self.pF.calculateFit()
         newTime = time.time()
-        newFlow = self.pump.getParameter('flowRateReal')
+        newFlow = self.pump.getParameter('flowRateReal') if self.pump is not None else None 
         newSignal = self.pF.getPosition()
         if newSignal != []:
             t0 = self.spotData.addDataValue(newSignal,newTime)

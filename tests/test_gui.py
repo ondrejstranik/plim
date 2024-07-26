@@ -62,11 +62,11 @@ def test_STViewerGUI():
 def test_plasmonViewerGUI():
     ''' testing the viewer with webcam'''
 
-    from viscope.main import Viscope
-    from viscope.gui.allDeviceGUI import AllDeviceGUI
     from spectralCamera.instrument.sCamera.sCameraGenerator import RGBWebCamera
     from plim.instrument.plasmonProcessor import PlasmonProcessor
 
+    from viscope.main import viscope
+    from viscope.gui.allDeviceGUI import AllDeviceGUI
     from plim.gui.plasmonViewerGUI import PlasmonViewerGUI
 
     #spectral camera system
@@ -80,7 +80,6 @@ def test_plasmonViewerGUI():
     pP.setParameter('threadingNow',True)
 
     # add gui
-    viscope = Viscope()
     viewer  = AllDeviceGUI(viscope)
     viewer.setDevice(camera)
     newGUI  = PlasmonViewerGUI(viscope)
