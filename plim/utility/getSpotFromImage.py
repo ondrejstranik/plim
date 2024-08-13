@@ -7,8 +7,10 @@ import napari
 from plim.algorithm.spotIdentification import SpotIdentification
 import plim
 
-container = np.load(plim.dataFolder + '/' + 'spot_0.npy.npz')
-image = container['image']
+ffolder = r'Experiment1_4to1_h2o_iso'
+ffile = r'Experiment1_4to1_h2o_iso_image.npz'
+container = np.load(plim.dataFolder + '/' + ffolder + '/' + ffile)
+image = container['arr_1']
 
 #%% identify the spots
 

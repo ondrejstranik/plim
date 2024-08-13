@@ -146,6 +146,11 @@ class Plim():
 
         sCal = CalibrateFrom3Images()
         sCal = sCal.loadClass(classFile = r'C:\Users\ostranik\Documents\GitHub\spectralCamera\spectralCamera\DATA\24-06-26-calibration\CalibrateFrom3Images.obj')
+        # this is necessary, because the saved sCal does not have gridLine.spBlockRowIdx and gridLine.spBlockColumnIdx 
+        sCal.gridLine.spBlockRowIdx = None
+        sCal.gridLine.spBlockColumnIdx = None
+
+        
         sCamera = SCamera(name='spectralCamera')
         sCamera.connect()
         sCamera.aberrationCorrection = True
