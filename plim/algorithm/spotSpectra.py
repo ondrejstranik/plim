@@ -11,7 +11,8 @@ class SpotSpectra:
     ''' class for calculating spot spectra '''
     DEFAULT = {'pxBcg': 3, # thickness of the background shell
                 'pxAve': 3, # radius of the spot
-                'pxSpace': 1} # space between spot and background
+                'pxSpace': 1,  # space between spot and background
+                'darkCount': 0} # offset in the signal, which should be substracted
 
 
     def __init__(self,wxyImage=None,spotPosition= [],**kwarg):
@@ -24,6 +25,9 @@ class SpotSpectra:
         self.pxBcg= int(kwarg['pxBcg']) if 'pxBcg' in kwarg else  self.DEFAULT['pxBcg']
         self.pxAve= int(kwarg['pxAve']) if 'pxAve' in kwarg else  self.DEFAULT['pxAve']
         self.pxSpace= int(kwarg['pxSpace']) if 'pxSpace' in kwarg else  self.DEFAULT['pxSpace']
+        
+        self.darkCount= kwarg['darkCount'] if 'darkCount' in kwarg else  self.DEFAULT['darkCount']
+
 
         self.maskSize = None # total size of the mask
         self.maskSpot = None # weights for calculation of spots spectra
@@ -103,11 +107,20 @@ class SpotSpectra:
             try:
                 spectraRawSpot = np.mean(myAreaImageFlatten[:,maskSpotFlatten], axis=1)
                 spectraRawBcg = np.mean(myAreaImageFlatten[:,maskBcgFlatten], axis=1)
+
+                spectraRawSpot = spectraRawSpot - self.darkCount
+                spectraRawBcg  = spectraRawBcg -  self.darkCount
+
+                spectraRawSpot[spectraRawSpot <=1] = 1 # avoid small numbers and negative
+                spectraRawBcg[spectraRawBcg <=1] = 1 # avoid division by small numbers and negative 
+
+                spectraSpot = spectraRawSpot/spectraRawBcg
+
             except:
                 spectraRawSpot = np.ones(self.wxyImage.shape[0])
                 spectraRawBcg = np.ones(self.wxyImage.shape[0])
 
-            spectraSpot = spectraRawSpot/spectraRawBcg
+                spectraSpot = spectraRawSpot/spectraRawBcg
 
             self.spectraRawSpot.append(spectraRawSpot)        
             self.spectraRawBcg.append(spectraRawBcg)        
