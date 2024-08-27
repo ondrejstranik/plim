@@ -33,7 +33,17 @@ class SaveDataGUI(BaseGUI):
             np.savez(str(filePath / fileName) + '_image',
             self.device.spotSpectra.spotPosition,
             self.device.spotSpectra.wxyImage,
-            self.device.pF.wavelength)            
+            self.device.pF.wavelength)
+            np.savez(str(filePath / fileName) + '_fit',
+            pxBcg = self.device.spotSpectra.pxBcg,
+            pxAve = self.device.spotSpectra.pxAve,
+            pxSpace = self.device.pxSpace,
+            darkCount = self.device.darkCount,
+            wavelengthStartFit = self.device.pF.wavelengthStartFit,
+            wavelengthStopFit = self.device.pF.wavelengthStopFit,
+            orderFit = self.device.pF.orderFit,
+            wavelengthGuess = self.device.pF.wavelengthGuess,                        
+            )
 
         @magicgui(call_button="Reset")
         def resetGui():

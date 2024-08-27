@@ -94,10 +94,16 @@ class SignalWidget(QWidget):
         #try:
             # draw lines
         for ii in np.arange(signal.shape[1]):
-            mypen = QPen()
-            mypen.setWidth(0)
-            #lineplot = self.graph.plot(pen= mypen)
-            lineplot = self.graph.plot()
+            
+            try:
+                mypen = QPen(QColor.fromRgbF(*list(
+                    self.sD.signalColor[ii])))
+                mypen.setWidth(0)
+                lineplot = self.graph.plot(pen= mypen)
+            except:
+                lineplot = self.graph.plot()
+                print('error occurred in drawGraph - signalWidget')
+                print(f'sD {self.sD.signalColor}')
 
             lineplot.setData(time, signal[:,ii]-offSet[ii])
         #except:

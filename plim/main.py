@@ -103,6 +103,7 @@ class Plim():
         newGUI.setDevice(pP)
         newGUI2  = PositionTrackGUI(viscope,vWindow='new')
         newGUI2.setDevice(pP)
+        newGUI2.interconnectGui(newGUI)
         deviceGUI = SaveDataGUI(viscope,vWindow=newGUI2.vWindow)
         deviceGUI.setDevice(pP)
 
@@ -189,6 +190,7 @@ class Plim():
         newGUI.setDevice(pP)
         newGUI2  = PositionTrackGUI(viscope,vWindow='new')
         newGUI2.setDevice(pP)
+        newGUI2.interconnectGui(newGUI)
         deviceGUI = SaveDataGUI(viscope,vWindow=newGUI2.vWindow)
         deviceGUI.setDevice(pP)
 

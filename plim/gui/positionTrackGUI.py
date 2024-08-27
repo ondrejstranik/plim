@@ -39,8 +39,9 @@ class PositionTrackGUI(BaseGUI):
         self.vWindow.addParameterGui(self.positionTrack,name=self.positionTrack.DEFAULT['nameGUI'])
         self.vWindow.addParameterGui(self.flowTrack,name=self.flowTrack.DEFAULT['nameGUI'])
 
-
-
+    def interconnectGui(self,plasmonViewerGUI=None):
+        ''' connect with other gui'''
+        self.pvGui = plasmonViewerGUI
 
     def setDevice(self,device):
         super().setDevice(device)
@@ -53,6 +54,11 @@ class PositionTrackGUI(BaseGUI):
 
     def updateGui(self):
         ''' update the data in gui '''
+
+        # connect the color of the line with the plasmon viewer
+        self.positionTrack.sD.signalColor = self.pvGui.plasmonViewer.pointLayer.face_color
+        
+        # update the graph
         self.positionTrack.drawGraph()
         self.flowTrack.drawGraph()
 

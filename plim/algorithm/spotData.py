@@ -22,6 +22,11 @@ class SpotData:
 
         self.time0 = self.time[0] if time is not None else 0 # position of zero time
 
+        # color for each signal
+        self.signalColor = None
+        # info for each signal
+        # TODO: implement the signalInfo
+        self.signalInfo = None
 
     def setData(self,signal,time=None):
         ''' set signal and (time)'''
