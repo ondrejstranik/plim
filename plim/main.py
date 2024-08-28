@@ -12,6 +12,7 @@ from viscope.gui.cameraGUI import CameraGUI
 from viscope.gui.cameraViewGUI import CameraViewGUI
 from spectralCamera.gui.sCameraGUI import SCameraGUI
 from plim.gui.saveDataGUI import SaveDataGUI
+from spectralCamera.gui.saveSIVideoGUI import SaveSIVideoGUI
 
 from viscope.gui.saveImageGUI import SaveImageGUI
 
@@ -86,27 +87,28 @@ class Plim():
         vM.connect()
 
         # set GUIs
-        viewer  = AllDeviceGUI(viscope)
-        viewer.setDevice([stage,pump])
+        adGui  = AllDeviceGUI(viscope)
+        adGui.setDevice([stage,pump])
  
-        deviceGUI = CameraGUI(viscope,vWindow=viscope.vWindow)
-        deviceGUI.setDevice(camera)
-        deviceGUI = SCameraGUI(viscope, vWindow=viscope.vWindow)
-        deviceGUI.setDevice(sCamera)
-        #deviceGUI = CameraViewGUI(viscope,vWindow='new')
-        #deviceGUI.setDevice(camera)
+        cGui = CameraGUI(viscope)
+        cGui.setDevice(camera)
+        scGui = SCameraGUI(viscope)
+        scGui.setDevice(sCamera)
+        cvGui = CameraViewGUI(viscope,vWindow='new')
+        cvGui.setDevice(camera)
         #deviceGUI = CameraGUI(viscope,vWindow=viscope.vWindow)
         #deviceGUI.setDevice(camera2)
         #deviceGUI = CameraViewGUI(viscope,vWindow='new')
         #deviceGUI.setDevice(camera2)
-        newGUI  = PlasmonViewerGUI(viscope,vWindow='new')
-        newGUI.setDevice(pP)
-        newGUI2  = PositionTrackGUI(viscope,vWindow='new')
-        newGUI2.setDevice(pP)
-        newGUI2.interconnectGui(newGUI)
-        deviceGUI = SaveDataGUI(viscope,vWindow=newGUI2.vWindow)
-        deviceGUI.setDevice(pP)
-
+        pvGui  = PlasmonViewerGUI(viscope,vWindow='new')
+        pvGui.setDevice(pP)
+        ptGui  = PositionTrackGUI(viscope,vWindow='new')
+        ptGui.setDevice(pP)
+        ptGui.interconnectGui(pvGui)
+        sdGui = SaveDataGUI(viscope,vWindow=ptGui.vWindow)
+        sdGui.setDevice(pP)
+        svGui  = SaveSIVideoGUI(viscope)
+        svGui.setDevice(sCamera)
 
         # carry out some GUI settings
         #newGUI.plasmonViewer.spotIdentGui()
@@ -130,7 +132,6 @@ class Plim():
         from plim.instrument.pump.regloICC import RegloICC
         from plim.instrument.plasmonProcessor import PlasmonProcessor
         from spectralCamera.instrument.camera.milCamera.milCamera import MilCamera
-        from viscope.instrument.virtual.virtualPump import VirtualPump  
 
 
         # some global settings
@@ -143,15 +144,14 @@ class Plim():
         camera.setParameter('exposureTime', 5)
         camera.setParameter('nFrame', 24)
         camera.setParameter('threadingNow',True)
+        
         #spectral camera
-
         sCal = CalibrateFrom3Images()
         sCal = sCal.loadClass(classFile = r'C:\Users\ostranik\Documents\GitHub\spectralCamera\spectralCamera\DATA\24-06-26-calibration\CalibrateFrom3Images.obj')
         # this is necessary, because the saved sCal does not have gridLine.spBlockRowIdx and gridLine.spBlockColumnIdx 
         sCal.gridLine.spBlockRowIdx = None
         sCal.gridLine.spBlockColumnIdx = None
 
-        
         sCamera = SCamera(name='spectralCamera')
         sCamera.connect()
         sCamera.aberrationCorrection = True
@@ -160,7 +160,6 @@ class Plim():
         sCamera.setParameter('threadingNow',True)
 
         # pump
-        #pump = VirtualPump('pump')
         RegloICC.DEFAULT['port'] = 'COM3'
         pump = RegloICC('pump')
         pump.connect()
@@ -173,26 +172,25 @@ class Plim():
         pP.setParameter('threadingNow',True)
 
         # set GUIs
-        viewer  = AllDeviceGUI(viscope)
-        viewer.setDevice([pump,camera])
-        deviceGUI = SCameraGUI(viscope, vWindow=viscope.vWindow)
-        deviceGUI.setDevice(sCamera)
+        adGui  = AllDeviceGUI(viscope)
+        adGui.setDevice(pump)
+        
+        cGui = CameraGUI(viscope)
+        cGui.setDevice(camera)
+        scGui = SCameraGUI(viscope)
+        scGui.setDevice(sCamera)
+        cvGui = CameraViewGUI(viscope,vWindow='new')
+        cvGui.setDevice(camera)
 
-        #deviceGUI = CameraGUI(viscope,vWindow=viscope.vWindow)
-        #deviceGUI.setDevice(camera)
-        #deviceGUI = CameraViewGUI(viscope,vWindow='new')
-        #deviceGUI.setDevice(camera)
-        #deviceGUI = CameraGUI(viscope,vWindow=viscope.vWindow)
-        #deviceGUI.setDevice(camera2)
-        #deviceGUI = CameraViewGUI(viscope,vWindow='new')
-        #deviceGUI.setDevice(camera2)
-        newGUI  = PlasmonViewerGUI(viscope,vWindow='new')
-        newGUI.setDevice(pP)
-        newGUI2  = PositionTrackGUI(viscope,vWindow='new')
-        newGUI2.setDevice(pP)
-        newGUI2.interconnectGui(newGUI)
-        deviceGUI = SaveDataGUI(viscope,vWindow=newGUI2.vWindow)
-        deviceGUI.setDevice(pP)
+        pvGui  = PlasmonViewerGUI(viscope,vWindow='new')
+        pvGui.setDevice(pP)
+        ptGui  = PositionTrackGUI(viscope,vWindow='new')
+        ptGui.setDevice(pP)
+        ptGui.interconnectGui(pvGui)
+        sdGui = SaveDataGUI(viscope,vWindow=ptGui.vWindow)
+        sdGui.setDevice(pP)
+        svGui  = SaveSIVideoGUI(viscope)
+        svGui.setDevice(sCamera)
 
 
         # carry out some GUI settings
