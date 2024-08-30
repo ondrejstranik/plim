@@ -32,7 +32,7 @@ class SignalWidget(QWidget):
     def _setWidget(self):
         ''' prepare the gui '''
 
-        @magicgui(auto_call=True)
+        @magicgui(auto_call=True, alignTime ={'min':0,'max':1e6})
         def fitParameter(
             align: bool = self.align,
             alignTime: float = self.alignTime
