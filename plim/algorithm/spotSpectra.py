@@ -5,14 +5,18 @@ class for calculating spot spectra from 3D spectral cube
 
 
 import numpy as np
+from skimage.transform import rotate
 
 
 class SpotSpectra:
     ''' class for calculating spot spectra '''
-    DEFAULT = {'pxBcg': 3, # thickness of the background shell
+    DEFAULT = {'sphere': True, # sphere or square
+                'pxBcg': 3, # thickness of the background shell
                 'pxAve': 3, # radius of the spot
+                'ratio': 1, # radio between the major and minor axis of the spot
+                'angle': 0, # [deg] angle of the major axis from horizontal line
                 'pxSpace': 1,  # space between spot and background
-                'darkCount': 0} # offset in the signal, which should be substracted
+                'darkCount': 0} # offset in the signal, which should be subtracted
 
 
     def __init__(self,wxyImage=None,spotPosition= [],**kwarg):
@@ -22,10 +26,13 @@ class SpotSpectra:
         if spotPosition is not []: self.spotPosition = spotPosition
 
         # parameters of the mask
+        self.sphere= kwarg['sphere'] if 'sphere' in kwarg else  self.DEFAULT['sphere']
+        self.ratio= kwarg['ratio'] if 'ratio' in kwarg else  self.DEFAULT['ratio']
+        self.angle= kwarg['angle'] if 'angle' in kwarg else  self.DEFAULT['angle']
         self.pxBcg= int(kwarg['pxBcg']) if 'pxBcg' in kwarg else  self.DEFAULT['pxBcg']
         self.pxAve= int(kwarg['pxAve']) if 'pxAve' in kwarg else  self.DEFAULT['pxAve']
         self.pxSpace= int(kwarg['pxSpace']) if 'pxSpace' in kwarg else  self.DEFAULT['pxSpace']
-        
+
         self.darkCount= kwarg['darkCount'] if 'darkCount' in kwarg else  self.DEFAULT['darkCount']
 
 
@@ -42,7 +49,8 @@ class SpotSpectra:
         
         self.calculateSpectra()
 
-    def setMask(self,pxAve=None,pxBcg= None, pxSpace = None):
+    def setMask(self,pxAve=None,pxBcg= None, pxSpace = None, 
+                sphere= None, ratio = None, angle = None):
         ''' set the geometry of spots and bcg mask  and calculate spectra'''
 
         if pxAve is not None:
@@ -51,14 +59,40 @@ class SpotSpectra:
             self.pxBcg = int(pxBcg)
         if pxSpace is not None:
             self.pxSpace = int(pxSpace)
-        self.maskSize = int(2*(self.pxBcg + self.pxAve + self.pxSpace) + 1 )
+        if sphere is not None:
+            self.sphere = sphere
+        if ratio is not None:
+            self.ratio = ratio
+        if angle is not None:
+            self.angle = angle
 
-        xx, yy = np.meshgrid(np.arange(self.maskSize) - self.maskSize//2, (np.arange(self.maskSize) - self.maskSize//2))
-        maskR = np.sqrt(xx**2 + yy**2)
+        # mask has a spherical shape        
+        if sphere:
+            self.maskSize = int(2*(self.pxBcg + self.pxAve + self.pxSpace) + 1 )
 
-        self.maskSpot = maskR<self.pxAve
-        self.maskBcg = (maskR>(self.pxAve+self.pxSpace)) & (maskR<self.pxAve+self.pxSpace + self.pxBcg)
-        
+            xx, yy = np.meshgrid(np.arange(self.maskSize) - self.maskSize//2, (np.arange(self.maskSize) - self.maskSize//2))
+            maskR = np.sqrt(xx**2 + yy**2)
+
+            self.maskSpot = maskR<self.pxAve
+            self.maskBcg = (maskR>(self.pxAve+self.pxSpace)) & (maskR<self.pxAve+self.pxSpace + self.pxBcg)
+            
+        # mask has a squares
+        else:
+            a = 2*(self.pxBcg + self.pxAve + self.pxSpace) + 1
+            b = 2*(self.pxBcg + self.pxAve*self.ratio + self.pxSpace) + 1
+            self.maskSize = int(np.sqrt(a**2 + b**2))
+
+            xx, yy = np.meshgrid(np.arange(self.maskSize) - self.maskSize//2, (np.arange(self.maskSize) - self.maskSize//2))
+
+            self.maskSpot = (np.abs(xx)<self.pxAve) & (np.abs(yy)<self.pxAve*self.ratio)
+            self.maskBcg = ((np.abs(xx)>(self.pxAve+self.pxSpace)) &
+                            (np.abs(xx)<(self.pxAve+self.pxSpace + self.pxBcg)) &
+                            (np.abs(yy)>(self.pxAve*self.ratio+self.pxSpace)) &
+                            (np.abs(yy)<(self.pxAve*self.ratio+self.pxSpace + self.pxBcg))) 
+
+            self.maskSpot = rotate(self.maskSpot,self.angle)
+            self.maskBcg = rotate(self.maskBcg,self.angle)
+
         # set mask image (for visualisation only)
         if hasattr(self,'wxyImage'):
             self.maskImage = 0*self.wxyImage[0,:,:]

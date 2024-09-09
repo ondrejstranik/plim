@@ -131,9 +131,9 @@ if False:
         _spectra = np.array(ss.getA())
         spectraAll[ii,:,:] = _spectra
         print(f'file number {ii} out of {len(sortedIdx)}')
-        np.save(ffolder + '/spectraAll',spectraAll)
+        np.save(ffolder + '/spectraAll.npy',spectraAll)
 else:
-    spectraAll = np.load(ffolder + '/spectraAll')
+    spectraAll = np.load(ffolder + '/spectraAll.npy')
 
 # %% make fit and show the signal
 from plim.algorithm.plasmonFit import PlasmonFit
@@ -183,13 +183,22 @@ bar_colors = color
 ax.bar(xvalue, yvalue, color=bar_colors)
 
 # %% LoD calculation
-sBase = signalAll[:,sTime<100]
+sBase = signalAll[:,sTime<90]
 sStd = np.std(sBase, axis=1)
 print(f'grating period {dp[spotIdxList]}')
 print(f'wavelength {signalAll[:,0]}')
 print(f'std : {sStd}')
 
 #%% conclusion
+
+_shift = np.array([8.1,7.2,20.0,15.6,16.6,16.4,14.2,15.7])
+Sb = _shift / 0.018 
+print(f'bulk sensitivity {Sb}')
+
+LoD = 3*sStd/Sb
+print(f'LoD = {LoD} RIU ')
+
+
 # best 700 idx= 4
 # iso:h20 4:1 --> delta n = 0.018
 LoD = 3*sStd[4]/(16/0.018)
