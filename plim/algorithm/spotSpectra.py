@@ -10,7 +10,7 @@ from skimage.transform import rotate
 
 class SpotSpectra:
     ''' class for calculating spot spectra '''
-    DEFAULT = {'sphere': True, # sphere or square
+    DEFAULT = {'circle': True, # circle or square
                 'pxBcg': 3, # thickness of the background shell
                 'pxAve': 3, # radius of the spot
                 'ratio': 1, # radio between the major and minor axis of the spot
@@ -26,7 +26,7 @@ class SpotSpectra:
         if spotPosition is not []: self.spotPosition = spotPosition
 
         # parameters of the mask
-        self.sphere= kwarg['sphere'] if 'sphere' in kwarg else  self.DEFAULT['sphere']
+        self.circle= kwarg['circle'] if 'circle' in kwarg else  self.DEFAULT['circle']
         self.ratio= kwarg['ratio'] if 'ratio' in kwarg else  self.DEFAULT['ratio']
         self.angle= kwarg['angle'] if 'angle' in kwarg else  self.DEFAULT['angle']
         self.pxBcg= int(kwarg['pxBcg']) if 'pxBcg' in kwarg else  self.DEFAULT['pxBcg']
@@ -47,10 +47,10 @@ class SpotSpectra:
 
         self.setMask()
         
-        self.calculateSpectra()
+        #self.calculateSpectra()
 
     def setMask(self,pxAve=None,pxBcg= None, pxSpace = None, 
-                sphere= None, ratio = None, angle = None):
+                circle= None, ratio = None, angle = None):
         ''' set the geometry of spots and bcg mask  and calculate spectra'''
 
         if pxAve is not None:
@@ -59,15 +59,15 @@ class SpotSpectra:
             self.pxBcg = int(pxBcg)
         if pxSpace is not None:
             self.pxSpace = int(pxSpace)
-        if sphere is not None:
-            self.sphere = sphere
+        if circle is not None:
+            self.circle = circle
         if ratio is not None:
             self.ratio = ratio
         if angle is not None:
             self.angle = angle
 
         # mask has a spherical shape        
-        if sphere:
+        if self.circle:
             self.maskSize = int(2*(self.pxBcg + self.pxAve + self.pxSpace) + 1 )
 
             xx, yy = np.meshgrid(np.arange(self.maskSize) - self.maskSize//2, (np.arange(self.maskSize) - self.maskSize//2))
@@ -78,17 +78,21 @@ class SpotSpectra:
             
         # mask has a squares
         else:
-            a = 2*(self.pxBcg + self.pxAve + self.pxSpace) + 1
-            b = 2*(self.pxBcg + self.pxAve*self.ratio + self.pxSpace) + 1
-            self.maskSize = int(np.sqrt(a**2 + b**2))
+            a = (self.pxBcg + self.pxAve + self.pxSpace)
+            b = (self.pxBcg + self.pxAve*self.ratio + self.pxSpace)
+            self.maskSize = 2*int(np.sqrt(a**2 + b**2)) +1
 
             xx, yy = np.meshgrid(np.arange(self.maskSize) - self.maskSize//2, (np.arange(self.maskSize) - self.maskSize//2))
 
             self.maskSpot = (np.abs(xx)<self.pxAve) & (np.abs(yy)<self.pxAve*self.ratio)
-            self.maskBcg = ((np.abs(xx)>(self.pxAve+self.pxSpace)) &
-                            (np.abs(xx)<(self.pxAve+self.pxSpace + self.pxBcg)) &
-                            (np.abs(yy)>(self.pxAve*self.ratio+self.pxSpace)) &
-                            (np.abs(yy)<(self.pxAve*self.ratio+self.pxSpace + self.pxBcg))) 
+            self.maskBcg = ((~(
+                                (np.abs(xx)<(self.pxAve+self.pxSpace)) & 
+                                (np.abs(yy)<(self.pxAve*self.ratio+self.pxSpace))
+                            )) &
+                            (
+                                (np.abs(xx)<(self.pxAve+self.pxSpace + self.pxBcg)) &
+                                (np.abs(yy)<(self.pxAve*self.ratio+self.pxSpace + self.pxBcg))
+                            ))
 
             self.maskSpot = rotate(self.maskSpot,self.angle)
             self.maskBcg = rotate(self.maskBcg,self.angle)
@@ -105,6 +109,7 @@ class SpotSpectra:
                                     int(myspot[1])-self.maskSize//2:int(myspot[1])+self.maskSize//2+1] += \
                                     self.maskBcg*1
                 except:
+                    print('error in setting self.maskImage')
                     pass
 
         self.calculateSpectra()

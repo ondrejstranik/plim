@@ -44,11 +44,15 @@ def test_spotSpectra():
 
    # identify the spots
     sI = SpotIdentification(image)
-    myPosition = sI.getPosition()
-    myRadius = sI.getRadius()
+    myPosition = sI.getPosition().astype(int)
+    myRadius = int(sI.getRadius())
+
+    print(f'position {myPosition}')
+    print(f'radius {myRadius}')
 
     # calculate spectra
-    sS = SpotSpectra(image,myPosition,pxAve=myRadius)
+    sS = SpotSpectra(image,myPosition,pxAve=int(myRadius), 
+                     sphere= False, ratio= 1.4, angle=25)
 
     # show images
     import napari

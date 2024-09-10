@@ -63,19 +63,29 @@ class SpotSpectraViewer(XYWViewer):
         @magicgui(auto_call= 'True')
         def spectraParameterGui(
             showRawSpectra: bool = self.showRawSpectra,
+            circle: bool = self.spotSpectra.circle,
             pxAve: int = self.spotSpectra.pxAve,
             pxBcg: int = self.spotSpectra.pxBcg,
             pxSpace: int = self.spotSpectra.pxSpace,
+            ratio: float = self.spotSpectra.ratio,
+            angle: int = self.spotSpectra.angle,
             darkCount: float = self.spotSpectra.darkCount
             ):
 
             spectraParameterGui._auto_call = False
+
+            self.spotSpectra.circle = circle
+            spectraParameterGui.circle.value = circle
             self.spotSpectra.pxAve = pxAve
             spectraParameterGui.pxAve.value = pxAve
             self.spotSpectra.pxBcg = pxBcg
             spectraParameterGui.pxBcg.value = pxBcg
             self.spotSpectra.pxSpace = pxSpace
             spectraParameterGui.pxSpace.value = pxSpace
+            self.spotSpectra.ratio = ratio
+            spectraParameterGui.ratio.value = ratio
+            self.spotSpectra.angle = angle
+            spectraParameterGui.angle.value = angle
             self.spotSpectra.darkCount = darkCount
             spectraParameterGui.darkCount.value = darkCount
             self.showRawSpectra = showRawSpectra
@@ -90,7 +100,7 @@ class SpotSpectraViewer(XYWViewer):
             sI = SpotIdentification(self.xywImage)
             myPosition = sI.getPosition()
             myRadius = sI.getRadius()
-            print(f'myRadius {myRadius}')
+            print(f'detected radius: {myRadius}')
 
             # update the spectra parameter
             self.pointLayer.data = myPosition
