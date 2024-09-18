@@ -203,10 +203,88 @@ class Plim():
         camera.disconnect()
         pP.disconnect()
 
+    @classmethod
+    def runRealMicroscope(cls):
+        '''  set the all the parameter and then run the GUI'''
+
+        from spectralCamera.instrument.camera.pfCamera.pFCamera import PFCamera 
+        from spectralCamera.algorithm.calibratePFImage import CalibratePFImage
+        from spectralCamera.instrument.sCamera.sCamera import SCamera
+        from viscope.instrument.virtual.virtualPump import VirtualPump
+        from plim.instrument.plasmonProcessor import PlasmonProcessor
+
+
+        # some global settings
+        viscope.dataFolder = plim.dataFolder
+
+        #spectral camera system
+        #camera
+        camera = PFCamera(name='pfCamera')
+        camera.connect()
+        camera.setParameter('exposureTime',300)
+        camera.setParameter('threadingNow',True)
+
+        sCal = CalibratePFImage()
+        
+        sCamera = SCamera(name='spectralCamera')
+        sCamera.connect()
+        sCamera.aberrationCorrection = True
+        sCamera.setParameter('camera',camera)
+        sCamera.setParameter('calibrationData',sCal)
+        sCamera.setParameter('threadingNow',True)
+
+        # pump
+        pump = VirtualPump('pump')
+        pump.connect()
+        pump.setParameter('flowRate',30)
+        pump.setParameter('flow',False)
+
+        # plasmon data processor    
+        pP = PlasmonProcessor()
+        pP.connect(sCamera=sCamera, pump=pump)
+        pP.setParameter('threadingNow',True)
+
+        # set GUIs
+        adGui  = AllDeviceGUI(viscope)
+        adGui.setDevice(pump)
+        
+        cGui = CameraGUI(viscope)
+        cGui.setDevice(camera)
+        scGui = SCameraGUI(viscope)
+        scGui.setDevice(sCamera)
+        cvGui = CameraViewGUI(viscope,vWindow='new')
+        cvGui.setDevice(camera)
+
+        pvGui  = PlasmonViewerGUI(viscope,vWindow='new')
+        pvGui.setDevice(pP)
+        ptGui  = PositionTrackGUI(viscope,vWindow='new')
+        ptGui.setDevice(pP)
+        ptGui.interconnectGui(pvGui)
+        sdGui = SaveDataGUI(viscope,vWindow=ptGui.vWindow)
+        sdGui.setDevice(pP)
+        svGui  = SaveSIVideoGUI(viscope)
+        svGui.setDevice(sCamera)
+
+
+        # carry out some GUI settings
+        #newGUI.plasmonViewer.spotIdentGui()
+
+        # main event loop
+        viscope.run()
+
+        sCamera.disconnect()
+        camera.disconnect()
+        pP.disconnect()
+
+
+
+
+
 if __name__ == "__main__":
 
     #Plim.runReal()
-    Plim.runVirtual()
+    #Plim.runVirtual()
+    Plim.runRealMicroscope()
     
 #%%
 
