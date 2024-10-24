@@ -221,7 +221,7 @@ class Plim():
         #camera
         camera = PFCamera(name='pfCamera')
         camera.connect()
-        camera.setParameter('exposureTime',300)
+        camera.setParameter('exposureTime',30)
         camera.setParameter('threadingNow',True)
 
         sCal = CalibratePFImage()
