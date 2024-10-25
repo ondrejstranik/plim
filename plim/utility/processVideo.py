@@ -42,20 +42,36 @@ spot = container3['arr_0']
 
 #%% show the data 
 
-#sViewer = PlasmonViewer(image, w)
-#sViewer.pointLayer.data = spotPosition
+def colorChange():
+    _fc = 1*sViewer.pointLayer.face_color #  deep copy of hte colors
+    _fc[list(sViewer.pointLayer.selected_data)] = sViewer.pointLayer._face.current_color # adjust the just modified 
+    sV.sD.signalColor = _fc
+    sV.drawGraph()
 
-viewer = napari.Viewer()
-viewer.add_image(image)
-viewer.add_points(spotPosition)
+sViewer = PlasmonViewer(image, w)
+sViewer.pointLayer.data = spotPosition
+
+sViewer.pointLayer._face.events.current_color.connect(colorChange)
+
+
+#viewer = napari.Viewer()
+#viewer.add_image(image)
+#viewer.add_points(spotPosition)
 
 sV = SignalWidget(signal=spot,time= time)
+colorChange()
 sV.show()
 
 fV = FlowRateWidget(signal=flow, time = time)
 fV.show()
 
+
+
+
 napari.run()
+
+# exit the code
+assert False
 
 
 # %% calculate spectra
