@@ -16,9 +16,12 @@ class SpotInfo:
 
         self.nSpot = SpotInfo.DEFAULT['n']
 
-        self.name = self.nSpot*['default Name']
-        self.color = self.nSpot*['default Color']
-        self.visible = self.nSpot*True
+        self.table = {
+            'name': ['default Name' for x in range(self.nSpot)],
+            'color': ['default Color' for x in range(self.nSpot)],
+            'visible': [True for x in range(self.nSpot)]
+        }
+
 
         
 #%%
