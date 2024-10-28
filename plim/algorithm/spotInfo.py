@@ -11,17 +11,23 @@ class SpotInfo:
     DEFAULT = {'n':5}
 
 
-    def __init__(self,**kwarg):
+    def __init__(self,n=None, **kwarg):
         ''' initialization of the parameters '''
 
-        self.nSpot = SpotInfo.DEFAULT['n']
+        
+        self.nSpot = n if n is not None else SpotInfo.DEFAULT['n']
 
         self.table = {
-            'name': ['default Name' for x in range(self.nSpot)],
-            'color': ['default Color' for x in range(self.nSpot)],
-            'visible': [True for x in range(self.nSpot)]
+            'name': [str(x) for x in range(self.nSpot)],
+            'color': ['#ffffff' for x in range(self.nSpot)],
+            'visible': ['True' for x in range(self.nSpot)]
         }
 
+    def checkValues(self):
+        print('checkTypes')
+        self.table['visible'] = [
+            'True' if x.lower() in ("true", "1") else 'False' for x in self.table['visible']
+            ]
 
         
 #%%
