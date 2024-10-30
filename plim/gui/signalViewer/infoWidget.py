@@ -18,11 +18,11 @@ class InfoWidget(QWidget):
 
     sigUpdateData = Signal()
 
-    def __init__(self, **kwargs):
+    def __init__(self, spotInfo = None, **kwargs):
         ''' initialise the class '''
         super().__init__()
 
-        self.sI = SpotInfo()
+        self.sI = spotInfo if spotInfo is not None else SpotInfo()
 
         # set this gui of this class
         InfoWidget._setWidget(self)

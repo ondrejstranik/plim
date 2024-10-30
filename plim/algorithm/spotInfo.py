@@ -19,12 +19,11 @@ class SpotInfo:
 
         self.table = {
             'name': [str(x) for x in range(self.nSpot)],
-            'color': ['#ffffff' for x in range(self.nSpot)],
+            'color': ['#ffffffff' for x in range(self.nSpot)],
             'visible': ['True' for x in range(self.nSpot)]
         }
 
     def checkValues(self):
-        print('checkTypes')
         self.table['visible'] = [
             'True' if x.lower() in ("true", "1") else 'False' for x in self.table['visible']
             ]

@@ -33,7 +33,7 @@ class Window(QMainWindow):
         self.w = None
         self.flow = None
         self.time = None
-        self.spot = None
+        self.signal = None
         self.sI = None
 
         # widget parameters
@@ -59,6 +59,7 @@ class Window(QMainWindow):
         ffile = r'Experiment1'
         nameSet = self.DEFAULT['nameSet']
 
+
         # load image
         container1 = np.load(ffolder + '/' + ffile + nameSet['image'])
         self.spotPosition = container1['arr_0']
@@ -72,9 +73,10 @@ class Window(QMainWindow):
 
         # load spot
         container3 = np.load(ffolder + '/' + ffile + nameSet['spot'])
-        self.spot = container3['arr_0']
+        self.signal = container3['arr_0']
 
-        self.sI = SpotInfo(n=self.spot.shape[1])
+        # set default spot info
+        self.sI = SpotInfo(n=self.signal.shape[1])
 
         print(f'number of spots {self.sI.nSpot}')
 
@@ -88,36 +90,64 @@ class Window(QMainWindow):
         self.close()
 
 
-    def colorChange(self):
-        _fc = 1*self.spotLayer.face_color #  deep copy of hte colors
+    def updateColor(self):
+        _fc = 1*self.spotLayer.face_color #  deep copy of the colors
         _fc[list(self.spotLayer.selected_data)] = self.spotLayer._face.current_color # adjust the just modified 
-        self.sW.sD.signalColor = _fc
-        self.sW.drawGraph()    
+
+        _fcHex = ['#{:02x}{:02x}{:02x}{:02x}'.format( *ii.tolist()) for ii in (_fc*255).astype(int)]
+
+
+        print(f'_fc {_fcHex}')
+
+
+
+        self.sI.table['color'] = _fcHex
+
+        self.iW.updateData()
+
+        #self.sW.sD.signalColor = _fc
+        #self.sW.drawGraph()    
 
     def updateWidget(self,**kwargs):
-        print('ahoj')
+        print('updatingWidgets')
+        # napari widget
         _sel = [x=='True' for x in self.sI.table['visible']]
-        self.spotLayer.data = self.spotPosition[_sel]        
+        self.spotLayer.data = self.spotPosition[_sel]
+        self.spotLayer.features = {
+            'names': np.array(self.sI.table['name'])[_sel].tolist()
+        }
+        self.spotLayer.face_color = np.array(self.sI.table['color'])[_sel].tolist()        
+        # signal widget
+        self.sW.setData(self.signal[:,_sel],self.time)
+        rgbaColor = [[int(x[1:3],16),int(x[3:5],16),int(x[5:7],16),int(x[7:9],16)/255] for x in self.sI.table['color']]
+        print(f'rgbaColor {rgbaColor}')
+        self.sW.sD.signalColor = rgbaColor
+        self.sW.drawGraph()
 
     def _createWidget(self):
 
         self.viewer = napari.Viewer()
         self.viewer.add_image(self.image)
-        self.spotLayer = self.viewer.add_points(self.spotPosition)
-        self.spotLayer._face.events.current_color.connect(self.colorChange)
+        self.spotLayer = self.viewer.add_points(np.array([[0,0]]))
+        #self.spotLayer.text = {
+        #        'string': '{names}',
+        #        'size': 20,
+        #        'color': 'green',
+        #        'translation': np.array([-30, 0])}
+        
+        self.spotLayer._face.events.current_color.connect(self.updateColor)
 
-        self.sW = SignalWidget(signal=self.spot,time= self.time)
-        self.colorChange()
+        self.sW = SignalWidget(signal=self.signal,time= self.time)
         self.sW.show()
 
         self.fW = FlowRateWidget(signal=self.flow, time = self.time)
         self.fW.show()
 
-        self.iW = InfoWidget()
-        self.iW.sI = self.sI
-        self.iW.updateData()
+        self.iW = InfoWidget(self.sI)
         self.iW.show()
+        self.updateWidget()
         self.iW.sigUpdateData.connect(self.updateWidget)
+
 
 
 if __name__ == "__main__":
