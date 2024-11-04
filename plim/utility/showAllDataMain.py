@@ -110,30 +110,35 @@ class Window(QMainWindow):
 
     def updateWidget(self,**kwargs):
         print('updatingWidgets')
-        # napari widget
-        _sel = [x=='True' for x in self.sI.table['visible']]
-        self.spotLayer.data = self.spotPosition[_sel]
-        self.spotLayer.features = {
-            'names': np.array(self.sI.table['name'])[_sel].tolist()
-        }
-        self.spotLayer.face_color = np.array(self.sI.table['color'])[_sel].tolist()        
-        # signal widget
-        self.sW.setData(self.signal[:,_sel],self.time)
-        rgbaColor = [[int(x[1:3],16),int(x[3:5],16),int(x[5:7],16),int(x[7:9],16)/255] for x in self.sI.table['color']]
-        print(f'rgbaColor {rgbaColor}')
-        self.sW.sD.signalColor = rgbaColor
-        self.sW.drawGraph()
+       
+        try:
+            # napari widget
+            _sel = [x=='True' for x in self.sI.table['visible']]
+            self.spotLayer.data = self.spotPosition[_sel]
+            self.spotLayer.features = {
+                'names': np.array(self.sI.table['name'])[_sel].tolist()
+            }
+            self.spotLayer.face_color = np.array(self.sI.table['color'])[_sel].tolist()        
+            # signal widget
+            self.sW.setData(self.signal[:,_sel],self.time)
+            rgbaColor = [[int(x[1:3],16)/255,int(x[3:5],16)/255,int(x[5:7],16)/255,int(x[7:9],16)/255] for x in self.sI.table['color']]
+            print(f'rgbaColor {rgbaColor}')
+            self.sW.sD.signalColor = rgbaColor
+            self.sW.drawGraph()
+        except:
+            print('error in updateWidget')
 
     def _createWidget(self):
 
         self.viewer = napari.Viewer()
         self.viewer.add_image(self.image)
         self.spotLayer = self.viewer.add_points(np.array([[0,0]]))
-        #self.spotLayer.text = {
-        #        'string': '{names}',
-        #        'size': 20,
-        #        'color': 'green',
-        #        'translation': np.array([-30, 0])}
+        self.spotLayer.features = {'names': ['0']}
+        self.spotLayer.text = {
+                'string': '{names}',
+                'size': 20,
+                'color': 'green',
+                'translation': np.array([-5, 0])}
         
         self.spotLayer._face.events.current_color.connect(self.updateColor)
 

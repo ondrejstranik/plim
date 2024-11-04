@@ -5,6 +5,7 @@ class for viewing signals from spots' plasmon resonance
 import pyqtgraph as pg
 from PyQt5.QtGui import QColor, QPen
 from qtpy.QtWidgets import QWidget,QVBoxLayout
+from qtpy import QtCore
 from magicgui import magicgui
 
 import numpy as np
@@ -23,6 +24,9 @@ class SignalWidget(QWidget):
 
         self.align = False
         self.alignTime = 0
+
+
+        self.mousePoint = QtCore.QPointF()
 
         # set this gui of this class
         SignalWidget._setWidget(self)
@@ -55,7 +59,8 @@ class SignalWidget(QWidget):
         styles = {'color':'r', 'font-size':'20px'}
         self.graph.setLabel('left', 'Position', units='nm')
         self.graph.setLabel('bottom', 'time', units= 's')
-        self.graph.scene().sigMouseClicked.connect(self.mouse_clicked)
+        #self.graph.scene().sigMouseClicked.connect(self.mouse_clicked)
+        self.graph.scene().sigMouseMoved.connect(self.mouse_moved)
 
         # fit parameter
         self.fitParameter = fitParameter
@@ -66,6 +71,22 @@ class SignalWidget(QWidget):
         layout.addWidget(self.infoBox.native)
         layout.addWidget(self.fitParameter.native)
         self.setLayout(layout)
+
+    def itemChange(self, change, value):
+        if change == self.GraphicsItemChange.ItemSceneChange and value:
+            # automatically connect the signal when added to a scene
+            value.sigMouseMoved.connect(self.mouse_moved)
+            self.setFocus()
+        return super().itemChange(change, value)
+
+    def mouse_moved(self, pos):
+        self.mousePoint =  self.graph.plotItem.vb.mapSceneToView(pos)
+
+    def keyPressEvent(self, evt):
+        scene_coords = evt.scenePos()
+        if self.graph.sceneBoundingRect().contains(scene_coords):
+            print("Mouse position from crosshairs: [{}, {}]".format(
+            self.mousePoint.x(), self.mousePoint.y()))
 
     def mouse_clicked(self,evt):
         vb = self.graph.plotItem.vb
