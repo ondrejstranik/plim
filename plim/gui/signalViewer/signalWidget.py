@@ -24,8 +24,13 @@ class SignalWidget(QWidget):
 
         self.align = False
         self.alignTime = 0
+        self.alignRange = 0
 
+        self.lineIndex = 0
+        self.time0 = 0
+        self.time1 = 0        
 
+        #define position of mouse on the graph - use for selection
         self.mousePoint = QtCore.QPointF()
 
         # set this gui of this class
@@ -36,13 +41,16 @@ class SignalWidget(QWidget):
     def _setWidget(self):
         ''' prepare the gui '''
 
-        @magicgui(auto_call=True, alignTime ={'min':0,'max':1e6})
+        @magicgui(auto_call=True, layout='horizontal',
+                  alignTime ={'min':0,'max':1e6},
+                  alignRange = {'min':0,'max':1e6})
         def fitParameter(
-            align: bool = self.align,
-            alignTime: float = self.alignTime
-            ):
+                align: bool = self.align,
+                alignTime: float = self.alignTime,
+                alignRange: float = self.alignRange):
             self.align= align
             self.alignTime = alignTime
+            self.alignRange = alignRange
 
             self.drawGraph()
 
@@ -51,49 +59,80 @@ class SignalWidget(QWidget):
                                      'widget_type': 'Label'} )
         def infoBox(acquisitionTime = 0):
             self.infoBox.acquisitionTime.value = acquisitionTime
+        
+        @magicgui(auto_call=True, layout='horizontal')
+        def lineParameter(
+                lineIndex: int = self.lineIndex,
+                time0: float = self.time0,
+                time1: float = self.time1):
+            
+            self.lineIndex = lineIndex
+            self.time0 = time0
+            self.time1 = time1
+            self.drawGraph()
 
-
+        @magicgui(call_button=False,
+                  value0 = {'label':'value',
+                                     'widget_type': 'Label'},
+                  value1 = {'label':'value',
+                                     'widget_type': 'Label'})
+        def infoLine(value0 = 0, value1 = 0):
+            pass
+            
         # add graph
         self.graph = pg.plot()
         self.graph.setTitle(f'Peak Position')
         styles = {'color':'r', 'font-size':'20px'}
         self.graph.setLabel('left', 'Position', units='nm')
         self.graph.setLabel('bottom', 'time', units= 's')
-        #self.graph.scene().sigMouseClicked.connect(self.mouse_clicked)
         self.graph.scene().sigMouseMoved.connect(self.mouse_moved)
 
         # fit parameter
         self.fitParameter = fitParameter
         self.infoBox = infoBox
+        self.infoLine = infoLine
+        self.lineParameter = lineParameter
 
         layout = QVBoxLayout()
         layout.addWidget(self.graph)
         layout.addWidget(self.infoBox.native)
         layout.addWidget(self.fitParameter.native)
+        layout.addWidget(self.lineParameter.native)
+        layout.addWidget(self.infoLine.native)
+
         self.setLayout(layout)
 
-    def itemChange(self, change, value):
-        if change == self.GraphicsItemChange.ItemSceneChange and value:
-            # automatically connect the signal when added to a scene
-            value.sigMouseMoved.connect(self.mouse_moved)
-            self.setFocus()
-        return super().itemChange(change, value)
+    #def itemChange(self, change, value):
+    #    if change == self.GraphicsItemChange.ItemSceneChange and value:
+    #        # automatically connect the signal when added to a scene
+    #        value.sigMouseMoved.connect(self.mouse_moved)
+    #        self.setFocus()
+    #    return super().itemChange(change, value)
 
     def mouse_moved(self, pos):
         self.mousePoint =  self.graph.plotItem.vb.mapSceneToView(pos)
 
     def keyPressEvent(self, evt):
-        scene_coords = evt.scenePos()
-        if self.graph.sceneBoundingRect().contains(scene_coords):
-            print("Mouse position from crosshairs: [{}, {}]".format(
-            self.mousePoint.x(), self.mousePoint.y()))
+        #scene_coords = evt.scenePos()
+        if self.graph.underMouse():
+            _key = evt.key()
+            _text = evt.text()
 
-    def mouse_clicked(self,evt):
-        vb = self.graph.plotItem.vb
-        scene_coords = evt.scenePos()
-        if self.graph.sceneBoundingRect().contains(scene_coords):
-            mouse_point = vb.mapSceneToView(scene_coords)
-            self.fitParameter.alignTime.value = mouse_point.x()
+            if _text == 'a':
+                self.fitParameter.alignTime.value = self.mousePoint.x()
+            
+            if _text == 's':
+                self._findLine(self.mousePoint.x(),self.mousePoint.y())
+                self.lineParameter.lineIndex.value = self.lineIndex
+
+    def _findLine(self,x,y):
+        ''' find the closest line from the cursor'''
+
+        # TODO: count for the aligment!!
+        nx = np.argmin(np.abs(self.sD.time - x))
+        self.lineIndex = np.argmin(np.abs(self.sD.signal[nx,:]-y))
+
+        return self.lineIndex
 
     def drawGraph(self):
         ''' draw all new lines in the spectraGraph '''
@@ -115,16 +154,21 @@ class SignalWidget(QWidget):
         #try:
             # draw lines
         for ii in np.arange(signal.shape[1]):
-            
+
+            mypen = QPen()
+            mypen.setColor(QColor("White"))
+            mypen.setWidth(0)
+            if ii == self.lineIndex:
+                mypen.setStyle(2)
+
             try:
-                mypen = QPen(QColor.fromRgbF(*list(
-                    self.sD.signalColor[ii])))
-                mypen.setWidth(0)
+                mypen.color = QColor.fromRgbF(*list(
+                    self.sD.signalColor[ii]))
                 lineplot = self.graph.plot(pen= mypen)
             except:
-                lineplot = self.graph.plot()
+                lineplot = self.graph.plot(pen= mypen)
                 print('error occurred in drawGraph - signalWidget')
-                print(f'sD {self.sD.signalColor}')
+                print(f'sD.signalColor {self.sD.signalColor}')
 
             lineplot.setData(time, signal[:,ii]-offSet[ii])
         #except:
@@ -133,7 +177,6 @@ class SignalWidget(QWidget):
         # display delta time
         if len(time) >1:
             self.infoBox(time[-1] - time[-2])
-
 
     def setData(self, signal,time=None):
         ''' set the data '''
