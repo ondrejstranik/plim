@@ -10,6 +10,7 @@ from magicgui import magicgui
 
 import numpy as np
 from plim.algorithm.spotData import SpotData
+from plim.algorithm.spotInfo import SpotInfo
 
 
 class SignalWidget(QWidget):
@@ -21,14 +22,11 @@ class SignalWidget(QWidget):
         super().__init__()
 
         self.sD = SpotData(signal,time)
+        self.sI = SpotInfo()
 
         self.align = False
-        self.alignTime = 0
-        self.alignRange = 0
-
         self.lineIndex = 0
-        self.time0 = 0
-        self.time1 = 0        
+      
 
         #define position of mouse on the graph - use for selection
         self.mousePoint = QtCore.QPointF()
@@ -43,14 +41,15 @@ class SignalWidget(QWidget):
 
         @magicgui(auto_call=True, layout='horizontal',
                   alignTime ={'min':0,'max':1e6},
-                  alignRange = {'min':0,'max':1e6})
+                  range = {'min':0,'max':1e6})
         def fitParameter(
                 align: bool = self.align,
-                alignTime: float = self.alignTime,
-                alignRange: float = self.alignRange):
+                alignTime: float = self.sD.alignTime,
+                range: float = self.sD.range):
+
             self.align= align
-            self.alignTime = alignTime
-            self.alignRange = alignRange
+            self.sD.setOffset(alignTime,range)
+            self.sD.getDSignal() # recalculate in the case the range changed
 
             self.drawGraph()
 
@@ -63,21 +62,18 @@ class SignalWidget(QWidget):
         @magicgui(auto_call=True, layout='horizontal')
         def lineParameter(
                 lineIndex: int = self.lineIndex,
-                time0: float = self.time0,
-                time1: float = self.time1):
+                evalTime: float = self.sD.evalTime,
+                dTime: float = self.sD.dTime):
             
             self.lineIndex = lineIndex
-            self.time0 = time0
-            self.time1 = time1
+            self.sD.getDSignal(evalTime,dTime)
             self.drawGraph()
 
-        @magicgui(call_button=False,
-                  value0 = {'label':'value',
-                                     'widget_type': 'Label'},
-                  value1 = {'label':'value',
+        @magicgui(call_button=False,layout='horizontal',
+                  dSignal = {'label':'dSignal',
                                      'widget_type': 'Label'})
-        def infoLine(value0 = 0, value1 = 0):
-            pass
+        def infoLine(dSignal = 0):
+            self.infoLine.dSignal.value = dSignal
             
         # add graph
         self.graph = pg.plot()
@@ -102,18 +98,10 @@ class SignalWidget(QWidget):
 
         self.setLayout(layout)
 
-    #def itemChange(self, change, value):
-    #    if change == self.GraphicsItemChange.ItemSceneChange and value:
-    #        # automatically connect the signal when added to a scene
-    #        value.sigMouseMoved.connect(self.mouse_moved)
-    #        self.setFocus()
-    #    return super().itemChange(change, value)
-
     def mouse_moved(self, pos):
         self.mousePoint =  self.graph.plotItem.vb.mapSceneToView(pos)
 
     def keyPressEvent(self, evt):
-        #scene_coords = evt.scenePos()
         if self.graph.underMouse():
             _key = evt.key()
             _text = evt.text()
@@ -125,12 +113,30 @@ class SignalWidget(QWidget):
                 self._findLine(self.mousePoint.x(),self.mousePoint.y())
                 self.lineParameter.lineIndex.value = self.lineIndex
 
+            if _text == '1':
+                self.lineParameter.evalTime.value = self.mousePoint.x()
+
+            if _text == '2':
+                self.lineParameter.dTime.value = self.sD.evalTime - self.mousePoint.x()
+
+
+
+
+
+        # keep the keyPressEvent on the this signal widget
+        self.setFocus()
+
     def _findLine(self,x,y):
         ''' find the closest line from the cursor'''
 
         # TODO: count for the aligment!!
         nx = np.argmin(np.abs(self.sD.time - x))
-        self.lineIndex = np.argmin(np.abs(self.sD.signal[nx,:]-y))
+
+        offSet = self.sD.offset
+        if not self.align:
+            offSet = 0*offSet
+
+        self.lineIndex = np.argmin(np.abs(self.sD.signal[nx,:]-offSet -y))
 
         return self.lineIndex
 
@@ -146,10 +152,9 @@ class SignalWidget(QWidget):
         # remove all lines
         self.graph.clear()
 
-        if self.align:
-            offSet = signal[np.argmin(np.abs(time - self.alignTime)),:]
-        else:
-            offSet = np.zeros(signal.shape[1])
+        offSet = self.sD.offset
+        if not self.align:
+            offSet = 0*offSet
 
         #try:
             # draw lines

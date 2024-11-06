@@ -16,11 +16,18 @@ class SpotData:
         #TODO: implement signal and time definition for a single values. 
 
         self.signal = None # numpy array, each column represent signal from one spot
-        
-        if signal is not None: self.signal = np.array(signal)  # position of plasmon peaks 
-        if time is not None: self.time = np.array(time) # corresponding time
+        self.time = None # corresponding time
+        self.time0 = 0 # position of zero time
 
-        self.time0 = self.time[0] if time is not None else 0 # position of zero time
+        # values from the data
+        self.offset = None
+        self.alignTime = 0
+        self.range = 2
+        self.evalTime = 0
+        self.dTime = 1
+        self.dSignal = None
+
+        if signal is not None: self.setData(signal,time)
 
         # color for each signal
         self.signalColor = None
@@ -33,6 +40,8 @@ class SpotData:
         self.signal = np.array(signal)
         self.time = np.array(time) if time is not None else np.arange(self.signal.shape[0])  # corresponding time
         self.time0 = self.time[0]
+        self.setOffset()
+
 
     def addDataValue(self, valueVector,time= None):
         ''' add single value to the signal
@@ -52,7 +61,6 @@ class SpotData:
                 self.time0 = 0
             return self.time0
                 
-
     def getData(self):
         ''' return the signal and time '''
         if self.signal is not None:
@@ -62,6 +70,49 @@ class SpotData:
                 return (self.signal,np.arange(self.signal.shape[0]))
         else:
             return (None, None)
+
+
+    def setOffset(self, alignTime=None, range= None):
+        ''' set offset value for the signal at the time offsetTime'''
+
+        if alignTime is not None: self.alignTime = alignTime
+        if range is not None: self.range = range
+
+        print(f't0 {self.time - self.time0 - self.alignTime - self.range/2}')
+        print(f't1 {self.time - self.time0 - self.alignTime + self.range/2}')
+
+
+        range = np.all((self.time - self.time0 - self.alignTime - self.range/2)>=0,
+                 (self.time - self.time0 - self.alignTime + self.range/2)<=0)
+        
+        self.offset = np.mean(self.signal[range,:],axis=0)
+
+    def getDSignal(self,evalTime=None,dTime=None, range=None):
+        ''' get the difference value of signal'''
+
+        if evalTime is not None: self.evalTime = evalTime
+        if dTime is not None: self.dTime = dTime
+        if range is not None: self.range = range
+
+        range = np.all((self.time - self.time0 - self.evalTime - self.range/2)>=0,
+                 (self.time - self.time0 - self.evalTime + self.range/2)<=0)
+        _signal1 = np.mean(self.signal[range,:],axis=0)
+        range = np.all((self.time - self.time0 - self.evalTime - self.dTime - self.range/2)>=0,
+                 (self.time - self.time0 - self.evalTime -self.dTime + self.range/2)<=0)
+        _signal2 = np.mean(self.signal[range,:],axis=0)
+
+
+        self.dSignal = _signal2 - _signal1
+
+        return self.dSignal
+
+
+        
+
+                 
+
+
+
 
 
     def clearData(self):
