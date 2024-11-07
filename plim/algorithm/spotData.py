@@ -27,6 +27,12 @@ class SpotData:
         self.dTime = 1
         self.dSignal = None
 
+        # info about the data
+        self.table = {
+            'name': None,
+            'color': None,
+            'visible': None}
+
         if signal is not None: self.setData(signal,time)
 
         # color for each signal
@@ -35,13 +41,32 @@ class SpotData:
         # TODO: implement the signalInfo
         self.signalInfo = None
 
-    def setData(self,signal,time=None):
+    def setTable(self,table=None):
+        ''' set table with info about the spots '''
+        nSpot = self.signal.shape[1]
+
+        if table is not None and len(table['name']) == nSpot:
+            self.table = table
+        else:
+            self.table = {
+            'name': [str(x) for x in range(nSpot)],
+            'color': ['#ffffff' for x in range(nSpot)],
+            'visible': ['True' for x in range(nSpot)]
+            }           
+
+    def checkTableValues(self):
+        self.table['visible'] = [
+            'True' if str(x).lower() in ("true", "1") else 'False' for x in self.table['visible']
+            ] 
+
+    def setData(self,signal,time=None, table=None):
         ''' set signal and (time)'''
         self.signal = np.array(signal)
         self.time = np.array(time) if time is not None else np.arange(self.signal.shape[0])  # corresponding time
         self.time0 = self.time[0]
         self.setOffset()
 
+        self.setTable()
 
     def addDataValue(self, valueVector,time= None):
         ''' add single value to the signal
@@ -71,6 +96,17 @@ class SpotData:
         else:
             return (None, None)
 
+    def getRange(self,time):
+        ''' get the boolvector with the selected timespan according the self.range'''
+
+        idx1 = np.argmin(np.abs(self.time - self.time0 - time + self.range/2))
+        idx2 = np.argmin(np.abs(self.time - self.time0 - time - self.range/2))
+
+        range = (self.time*0).astype('bool')
+        range[idx1:idx2+1] = True
+
+        return range
+
 
     def setOffset(self, alignTime=None, range= None):
         ''' set offset value for the signal at the time offsetTime'''
@@ -78,13 +114,7 @@ class SpotData:
         if alignTime is not None: self.alignTime = alignTime
         if range is not None: self.range = range
 
-        print(f't0 {self.time - self.time0 - self.alignTime - self.range/2}')
-        print(f't1 {self.time - self.time0 - self.alignTime + self.range/2}')
-
-
-        range = np.all((self.time - self.time0 - self.alignTime - self.range/2)>=0,
-                 (self.time - self.time0 - self.alignTime + self.range/2)<=0)
-        
+        range = self.getRange(self.alignTime)
         self.offset = np.mean(self.signal[range,:],axis=0)
 
     def getDSignal(self,evalTime=None,dTime=None, range=None):
@@ -94,25 +124,14 @@ class SpotData:
         if dTime is not None: self.dTime = dTime
         if range is not None: self.range = range
 
-        range = np.all((self.time - self.time0 - self.evalTime - self.range/2)>=0,
-                 (self.time - self.time0 - self.evalTime + self.range/2)<=0)
+        range = self.getRange(self.evalTime)
         _signal1 = np.mean(self.signal[range,:],axis=0)
-        range = np.all((self.time - self.time0 - self.evalTime - self.dTime - self.range/2)>=0,
-                 (self.time - self.time0 - self.evalTime -self.dTime + self.range/2)<=0)
+        range = self.getRange(self.evalTime+self.dTime)
         _signal2 = np.mean(self.signal[range,:],axis=0)
-
 
         self.dSignal = _signal2 - _signal1
 
         return self.dSignal
-
-
-        
-
-                 
-
-
-
 
 
     def clearData(self):
@@ -120,6 +139,11 @@ class SpotData:
         self.signal = None
         self.time = None
         self.time0 = 0
+
+        self.table = {
+            'name': None,
+            'color': None,
+            'visible': None}
 
         
 #%%

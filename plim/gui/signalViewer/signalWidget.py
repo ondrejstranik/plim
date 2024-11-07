@@ -40,7 +40,7 @@ class SignalWidget(QWidget):
         ''' prepare the gui '''
 
         @magicgui(auto_call=True, layout='horizontal',
-                  alignTime ={'min':0,'max':1e6},
+                  alignTime ={'min':0,'max':1e6, 'tooltip': " to select \n press 'a' on graph"},
                   range = {'min':0,'max':1e6})
         def fitParameter(
                 align: bool = self.align,
@@ -59,21 +59,24 @@ class SignalWidget(QWidget):
         def infoBox(acquisitionTime = 0):
             self.infoBox.acquisitionTime.value = acquisitionTime
         
-        @magicgui(auto_call=True, layout='horizontal')
+        @magicgui(auto_call=True, layout='horizontal',
+                  lineIndex = {'tooltip': " to select \n press 's' on graph"},
+                  evalTime = {'tooltip': " to select \n press '1' on graph"},
+                  dTime = {'tooltip': " to select \n press '2' on graph"},
+                  dSignal = {'label':'dSignal','widget_type': 'Label'})
         def lineParameter(
                 lineIndex: int = self.lineIndex,
                 evalTime: float = self.sD.evalTime,
-                dTime: float = self.sD.dTime):
+                dTime: float = self.sD.dTime,
+                dSignal = None):
             
             self.lineIndex = lineIndex
             self.sD.getDSignal(evalTime,dTime)
+            if self.lineIndex < len(self.sD.dSignal):
+                self.lineParameter.dSignal.value = self.sD.dSignal[self.lineIndex]
+            else:
+                self.lineParameter.dSignal.value = dSignal
             self.drawGraph()
-
-        @magicgui(call_button=False,layout='horizontal',
-                  dSignal = {'label':'dSignal',
-                                     'widget_type': 'Label'})
-        def infoLine(dSignal = 0):
-            self.infoLine.dSignal.value = dSignal
             
         # add graph
         self.graph = pg.plot()
@@ -86,7 +89,6 @@ class SignalWidget(QWidget):
         # fit parameter
         self.fitParameter = fitParameter
         self.infoBox = infoBox
-        self.infoLine = infoLine
         self.lineParameter = lineParameter
 
         layout = QVBoxLayout()
@@ -94,8 +96,6 @@ class SignalWidget(QWidget):
         layout.addWidget(self.infoBox.native)
         layout.addWidget(self.fitParameter.native)
         layout.addWidget(self.lineParameter.native)
-        layout.addWidget(self.infoLine.native)
-
         self.setLayout(layout)
 
     def mouse_moved(self, pos):
@@ -117,10 +117,9 @@ class SignalWidget(QWidget):
                 self.lineParameter.evalTime.value = self.mousePoint.x()
 
             if _text == '2':
-                self.lineParameter.dTime.value = self.sD.evalTime - self.mousePoint.x()
-
-
-
+                _value = self.mousePoint.x() - self.sD.evalTime
+                if _value < 0 : _value = 0 
+                self.lineParameter.dTime.value = _value
 
 
         # keep the keyPressEvent on the this signal widget
@@ -129,14 +128,22 @@ class SignalWidget(QWidget):
     def _findLine(self,x,y):
         ''' find the closest line from the cursor'''
 
-        # TODO: count for the aligment!!
-        nx = np.argmin(np.abs(self.sD.time - x))
+        nx = np.argmin(np.abs(self.sD.time -self.sD.time0 - x))
+        print(f'selection at time {self.sD.time[nx]-self.sD.time0}')
 
         offSet = self.sD.offset
         if not self.align:
             offSet = 0*offSet
 
-        self.lineIndex = np.argmin(np.abs(self.sD.signal[nx,:]-offSet -y))
+        # remove the one not visible
+        _signal = self.sD.signal[nx,:]
+        _selection = [ x  != 'True' for x in self.sD.table['visible']]
+        _signal[_selection] = np.inf
+
+        print(f'signal {_signal -offSet -y}')
+
+        self.lineIndex = np.argmin(np.abs(_signal -offSet -y))
+
 
         return self.lineIndex
 
@@ -152,6 +159,7 @@ class SignalWidget(QWidget):
         # remove all lines
         self.graph.clear()
 
+        # set off set for the lines
         offSet = self.sD.offset
         if not self.align:
             offSet = 0*offSet
@@ -160,6 +168,9 @@ class SignalWidget(QWidget):
             # draw lines
         for ii in np.arange(signal.shape[1]):
 
+            if self.sD.table['visible'][ii] != 'True':
+                continue
+
             mypen = QPen()
             mypen.setColor(QColor("White"))
             mypen.setWidth(0)
@@ -167,17 +178,29 @@ class SignalWidget(QWidget):
                 mypen.setStyle(2)
 
             try:
-                mypen.color = QColor.fromRgbF(*list(
-                    self.sD.signalColor[ii]))
+                hexColor = self.sD.table['color'][ii]
+                rgbaColor = [int(hexColor[1:3],16)/255,
+                              int(hexColor[3:5],16)/255,
+                              int(hexColor[5:7],16)/255,
+                              1]
+                mypen.setColor(QColor.fromRgbF(*list(rgbaColor)))
                 lineplot = self.graph.plot(pen= mypen)
             except:
                 lineplot = self.graph.plot(pen= mypen)
                 print('error occurred in drawGraph - signalWidget')
-                print(f'sD.signalColor {self.sD.signalColor}')
+                print(f"sD.signalColor {self.sD.table['color']}")
 
             lineplot.setData(time, signal[:,ii]-offSet[ii])
         #except:
         #    print('error occurred in drawSpectraGraph - pointSpectra')
+
+        # display infinity lines
+        vLine = pg.InfiniteLine(angle=90, movable=False, pen=pg.mkPen('g', width=0, style=QtCore.Qt.SolidLine))
+        vLine.setPos(self.sD.evalTime)
+        self.graph.addItem(vLine, ignoreBounds=True)
+        vLine = pg.InfiniteLine(angle=90, movable=False, pen=pg.mkPen('r', width=0, style=QtCore.Qt.SolidLine))
+        vLine.setPos(self.sD.evalTime+self.sD.dTime)
+        self.graph.addItem(vLine, ignoreBounds=True)
 
         # display delta time
         if len(time) >1:
