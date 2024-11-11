@@ -7,6 +7,7 @@ from PyQt5.QtGui import QColor, QPen
 from qtpy.QtWidgets import QWidget,QVBoxLayout
 from qtpy import QtCore
 from magicgui import magicgui
+from qtpy.QtCore import Signal
 
 import numpy as np
 from plim.algorithm.spotData import SpotData
@@ -16,6 +17,7 @@ from plim.algorithm.spotInfo import SpotInfo
 class SignalWidget(QWidget):
     ''' main class for viewing signal'''
     DEFAULT = {'nameGUI':'Signal'}
+    sigUpdateData = Signal()
 
     def __init__(self,signal=None, time= None, **kwargs):
         ''' initialise the class '''
@@ -77,6 +79,7 @@ class SignalWidget(QWidget):
             else:
                 self.lineParameter.dSignal.value = dSignal
             self.drawGraph()
+            self.sigUpdateData.emit()
             
         # add graph
         self.graph = pg.plot()

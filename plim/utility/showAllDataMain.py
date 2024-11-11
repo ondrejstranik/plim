@@ -105,7 +105,12 @@ class Window(QMainWindow):
 
         self.iW.updateData()
 
-  
+    def updateSelected(self):
+        print(f'updating selected in napari {list(self.spotLayer.selected_data)}')
+        if list(self.spotLayer.selected_data) != []:
+            self.iW.updateSelect(list(self.spotLayer.selected_data))
+
+        self.spotLayer.selected_data._data
 
     def updateWidget(self,**kwargs):
         ''' update napari and signal widget from data '''
@@ -157,10 +162,10 @@ class Window(QMainWindow):
                 'color': 'green',
                 'translation': np.array([-5, 0])}
         self.spotLayer._face.events.current_color.connect(self.updateColor)
+        self.spotLayer.selected_data.events.connect(self.updateSelected)
 
         # signal widget
         self.sW = SignalWidget()
-        #self.sW = SignalWidget(signal=self.signal,time= self.time)
         self.sW.sD = self.sD
         self.sW.show()
 
@@ -172,7 +177,10 @@ class Window(QMainWindow):
         self.iW = InfoWidget(self.sD)
         self.iW.show()
         self.updateWidget()
+        self.iW.updateSelect(self.sW.lineIndex)
         self.iW.sigUpdateData.connect(self.updateWidget)
+        self.sW.sigUpdateData.connect(lambda: self.iW.updateSelect(self.sW.lineIndex))
+
 
 
 
