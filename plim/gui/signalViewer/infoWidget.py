@@ -49,7 +49,7 @@ class InfoWidget(QWidget):
 
         # fit parameter
         self.infoBox = infoBox
-        self.infoBox.infoTable.native.setSelectionMode(2)
+        #self.infoBox.infoTable.native.setSelectionMode(4)
 
         layout = QVBoxLayout()
         layout.addWidget(self.infoBox.native)
@@ -66,14 +66,19 @@ class InfoWidget(QWidget):
     def updateSelect(self,idx):
         print(f'row to select : {idx}')
 
-        idx = np.array(idx, ndmin=1)
+        #idx = np.array(idx, ndmin=1)
+        self.infoBox.infoTable.native.selectRow(idx)
 
-        self.infoBox.infoTable.native.selectionModel().clear()
+        #self.infoBox.infoTable.native.selectionModel().clear()
         #self.infoBox.infoTable.native.setSelectionMode(4)
-        for ii in idx:
-            if ii is not None:
-                self.infoBox.infoTable.native.selectRow(ii)
+        #for ii in idx:
+        #    if ii is not None:
+        #        self.infoBox.infoTable.native.selectRow(ii)
         #self.infoBox.infoTable.native.setSelectionMode(1)
+        #indexes = self.infoBox.infoTable.native.selectionModel().selectedRows()
+        #for index in sorted(indexes):
+        #    print('Row %d is selected' % index.row())
+
 
 if __name__ == "__main__":
     pass

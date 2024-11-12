@@ -105,14 +105,26 @@ class Window(QMainWindow):
 
         self.iW.updateData()
 
-    def updateSelected(self):
-        print(f'updating selected in napari {list(self.spotLayer.selected_data)}')
+    def updateFromNapari(self):
+        spotList = list(self.spotLayer.selected_data)
         if list(self.spotLayer.selected_data) != []:
-            self.iW.updateSelect(list(self.spotLayer.selected_data))
+            spotList0 = spotList[0]
+            print(f'updating selected in napari {spotList0}')
+            self.sW.lineParameter.lineIndex.value = spotList0
+            #self.iW.updateSelect(list(self.spotLayer.selected_data)[0])
 
-        self.spotLayer.selected_data._data
+        #self.spotLayer.selected_data._data
 
-    def updateWidget(self,**kwargs):
+    def updateFromSW(self):
+        print(f'updating selected fromn sW {self.sW.lineIndex}')
+        self.iW.updateData()
+        self.iW.updateSelect(self.sW.lineIndex)
+        self.spotLayer.selected_data.select_only(self.sW.lineIndex)
+
+
+        #self.spotLayer.selected_data._data
+
+    def updateFromIW(self,**kwargs):
         ''' update napari and signal widget from data '''
         print('updatingWidgets')
        
@@ -129,15 +141,12 @@ class Window(QMainWindow):
             self.spotLayer.features = {
                 'names': self.sD.table['name']
             }
-
             rgb = self.sD.table['color']
             vis = self.sD.table['visible']
             _color = [rgb[ii] + 'ff' if vis[ii]=='True' else rgb[ii] + '00' for ii in range(len(rgb))]
 
             #self.spotLayer.face_color = self.sD.table['color']
             self.spotLayer.face_color = _color
-
-
 
             # signal widget
             #self.sW.setData(self.signal[:,_sel],self.time)
@@ -147,7 +156,7 @@ class Window(QMainWindow):
             #print(f"sW.sD.table['color'] {self.sW.sD.table['color']}")
             self.sW.drawGraph()
         except:
-            print('error in updateWidget')
+            print('error in updateFromIW')
 
     def _createWidget(self):
 
@@ -162,12 +171,13 @@ class Window(QMainWindow):
                 'color': 'green',
                 'translation': np.array([-5, 0])}
         self.spotLayer._face.events.current_color.connect(self.updateColor)
-        self.spotLayer.selected_data.events.connect(self.updateSelected)
+        self.spotLayer.selected_data.events.connect(self.updateFromNapari)
 
         # signal widget
         self.sW = SignalWidget()
         self.sW.sD = self.sD
         self.sW.show()
+        self.sW.sigUpdateData.connect(self.updateFromSW)
 
         # flow rate widget
         self.fW = FlowRateWidget(signal=self.flow, time = self.time)
@@ -176,10 +186,11 @@ class Window(QMainWindow):
         # info widget
         self.iW = InfoWidget(self.sD)
         self.iW.show()
-        self.updateWidget()
+        self.updateFromIW()
         self.iW.updateSelect(self.sW.lineIndex)
-        self.iW.sigUpdateData.connect(self.updateWidget)
-        self.sW.sigUpdateData.connect(lambda: self.iW.updateSelect(self.sW.lineIndex))
+        self.iW.sigUpdateData.connect(self.updateFromIW)
+
+
 
 
 

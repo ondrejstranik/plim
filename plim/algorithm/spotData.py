@@ -36,10 +36,10 @@ class SpotData:
         if signal is not None: self.setData(signal,time)
 
         # color for each signal
-        self.signalColor = None
+        #self.signalColor = None
         # info for each signal
         # TODO: implement the signalInfo
-        self.signalInfo = None
+        #self.signalInfo = None
 
     def setTable(self,table=None):
         ''' set table with info about the spots '''

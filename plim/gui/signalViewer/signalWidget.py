@@ -24,7 +24,7 @@ class SignalWidget(QWidget):
         super().__init__()
 
         self.sD = SpotData(signal,time)
-        self.sI = SpotInfo()
+        #self.sI = SpotInfo()
 
         self.align = False
         self.lineIndex = 0
@@ -65,20 +65,36 @@ class SignalWidget(QWidget):
                   lineIndex = {'tooltip': " to select \n press 's' on graph"},
                   evalTime = {'tooltip': " to select \n press '1' on graph"},
                   dTime = {'tooltip': " to select \n press '2' on graph"},
-                  dSignal = {'label':'dSignal','widget_type': 'Label'})
+                  dSignal = {'label':'dSignal','widget_type': 'Label'},
+                  lineVisible = {'tooltip':"to toggle \n press 'v' on graph",
+                                 'label':'visible:','widget_type': 'Label'}
+                  )
         def lineParameter(
                 lineIndex: int = self.lineIndex,
+                lineVisible: str = None,
                 evalTime: float = self.sD.evalTime,
                 dTime: float = self.sD.dTime,
                 dSignal = None):
             
+            # change of the line focus
             self.lineIndex = lineIndex
+
+            # set visibility value
+
+            # calculate the parameters
+            self.lineParameter._auto_call = False
             self.sD.getDSignal(evalTime,dTime)
             if self.lineIndex < len(self.sD.dSignal):
                 self.lineParameter.dSignal.value = self.sD.dSignal[self.lineIndex]
+                self.lineParameter.lineVisible.value =  self.sD.table['visible'][lineIndex]=='True'
+
             else:
-                self.lineParameter.dSignal.value = dSignal
+                self.lineParameter.dSignal.value = None
+                self.lineParameter.lineVisible.value = None
+            self.lineParameter._auto_call = True
+
             self.drawGraph()
+            print('ahoj')
             self.sigUpdateData.emit()
             
         # add graph
@@ -124,6 +140,12 @@ class SignalWidget(QWidget):
                 if _value < 0 : _value = 0 
                 self.lineParameter.dTime.value = _value
 
+            if _text == 'v':
+                if self.sD.table['visible'][self.lineIndex]=='True':
+                    self.sD.table['visible'][self.lineIndex] = 'False'
+                else:
+                    self.sD.table['visible'][self.lineIndex] = 'True'
+                self.lineParameter()
 
         # keep the keyPressEvent on the this signal widget
         self.setFocus()
