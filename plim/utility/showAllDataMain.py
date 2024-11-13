@@ -107,28 +107,29 @@ class Window(QMainWindow):
 
     def updateFromNapari(self):
         spotList = list(self.spotLayer.selected_data)
-        if list(self.spotLayer.selected_data) != []:
+        if len(spotList) == 1:
             spotList0 = spotList[0]
-            print(f'updating selected in napari {spotList0}')
+            print(f'updating from napari, selection {spotList0}')
             self.sW.lineParameter.lineIndex.value = spotList0
             #self.iW.updateSelect(list(self.spotLayer.selected_data)[0])
 
         #self.spotLayer.selected_data._data
 
     def updateFromSW(self):
-        print(f'updating selected fromn sW {self.sW.lineIndex}')
+        print(f'updating fromn sW; selection {self.sW.lineIndex}')
         self.iW.updateData()
         self.iW.updateSelect(self.sW.lineIndex)
-        self.spotLayer.selected_data.select_only(self.sW.lineIndex)
+        #self.spotLayer.selected_data.select_only(self.sW.lineIndex)
 
 
         #self.spotLayer.selected_data._data
 
     def updateFromIW(self,**kwargs):
         ''' update napari and signal widget from data '''
-        print('updatingWidgets')
+        print('updatingFrom IW')
        
-        try:
+        if True:
+        #try:
             # napari widget
             #_sel = [x=='True' for x in self.sD.table['visible']]
             #self.spotLayer.data = self.spotPosition[_sel]
@@ -137,7 +138,10 @@ class Window(QMainWindow):
             #}
             #self.spotLayer.face_color = np.array(self.sD.table['color'])[_sel].tolist()        
 
-            self.spotLayer.data = self.spotPosition
+            if np.any(self.spotLayer.data -self.spotPosition):
+                print('updating spot position')
+                self.spotLayer.data = self.spotPosition
+
             self.spotLayer.features = {
                 'names': self.sD.table['name']
             }
@@ -155,8 +159,8 @@ class Window(QMainWindow):
             #self.sW.sD.table['color'] = self.sD.table['color']
             #print(f"sW.sD.table['color'] {self.sW.sD.table['color']}")
             self.sW.drawGraph()
-        except:
-            print('error in updateFromIW')
+        #except:
+        #    print('error in updateFromIW')
 
     def _createWidget(self):
 

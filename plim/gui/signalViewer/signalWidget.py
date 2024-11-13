@@ -11,7 +11,6 @@ from qtpy.QtCore import Signal
 
 import numpy as np
 from plim.algorithm.spotData import SpotData
-from plim.algorithm.spotInfo import SpotInfo
 
 
 class SignalWidget(QWidget):
@@ -19,12 +18,15 @@ class SignalWidget(QWidget):
     DEFAULT = {'nameGUI':'Signal'}
     sigUpdateData = Signal()
 
-    def __init__(self,signal=None, time= None, **kwargs):
+    def __init__(self,signal=None, time= None, spotData = None,  **kwargs):
         ''' initialise the class '''
         super().__init__()
 
-        self.sD = SpotData(signal,time)
-        #self.sI = SpotInfo()
+        if spotData is not None: self.sD = spotData 
+        else:
+            if signal is not None: self.sD = SpotData(signal,time)
+            else:
+                self.sD = SpotData(np.arange(10*3).reshape(10,3))
 
         self.align = False
         self.lineIndex = 0
@@ -36,7 +38,9 @@ class SignalWidget(QWidget):
         # set this gui of this class
         SignalWidget._setWidget(self)
 
-        self.drawGraph()
+        # set the values / graph lines in the gui
+        self.lineParameter()
+        #self.drawGraph()
 
     def _setWidget(self):
         ''' prepare the gui '''
@@ -52,6 +56,7 @@ class SignalWidget(QWidget):
             self.align= align
             self.sD.setOffset(alignTime,range)
             self.sD.getDSignal() # recalculate in the case the range changed
+            self.sD.getNoise()
 
             self.drawGraph()
 
@@ -63,38 +68,48 @@ class SignalWidget(QWidget):
         
         @magicgui(auto_call=True, layout='horizontal',
                   lineIndex = {'tooltip': " to select \n press 's' on graph"},
-                  evalTime = {'tooltip': " to select \n press '1' on graph"},
-                  dTime = {'tooltip': " to select \n press '2' on graph"},
+                  evalTime = {'min':0,'max':1e6,'tooltip': " to select \n press '1' on graph"},
+                  dTime = {'min':0,'max':1e6,'tooltip': " to select \n press '2' on graph"},
                   dSignal = {'label':'dSignal','widget_type': 'Label'},
+                  noise = {'label':'Noise','widget_type': 'Label'},
                   lineVisible = {'tooltip':"to toggle \n press 'v' on graph",
-                                 'label':'visible:','widget_type': 'Label'}
+                                 'label':'visible:','widget_type': 'Label'},
+                  lineName = {'label':'name','widget_type': 'Label'}
                   )
         def lineParameter(
                 lineIndex: int = self.lineIndex,
+                lineName: str = None,
                 lineVisible: str = None,
                 evalTime: float = self.sD.evalTime,
                 dTime: float = self.sD.dTime,
-                dSignal = None):
+                dSignal = None,
+                noise = None):
             
             # change of the line focus
             self.lineIndex = lineIndex
 
-            # set visibility value
-
             # calculate the parameters
-            self.lineParameter._auto_call = False
             self.sD.getDSignal(evalTime,dTime)
-            if self.lineIndex < len(self.sD.dSignal):
-                self.lineParameter.dSignal.value = self.sD.dSignal[self.lineIndex]
-                self.lineParameter.lineVisible.value =  self.sD.table['visible'][lineIndex]=='True'
+            self.sD.getNoise()
 
+            # set the display values
+            self.lineParameter._auto_call = False
+            
+            if self.lineIndex < len(self.sD.dSignal):
+                self.lineParameter.dSignal.value = f"{self.sD.dSignal[self.lineIndex]:.2E}"
+                self.lineParameter.lineVisible.value =  self.sD.table['visible'][self.lineIndex]=='True'
+                self.lineParameter.lineName.value =  self.sD.table['name'][self.lineIndex]
+                self.lineParameter.noise.value =  f"{self.sD.noise[self.lineIndex]:.2E}"
             else:
                 self.lineParameter.dSignal.value = None
                 self.lineParameter.lineVisible.value = None
+                self.lineParameter.lineName.value =  None
+                self.lineParameter.noise.value =  None
+            
             self.lineParameter._auto_call = True
 
             self.drawGraph()
-            print('ahoj')
+            print('calling line Parameter')
             self.sigUpdateData.emit()
             
         # add graph

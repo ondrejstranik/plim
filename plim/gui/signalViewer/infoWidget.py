@@ -29,23 +29,48 @@ class InfoWidget(QWidget):
         InfoWidget._setWidget(self)
 
 
+    def keyPressEvent(self, evt):
+        ''' react on the key pressed, when focused on the widget'''
+        _text = evt.text()
+
+        if _text == 'v':
+            indexes = self.infoBox.infoTable.native.selectionModel().selectedRows()
+            _idx = [index.row() for index in indexes]
+            print(f'selected rows in the table {_idx}')
+            if _idx == []:
+                self.setFocus()
+                return 
+            if self.sD.table['visible'][_idx[0]]=='True':
+                for ii in _idx:
+                    self.sD.table['visible'][ii] = 'False'
+            else:
+                for ii in _idx:
+                    self.sD.table['visible'][ii] = 'True'
+
+            self.updateData()
+            # keep the keyPressEvent on the this signal widget
+            self.setFocus()
+
+
     def _setWidget(self):
         ''' prepare the gui '''
 
         @magicgui(auto_call=True,
                   infoTable = {'widget_type':'Table'})
         def infoBox(
-            infoTable: dict = self.sD.table
+            infoTable: dict = self.sD.table | {'dSignal': self.sD.dSignal, 'noise': self.sD.noise}
             ):
             self.infoBox._auto_call = False
-            self.sD.table = dict(infoBox.infoTable).copy()
+            #self.sD.table = dict(infoBox.infoTable).copy()
+            self.sD.table = dict(infoBox.infoTable)
             self.sD.checkTableValues()
-            infoBox.infoTable.value = self.sD.table.copy()
+            #infoBox.infoTable.value = self.sD.table.copy()
+            infoBox.infoTable.value = self.sD.table | {'dSignal': self.sD.dSignal, 'noise': self.sD.noise}
             self.infoBox._auto_call = True
 
-            print(dict(infoBox.infoTable))
+            #print(dict(infoBox.infoTable))
             self.sigUpdateData.emit()
-            print('emitting signal')
+            print('infoWidget: emitting signal')
 
         # fit parameter
         self.infoBox = infoBox
@@ -58,7 +83,13 @@ class InfoWidget(QWidget):
     def updateData(self):
         _temp =  self.infoBox._auto_call
         self.infoBox._auto_call = False
-        self.infoBox.infoTable.value = self.sD.table.copy()
+        
+        _dict = {'dSignal': self.sD.dSignal, 'noise': self.sD.noise}
+
+        #self.infoBox.infoTable.value = self.sD.table.copy()
+        self.infoBox.infoTable.value = self.sD.table | _dict
+
+        
         self.infoBox._auto_call = _temp
         self.sigUpdateData.emit()
         print('emitting signal')
@@ -67,6 +98,7 @@ class InfoWidget(QWidget):
         print(f'row to select : {idx}')
 
         #idx = np.array(idx, ndmin=1)
+        self.infoBox.infoTable.native.selectionModel().clear()
         self.infoBox.infoTable.native.selectRow(idx)
 
         #self.infoBox.infoTable.native.selectionModel().clear()

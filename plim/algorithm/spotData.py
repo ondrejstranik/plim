@@ -11,7 +11,7 @@ class SpotData:
     DEFAULT = {}
 
 
-    def __init__(self,signal=None,time=None,**kwarg):
+    def __init__(self,signal=None,time=None, **kwarg):
         ''' initialization of the parameters '''
         #TODO: implement signal and time definition for a single values. 
 
@@ -26,6 +26,7 @@ class SpotData:
         self.evalTime = 0
         self.dTime = 1
         self.dSignal = None
+        self.noise = None
 
         # info about the data
         self.table = {
@@ -65,6 +66,10 @@ class SpotData:
         self.time = np.array(time) if time is not None else np.arange(self.signal.shape[0])  # corresponding time
         self.time0 = self.time[0]
         self.setOffset()
+
+        self.getDSignal()
+        self.getNoise()
+
 
         self.setTable()
 
@@ -132,6 +137,20 @@ class SpotData:
         self.dSignal = _signal2 - _signal1
 
         return self.dSignal
+
+    def getNoise(self,evalTime=None, dTime=None, range=None):
+        ''' get the noise of the signal at the time evalTime + dTime'''
+
+        if evalTime is not None: self.evalTime = evalTime
+        if dTime is not None: self.dTime = dTime
+        if range is not None: self.range = range
+
+        range = self.getRange(self.evalTime+self.dTime)
+        self.noise =  np.std(self.signal[range,:],axis=0)
+
+        return self.noise
+
+
 
 
     def clearData(self):
