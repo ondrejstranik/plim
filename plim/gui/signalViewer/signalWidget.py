@@ -38,9 +38,8 @@ class SignalWidget(QWidget):
         # set this gui of this class
         SignalWidget._setWidget(self)
 
-        # set the values / graph lines in the gui
+        # set the values and graph lines in the gui
         self.lineParameter()
-        #self.drawGraph()
 
     def _setWidget(self):
         ''' prepare the gui '''
@@ -255,6 +254,7 @@ class SignalWidget(QWidget):
         ''' add new value '''        
         self.sD.addDataValue(valueVector,time)
         self.drawGraph()
+
 
 
 if __name__ == "__main__":

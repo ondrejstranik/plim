@@ -59,6 +59,7 @@ class Window(QMainWindow):
     def _loadData(self):
 
         ffolder = r'F:\ondra\LPI\24-08-28 spr_variable_array\iso_h20_1to4'
+        ffolder = r'g:\office\work\projects - funded\21-10-01 LPI\LPI\24-08-28 spr_variable_array\iso_h20_1to4'
         ffile = r'Experiment1'
         nameSet = self.DEFAULT['nameSet']
 
@@ -175,7 +176,9 @@ class Window(QMainWindow):
                 'color': 'green',
                 'translation': np.array([-5, 0])}
         self.spotLayer._face.events.current_color.connect(self.updateColor)
-        self.spotLayer.selected_data.events.connect(self.updateFromNapari)
+        #self.spotLayer.selected_data.events.connect(self.updateFromNapari)
+
+        self.viewer.bind_key('s',lambda x: self.updateFromNapari())
 
         # signal widget
         self.sW = SignalWidget()
