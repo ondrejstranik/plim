@@ -92,7 +92,7 @@ class InfoWidget(QWidget):
         
         self.infoBox._auto_call = _temp
         self.sigUpdateData.emit()
-        print('emitting signal')
+        print('emitting signal in infoWidget')
 
     def updateSelect(self,idx):
         print(f'row to select : {idx}')

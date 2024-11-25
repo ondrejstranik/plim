@@ -15,8 +15,8 @@ class SpotData:
         ''' initialization of the parameters '''
         #TODO: implement signal and time definition for a single values. 
 
-        self.signal = None # numpy array, each column represent signal from one spot
-        self.time = None # corresponding time
+        self.signal = signal # numpy array, each column represent signal from one spot
+        self.time = time # corresponding time
         self.time0 = 0 # position of zero time
 
         # values from the data
@@ -35,12 +35,6 @@ class SpotData:
             'visible': None}
 
         if signal is not None: self.setData(signal,time)
-
-        # color for each signal
-        #self.signalColor = None
-        # info for each signal
-        # TODO: implement the signalInfo
-        #self.signalInfo = None
 
     def setTable(self,table=None):
         ''' set table with info about the spots '''
@@ -71,7 +65,7 @@ class SpotData:
         self.getNoise()
 
 
-        self.setTable()
+        self.setTable(table=table)
 
     def addDataValue(self, valueVector,time= None):
         ''' add single value to the signal

@@ -56,6 +56,7 @@ class SignalWidget(QWidget):
             self.sD.setOffset(alignTime,range)
             self.sD.getDSignal() # recalculate in the case the range changed
             self.sD.getNoise()
+            self.lineParameter.noise.value =  f"{self.sD.noise[self.lineIndex]:.2E}"
 
             self.drawGraph()
 
@@ -72,43 +73,79 @@ class SignalWidget(QWidget):
                   dSignal = {'label':'dSignal','widget_type': 'Label'},
                   noise = {'label':'Noise','widget_type': 'Label'},
                   lineVisible = {'tooltip':"to toggle \n press 'v' on graph",
-                                 'label':'visible:','widget_type': 'Label'},
-                  lineName = {'label':'name','widget_type': 'Label'}
+                                 'label':'visible'},
+                  lineColor = {'tooltip':"use format #000000 - #FFFFFF",
+                                 'label':'color:'},                                 
+                  lineName = {'label':'name'}
                   )
         def lineParameter(
                 lineIndex: int = self.lineIndex,
-                lineName: str = None,
-                lineVisible: str = None,
+                lineName: str = self.sD.table['name'][self.lineIndex],
+                lineVisible: bool = self.sD.table['visible'][self.lineIndex]=='True',
+                lineColor: str = self.sD.table['color'][self.lineIndex],
                 evalTime: float = self.sD.evalTime,
                 dTime: float = self.sD.dTime,
                 dSignal = None,
                 noise = None):
-            
-            # change of the line focus
-            self.lineIndex = lineIndex
 
-            # calculate the parameters
-            self.sD.getDSignal(evalTime,dTime)
-            self.sD.getNoise()
+            # line index out of range
+            if lineIndex >= len(self.sD.dSignal):
+                lineIndex = len(self.sD.dSignal)-1
+                self.lineParameter._auto_call = False
+                self.lineParameter.lineIndex.value = lineIndex
+                self.lineParameter._auto_call = True
+                print('index out of line')
 
-            # set the display values
-            self.lineParameter._auto_call = False
-            
-            if self.lineIndex < len(self.sD.dSignal):
+            # line index is changed
+            if self.lineIndex != lineIndex:
+                # change of the line focus
+                self.lineIndex = lineIndex
+
+                # set the display values
+                self.lineParameter._auto_call = False
+                self.lineParameter.dSignal.value = f"{self.sD.dSignal[lineIndex]:.2E}"
+                self.lineParameter.lineVisible.value =  self.sD.table['visible'][lineIndex]=='True'
+                self.lineParameter.lineName.value =  self.sD.table['name'][lineIndex]
+                self.lineParameter.lineColor.value =  self.sD.table['color'][lineIndex]
+                self.lineParameter.noise.value =  f"{self.sD.noise[lineIndex]:.2E}"
+                self.lineParameter._auto_call = True
+                self.drawGraph()
+                print('change of index')
+
+            # visibility is changed
+            elif (self.sD.table['visible'][lineIndex]=='True') != lineVisible:
+                if lineVisible:
+                    self.sD.table['visible'][lineIndex]='True'
+                else:
+                    self.sD.table['visible'][lineIndex]='False'
+                self.drawGraph()
+                print('change of visibility')
+
+
+            # color is changed            
+            elif self.sD.table['color'][lineIndex] != lineColor:
+                self.sD.table['color'][lineIndex] = lineColor
+                self.drawGraph()
+                print('change of color')
+
+
+            # name is changed            
+            elif self.sD.table['name'][lineIndex] != lineName:
+                self.sD.table['name'][lineIndex] = lineName
+                print('change of name')
+
+
+            # evaluation time or delta time is changed
+            elif  (evalTime != self.sD.evalTime) or (dTime != self.sD.dTime):
+                self.sD.getDSignal(evalTime,dTime)
+                self.sD.getNoise()
                 self.lineParameter.dSignal.value = f"{self.sD.dSignal[self.lineIndex]:.2E}"
-                self.lineParameter.lineVisible.value =  self.sD.table['visible'][self.lineIndex]=='True'
-                self.lineParameter.lineName.value =  self.sD.table['name'][self.lineIndex]
                 self.lineParameter.noise.value =  f"{self.sD.noise[self.lineIndex]:.2E}"
-            else:
-                self.lineParameter.dSignal.value = None
-                self.lineParameter.lineVisible.value = None
-                self.lineParameter.lineName.value =  None
-                self.lineParameter.noise.value =  None
-            
-            self.lineParameter._auto_call = True
+                self.drawGraph()
+                print('change of evaluation')
 
-            self.drawGraph()
-            print('calling line Parameter')
+
+            print('calling line Parameter in signal Widget')
             self.sigUpdateData.emit()
             
         # add graph
@@ -119,7 +156,7 @@ class SignalWidget(QWidget):
         self.graph.setLabel('bottom', 'time', units= 's')
         self.graph.scene().sigMouseMoved.connect(self.mouse_moved)
 
-        # fit parameter
+        # widgets
         self.fitParameter = fitParameter
         self.infoBox = infoBox
         self.lineParameter = lineParameter
@@ -130,6 +167,9 @@ class SignalWidget(QWidget):
         layout.addWidget(self.fitParameter.native)
         layout.addWidget(self.lineParameter.native)
         self.setLayout(layout)
+
+        self.drawGraph()
+
 
     def mouse_moved(self, pos):
         self.mousePoint =  self.graph.plotItem.vb.mapSceneToView(pos)
@@ -143,8 +183,8 @@ class SignalWidget(QWidget):
                 self.fitParameter.alignTime.value = self.mousePoint.x()
             
             if _text == 's':
-                self._findLine(self.mousePoint.x(),self.mousePoint.y())
-                self.lineParameter.lineIndex.value = self.lineIndex
+                lineIndex = self._findLine(self.mousePoint.x(),self.mousePoint.y())
+                self.lineParameter.lineIndex.value = lineIndex
 
             if _text == '1':
                 self.lineParameter.evalTime.value = self.mousePoint.x()
@@ -155,11 +195,8 @@ class SignalWidget(QWidget):
                 self.lineParameter.dTime.value = _value
 
             if _text == 'v':
-                if self.sD.table['visible'][self.lineIndex]=='True':
-                    self.sD.table['visible'][self.lineIndex] = 'False'
-                else:
-                    self.sD.table['visible'][self.lineIndex] = 'True'
-                self.lineParameter()
+                self.lineParameter.lineVisible.value = not self.lineParameter.lineVisible.value
+                print(f'pressed v: {self.lineParameter.lineVisible.value}')
 
         # keep the keyPressEvent on the this signal widget
         self.setFocus()
@@ -181,10 +218,10 @@ class SignalWidget(QWidget):
 
         print(f'signal {_signal -offSet -y}')
 
-        self.lineIndex = np.argmin(np.abs(_signal -offSet -y))
+        lineIndex = np.argmin(np.abs(_signal -offSet -y))
 
 
-        return self.lineIndex
+        return lineIndex
 
     def drawGraph(self):
         ''' draw all new lines in the spectraGraph '''
@@ -241,6 +278,12 @@ class SignalWidget(QWidget):
         vLine.setPos(self.sD.evalTime+self.sD.dTime)
         self.graph.addItem(vLine, ignoreBounds=True)
 
+        # display infinity lines -  aliment
+        if self.align:
+            vLine = pg.InfiniteLine(angle=90, movable=False, pen=pg.mkPen('b', width=0, style=QtCore.Qt.SolidLine))
+            vLine.setPos(self.sD.alignTime)
+            self.graph.addItem(vLine, ignoreBounds=True)
+
         # display delta time
         if len(time) >1:
             self.infoBox(time[-1] - time[-2])
@@ -255,6 +298,9 @@ class SignalWidget(QWidget):
         self.sD.addDataValue(valueVector,time)
         self.drawGraph()
 
+    def updateData(self):
+        self.lineParameter()
+        self.drawGraph()
 
 
 if __name__ == "__main__":

@@ -39,12 +39,17 @@ class Window(QMainWindow):
         self.signal = None
         self.sD = None
 
-        # widget parameters
+        # widget / widgets parameters
         self.viewer = None
         self.spotLayer = None
         self.sW = None
         self.fW = None
         self.iW = None
+
+        # update synchronisation
+        self.isSWUpdated = False
+        self.isViewerUpdated = False
+        self.isIWUpdated = False
 
         self._createToolBar()
 
@@ -91,45 +96,106 @@ class Window(QMainWindow):
         self.viewer.close()
         self.close()
 
+    def _resetUpdate(self):
+        ''' if all widgets updated the update flag are set false'''
+        if   self.isSWUpdated and self.isViewerUpdated and  self.isIWUpdated:
+            self.isSWUpdated = False
+            self.isViewerUpdated = False
+            self.isIWUpdated = False
 
-    def updateColor(self):
-        ''' update color info  from Napari'''
+    def updateViewer(self):
+        ''' update napari Viewer'''
+
+        # updating spots position
+        if np.any(self.spotLayer.data -self.spotPosition):
+            #print('updating spot position')
+            self.spotLayer.data = self.spotPosition
+
+        # updating spot features
+        self.spotLayer.features = {
+            'names': self.sD.table['name']
+        }
+        rgb = self.sD.table['color']
+        vis = self.sD.table['visible']
+        _color = [rgb[ii] + 'ff' if vis[ii]=='True' else rgb[ii] + '00' for ii in range(len(rgb))]
+
+        self.spotLayer.face_color = _color
+
+
+    def updateColorFromNapari(self):
+        ''' update color from Napari, update spot and info widget'''
+ 
+        print(f'updating from Napari - color')
+        self.isViewerUpdated = True
+ 
+        # update color in spotData
         _fc = 1*self.spotLayer.face_color #  deep copy of the colors
         _fc[list(self.spotLayer.selected_data)] = self.spotLayer._face.current_color # adjust the just modified 
-
-        #_fcHex = ['#{:02x}{:02x}{:02x}{:02x}'.format( *ii.tolist()) for ii in (_fc*255).astype(int)]
         _fcHex = ['#{:02x}{:02x}{:02x}'.format( *ii.tolist()) for ii in (_fc*255).astype(int)]
-
-        #print(f'_fc {_fcHex}')
-
         self.sD.table['color'] = _fcHex
 
-        self.iW.updateData()
+        self.updateViewer()
 
-    def updateFromNapari(self):
+        if not self.isIWUpdated:
+            self.iW.updateData()
+            self.isIWUpdated = True
+        if not self.isSWUpdated:
+            self.sW.lineParameter.lineColor.value = (self.sD.table['color']
+                                                     [self.sW.lineParameter.lineIndex.value])
+            self.sW.updateData()
+            self.isSWUpdated = True
+
+        self._resetUpdate()
+
+    def updateSelectionFromNapari(self):
+
+        print(f'updating from Napari - color')
+        self.isViewerUpdated = True
+
+        # selected layers
         spotList = list(self.spotLayer.selected_data)
-        if len(spotList) == 1:
-            spotList0 = spotList[0]
-            print(f'updating from napari, selection {spotList0}')
-            self.sW.lineParameter.lineIndex.value = spotList0
-            #self.iW.updateSelect(list(self.spotLayer.selected_data)[0])
+        
+        if not self.isSWUpdated:
+            if len(spotList) == 1:
+                self.sW.lineParameter.lineIndex.value = spotList[0]
+            self.isSWUpdated = True
 
-        #self.spotLayer.selected_data._data
+        if not self.isIWUpdated:
+            #self.iW.updateData()
+            self.iW.updateSelect(self.sW.lineIndex)
+            self.isIWUpdated = True
+
+        self._resetUpdate()
 
     def updateFromSW(self):
-        print(f'updating fromn sW; selection {self.sW.lineIndex}')
-        self.iW.updateData()
-        self.iW.updateSelect(self.sW.lineIndex)
-        #self.spotLayer.selected_data.select_only(self.sW.lineIndex)
+        ''' update napari and info widget '''
 
-
-        #self.spotLayer.selected_data._data
+        print(f'updating from sW')
+        self.isSWUpdated = True
+        if not self.isIWUpdated:
+            self.iW.updateData()
+            self.iW.updateSelect(self.sW.lineIndex)
+            self.isSWUpdated = True
+        if not self.isViewerUpdated:
+            self.updateViewer()
+            self.spotLayer.selected_data.select_only(self.sW.lineIndex)
+            self.isViewerUpdated = True
+        self._resetUpdate()
 
     def updateFromIW(self,**kwargs):
-        ''' update napari and signal widget from data '''
+        ''' update napari and signal widget'''
+
         print('updatingFrom IW')
-       
-        if True:
+        self.isIWUpdated = True    
+        if not self.isSWUpdated:
+            self.sW.updateData()
+            self.isSWUpdated = True
+        if not self.isViewerUpdated:
+            self.updateViewer()
+            self.isViewerUpdated = True
+        self._resetUpdate()
+
+        if False:
         #try:
             # napari widget
             #_sel = [x=='True' for x in self.sD.table['visible']]
@@ -175,14 +241,13 @@ class Window(QMainWindow):
                 'size': 20,
                 'color': 'green',
                 'translation': np.array([-5, 0])}
-        self.spotLayer._face.events.current_color.connect(self.updateColor)
-        #self.spotLayer.selected_data.events.connect(self.updateFromNapari)
-
-        self.viewer.bind_key('s',lambda x: self.updateFromNapari())
+        self.spotLayer._face.events.current_color.connect(self.updateColorFromNapari)
+        #self.spotLayer.selected_data.events.connect(self.updateSelectionFromNapari)
+        self.viewer.bind_key('s',lambda x: self.updateSelectionFromNapari())
 
         # signal widget
-        self.sW = SignalWidget()
-        self.sW.sD = self.sD
+        self.sW = SignalWidget(spotData=self.sD)
+        #self.sW.sD = self.sD
         self.sW.show()
         self.sW.sigUpdateData.connect(self.updateFromSW)
 
@@ -193,12 +258,11 @@ class Window(QMainWindow):
         # info widget
         self.iW = InfoWidget(self.sD)
         self.iW.show()
-        self.updateFromIW()
-        self.iW.updateSelect(self.sW.lineIndex)
         self.iW.sigUpdateData.connect(self.updateFromIW)
-
-
-
+        #self.updateFromIW()
+        
+        #self.iW.updateSelect(self.sW.lineIndex)
+        self.updateFromSW()
 
 
 
