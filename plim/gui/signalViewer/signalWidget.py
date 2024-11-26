@@ -196,7 +196,7 @@ class SignalWidget(QWidget):
 
             if _text == 'v':
                 self.lineParameter.lineVisible.value = not self.lineParameter.lineVisible.value
-                print(f'pressed v: {self.lineParameter.lineVisible.value}')
+
 
         # keep the keyPressEvent on the this signal widget
         self.setFocus()
@@ -298,10 +298,27 @@ class SignalWidget(QWidget):
         self.sD.addDataValue(valueVector,time)
         self.drawGraph()
 
-    def updateData(self):
-        self.lineParameter()
-        self.drawGraph()
+    def redrawWidget(self):
+        ''' update and redraw the complete widget according the class values'''
+        # line parameter Widget
+        self.lineParameter._auto_call = False
+        self.lineParameter.lineIndex.value = self.lineIndex
+        self.lineParameter.dSignal.value = f"{self.sD.dSignal[self.lineIndex]:.2E}"
+        self.lineParameter.lineVisible.value =  self.sD.table['visible'][self.lineIndex]=='True'
+        self.lineParameter.lineName.value =  self.sD.table['name'][self.lineIndex]
+        self.lineParameter.lineColor.value =  self.sD.table['color'][self.lineIndex]
+        self.lineParameter.noise.value =  f"{self.sD.noise[self.lineIndex]:.2E}"
+        self.lineParameter._auto_call = True        
 
+        # fit parameter widget
+        self.fitParameter._auto_call = False
+        self.fitParameter.align.value = self.align
+        self.fitParameter.alignTime.value = self.sD.alignTime
+        self.fitParameter.range.value = self.sD.range
+        self.fitParameter._auto_call = True
+
+        # graph widget
+        self.drawGraph()
 
 if __name__ == "__main__":
     pass

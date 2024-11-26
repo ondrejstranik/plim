@@ -103,13 +103,16 @@ class Window(QMainWindow):
             self.isViewerUpdated = False
             self.isIWUpdated = False
 
-    def updateViewer(self):
+    def redrawViewer(self):
         ''' update napari Viewer'''
 
         # updating spots position
-        if np.any(self.spotLayer.data -self.spotPosition):
-            #print('updating spot position')
+        try:
+            if np.any(self.spotLayer.data -self.spotPosition):
+                self.spotLayer.data = self.spotPosition
+        except:
             self.spotLayer.data = self.spotPosition
+
 
         # updating spot features
         self.spotLayer.features = {
@@ -125,65 +128,68 @@ class Window(QMainWindow):
     def updateColorFromNapari(self):
         ''' update color from Napari, update spot and info widget'''
  
-        if not self.isViewerUpdated:
-            print(f'updating from Napari - color')
-            self.isViewerUpdated = True
+        print(f'updating from Napari - color')
     
-            # update color in spotData
-            _fc = 1*self.spotLayer.face_color #  deep copy of the colors
-            _fc[list(self.spotLayer.selected_data)] = self.spotLayer._face.current_color # adjust the just modified 
-            _fcHex = ['#{:02x}{:02x}{:02x}'.format( *ii.tolist()) for ii in (_fc*255).astype(int)]
-            self.sD.table['color'] = _fcHex
+        # update color in spotData
+        _fc = 1*self.spotLayer.face_color #  deep copy of the colors
+        _fc[list(self.spotLayer.selected_data)] = self.spotLayer._face.current_color # adjust the just modified 
+        _fcHex = ['#{:02x}{:02x}{:02x}'.format( *ii.tolist()) for ii in (_fc*255).astype(int)]
+        self.sD.table['color'] = _fcHex
 
-            self.updateViewer()
+        #TODO: this do not really update the color immediately. Try to figure out something else
+        # update the color selection according the visibility
+        rgb = self.sD.table['color']
+        vis = self.sD.table['visible']
+        _color = [rgb[ii] + 'ff' if vis[ii]=='True' else rgb[ii] + '00' for ii in list(self.spotLayer.selected_data)]
+        print(f'current_color {_color}')
+        self.spotLayer._face.current_color = _color
 
-            self.iW.updateData()
-            self.sW.lineParameter.lineColor.value = (self.sD.table['color']
-                                                     [self.sW.lineParameter.lineIndex.value])
-            self.sW.updateData()
-
-        self._resetUpdate()
+        self.iW.redrawWidget()
+        self.sW.redrawWidget()
 
     def updateSelectionFromNapari(self):
 
-        if not self.isViewerUpdated:
-            print(f'updating from Napari - selection')
-            self.isViewerUpdated = True
-            # selected layers
-            spotList0 = list(self.spotLayer.selected_data)[0]
-            if spotList0 != self.sW.lineParameter.lineIndex.value:
-                self.sW.lineParameter.lineIndex.value = spotList0
-            else:
-                self.isSWUpdated = True
-                self.isIWUpdated = True
-                self.iW.updateSelect(spotList0)
+        print(f'updating from Napari - selection')
+        # selected layers
+        spotList = list(self.spotLayer.selected_data)
+        if spotList:
+            self.sW.lineIndex = spotList[0]
+            self.sW.redrawWidget()
+            self.iW.updateSelect(spotList)
 
-        self._resetUpdate()
+    def updateVisibilityFromNapari(self):
+
+        print(f'updating from Napari - visibility')
+        # selected layers
+        _idx = list(self.spotLayer.selected_data)
+        if _idx == []:
+            return 
+        if self.sD.table['visible'][_idx[0]]=='True':
+            for ii in _idx:
+                self.sD.table['visible'][ii] = 'False'
+        else:
+            for ii in _idx:
+                self.sD.table['visible'][ii] = 'True'
+
+        self.redrawViewer()
+        self.iW.redrawWidget()
+        self.sW.redrawWidget()
+
 
     def updateFromSW(self):
         ''' update napari and info widget '''
 
-        if not self.isSWUpdated:
-            print(f'updating from sW')
-            self.isSWUpdated = True
-            self.iW.updateData()
-            self.iW.updateSelect(self.sW.lineIndex)
-            self.updateViewer()
-            self.isViewerUpdated = True
-            self.spotLayer.selected_data.select_only(self.sW.lineIndex)
-        self._resetUpdate()
+        print(f'updating from sW')
+        self.iW.redrawWidget()
+        self.iW.updateSelect(self.sW.lineIndex)
+        self.redrawViewer()
 
     def updateFromIW(self,**kwargs):
         ''' update napari and signal widget'''
 
-        if not self.isIWUpdated:
-            print('updatingFrom IW')
-            self.isIWUpdated = True    
-            self.sW.updateData()
-            self.updateViewer()
-            self.isViewerUpdated = True
-
-        self._resetUpdate()
+        print('updatingFrom IW')
+        self.sW.redrawWidget()
+        self.redrawViewer()
 
         if False:
         #try:
@@ -232,8 +238,8 @@ class Window(QMainWindow):
                 'color': 'green',
                 'translation': np.array([-5, 0])}
         self.spotLayer._face.events.current_color.connect(self.updateColorFromNapari)
-        #self.spotLayer.selected_data.events.connect(self.updateSelectionFromNapari)
         self.viewer.bind_key('s',lambda x: self.updateSelectionFromNapari())
+        self.viewer.bind_key('v',lambda x: self.updateVisibilityFromNapari())
 
         # signal widget
         self.sW = SignalWidget(spotData=self.sD)
@@ -249,9 +255,8 @@ class Window(QMainWindow):
         self.iW = InfoWidget(self.sD)
         self.iW.show()
         self.iW.sigUpdateData.connect(self.updateFromIW)
-        #self.updateFromIW()
         
-        #self.iW.updateSelect(self.sW.lineIndex)
+        # initial update
         self.updateFromSW()
 
 

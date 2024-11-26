@@ -61,56 +61,41 @@ class InfoWidget(QWidget):
             infoTable: dict = self.sD.table | {'dSignal': self.sD.dSignal, 'noise': self.sD.noise}
             ):
             self.infoBox._auto_call = False
-            #self.sD.table = dict(infoBox.infoTable).copy()
             self.sD.table = dict(infoBox.infoTable)
             self.sD.checkTableValues()
-            #infoBox.infoTable.value = self.sD.table.copy()
             infoBox.infoTable.value = self.sD.table | {'dSignal': self.sD.dSignal, 'noise': self.sD.noise}
             self.infoBox._auto_call = True
-
-            #print(dict(infoBox.infoTable))
             self.sigUpdateData.emit()
             print('infoWidget: emitting signal')
 
         # fit parameter
         self.infoBox = infoBox
-        #self.infoBox.infoTable.native.setSelectionMode(4)
+        self.infoBox.infoTable.native.setSelectionMode(4)
 
         layout = QVBoxLayout()
         layout.addWidget(self.infoBox.native)
         self.setLayout(layout)
 
-    def updateData(self):
+    def redrawWidget(self):
+        ''' redraw all values in the widget from class parameters'''
+        
         _temp =  self.infoBox._auto_call
         self.infoBox._auto_call = False
-        
         _dict = {'dSignal': self.sD.dSignal, 'noise': self.sD.noise}
-
-        #self.infoBox.infoTable.value = self.sD.table.copy()
         self.infoBox.infoTable.value = self.sD.table | _dict
-
-        
         self.infoBox._auto_call = _temp
-        self.sigUpdateData.emit()
-        print('emitting signal in infoWidget')
 
     def updateSelect(self,idx):
         print(f'row to select : {idx}')
 
-        #idx = np.array(idx, ndmin=1)
+        idx = np.array(idx, ndmin=1)
+
         self.infoBox.infoTable.native.selectionModel().clear()
-        self.infoBox.infoTable.native.selectRow(idx)
-
-        #self.infoBox.infoTable.native.selectionModel().clear()
-        #self.infoBox.infoTable.native.setSelectionMode(4)
-        #for ii in idx:
-        #    if ii is not None:
-        #        self.infoBox.infoTable.native.selectRow(ii)
-        #self.infoBox.infoTable.native.setSelectionMode(1)
-        #indexes = self.infoBox.infoTable.native.selectionModel().selectedRows()
-        #for index in sorted(indexes):
-        #    print('Row %d is selected' % index.row())
-
+        self.infoBox.infoTable.native.setSelectionMode(2)
+        for ii in idx:
+            if ii is not None:
+                self.infoBox.infoTable.native.selectRow(ii)
+        self.infoBox.infoTable.native.setSelectionMode(4)
 
 if __name__ == "__main__":
     pass
