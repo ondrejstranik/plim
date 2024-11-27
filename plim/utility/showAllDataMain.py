@@ -5,8 +5,10 @@
 import numpy as np
 import napari
 
-from qtpy.QtWidgets import QApplication,QMainWindow,QWidget,QToolBar,QVBoxLayout
+from qtpy.QtWidgets import (
+    QApplication,QMainWindow,QWidget,QToolBar,QVBoxLayout, QFileDialog)
 import sys
+from pathlib import Path
 
 #from plim.algorithm.spotInfo import SpotInfo
 from plim.algorithm.spotData import SpotData
@@ -24,7 +26,9 @@ class Window(QMainWindow):
                             'flow':'_flowData.npz',
                             'image': '_image.npz',
                             'spot': '_spotData.npz'
-                            }}
+                            },
+                'fileMainName' : 'Experiment1',
+                'folder' : r'g:\office\work\projects - funded\21-10-01 LPI\LPI\24-08-28 spr_variable_array\iso_h20_1to4' }
 
 
     def __init__(self,**kwarg):
@@ -57,31 +61,56 @@ class Window(QMainWindow):
 
     def _createToolBar(self):
         tools = QToolBar()
-        tools.addAction("Load", self._loadData)
+        tools.addAction("Load", self.LoadPressed)
         tools.addAction("Exit", self.closeAll)
         self.addToolBar(tools)
 
-    def _loadData(self):
+    def _selectFile(self):
+        ''' select file with the gui window
+        return path -- string and fileMainName --string
+        '''
+        dialog = QFileDialog(self)
+        dialog.setDirectory(__file__)
+        dialog.setFileMode(QFileDialog.FileMode.ExistingFiles)
+        dialog.setNameFilter("Numpy arrays (*.npz)")
+        dialog.setViewMode(QFileDialog.ViewMode.List)
+        if dialog.exec():
+            filenames = dialog.selectedFiles()
+        
+        p = Path(filenames)
+        _name = p.stem
+        fileMainName = '_'.join(_name.split('_')[:-1])
+        
+        return str(p.parent) , fileMainName
+    
 
-        ffolder = r'F:\ondra\LPI\24-08-28 spr_variable_array\iso_h20_1to4'
-        ffolder = r'g:\office\work\projects - funded\21-10-01 LPI\LPI\24-08-28 spr_variable_array\iso_h20_1to4'
-        ffile = r'Experiment1'
+    def LoadPressed(self):
+
+        folder, fileMainName = self._selectFile()
+        self._loadData(folder=folder,fileMainName= fileMainName)
+
+
+    def _loadData(self,folder= None, fileMainName=None):
+        ''' load all possible data from files '''
+
+        if folder is None: folder = self.DEFAULT['folder']
+        if fileMainName is None: fileMainName = self.DEFAULT['fileMainName']
+        
         nameSet = self.DEFAULT['nameSet']
 
-
         # load image
-        container1 = np.load(ffolder + '/' + ffile + nameSet['image'])
+        container1 = np.load(folder + '/' + fileMainName + nameSet['image'])
         self.spotPosition = container1['arr_0']
         self.image = container1['arr_1']
         self.w = container1['arr_2']
 
         # load flow
-        container2 = np.load(ffolder + '/' + ffile + nameSet['flow'])
+        container2 = np.load(folder + '/' + fileMainName + nameSet['flow'])
         self.flow = container2['arr_0']
         self.time = container2['arr_1']
 
         # load spot
-        container3 = np.load(ffolder + '/' + ffile + nameSet['spot'])
+        container3 = np.load(folder + '/' + fileMainName + nameSet['spot'])
         self.signal = container3['arr_0']
 
         # set default spot info
