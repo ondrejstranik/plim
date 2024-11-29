@@ -28,7 +28,8 @@ class Window(QMainWindow):
                             'spot': '_spotData.npz'
                             },
                 'fileMainName' : 'Experiment1',
-                'folder' : r'g:\office\work\projects - funded\21-10-01 LPI\LPI\24-08-28 spr_variable_array\iso_h20_1to4' }
+                'folder' : r'g:\office\work\projects - funded\21-10-01 LPI\LPI\24-08-28 spr_variable_array\iso_h20_1to4',
+                'loadDefault': True }
 
 
     def __init__(self,**kwarg):
@@ -46,22 +47,24 @@ class Window(QMainWindow):
         # widget / widgets parameters
         self.viewer = None
         self.spotLayer = None
+        self.imageLayer = None
         self.sW = None
         self.fW = None
         self.iW = None
 
-        # update synchronisation
-        self.isSWUpdated = False
-        self.isViewerUpdated = False
-        self.isIWUpdated = False
-
         self._createToolBar()
 
-        self._loadData()
+        if self.DEFAULT['loadDefault']:
+            self._loadData()
+
+        self._createWidget()
+
 
     def _createToolBar(self):
         tools = QToolBar()
         tools.addAction("Load", self.LoadPressed)
+        tools.addAction("Save", self.SavePressed)
+        tools.addAction("Export", self.ExportPressed)
         tools.addAction("Exit", self.closeAll)
         self.addToolBar(tools)
 
@@ -71,24 +74,49 @@ class Window(QMainWindow):
         '''
         dialog = QFileDialog(self)
         dialog.setDirectory(__file__)
-        dialog.setFileMode(QFileDialog.FileMode.ExistingFiles)
+        dialog.setFileMode(QFileDialog.FileMode.ExistingFile)
         dialog.setNameFilter("Numpy arrays (*.npz)")
         dialog.setViewMode(QFileDialog.ViewMode.List)
         if dialog.exec():
             filenames = dialog.selectedFiles()
         
-        p = Path(filenames)
-        _name = p.stem
-        fileMainName = '_'.join(_name.split('_')[:-1])
-        
-        return str(p.parent) , fileMainName
+        if filenames:
+            p = Path(filenames[0])
+            _name = p.stem
+            fileMainName = '_'.join(_name.split('_')[:-1])
+            return str(p.parent) , fileMainName
+        else:
+            return None
     
+    def ExportPressed(self):
+        dialog = QFileDialog(self)
+        dialog.setDirectory(__file__)
+        dialog.setFileMode(QFileDialog.FileMode.Directory)
+        if dialog.exec():
+            folder = dialog.selectedFiles()
+        
+        if folder is not None:
+            self.viewer.theme = "light"
+            export_figure = self.viewer.screenshot(path=folder[0] +r"/image.png")
+            self.viewer.theme = "dark"
+            print('data exported')
+
+    def SavePressed(self):
+        pass
 
     def LoadPressed(self):
 
         folder, fileMainName = self._selectFile()
-        self._loadData(folder=folder,fileMainName= fileMainName)
+        if fileMainName is not None:        
+            self._loadData(folder=folder,fileMainName= fileMainName)
 
+        # update data widgets
+        self.sW.sD = self.sD
+        self.iW.sD = self.sD
+        self.imageLayer.data = self.image
+        # update widgets
+        self.sW.lineParameter()
+        self.sW.drawGraph()
 
     def _loadData(self,folder= None, fileMainName=None):
         ''' load all possible data from files '''
@@ -116,21 +144,12 @@ class Window(QMainWindow):
         # set default spot info
         self.sD = SpotData(self.signal, self.time)
 
-        self._createWidget()
-
     def closeAll(self):
         self.sW.close()
         self.iW.close()
         self.fW.close()
         self.viewer.close()
         self.close()
-
-    def _resetUpdate(self):
-        ''' if all widgets updated the update flag are set false'''
-        if   self.isSWUpdated and self.isViewerUpdated and  self.isIWUpdated:
-            self.isSWUpdated = False
-            self.isViewerUpdated = False
-            self.isIWUpdated = False
 
     def redrawViewer(self):
         ''' update napari Viewer'''
@@ -258,7 +277,7 @@ class Window(QMainWindow):
 
         # napari viewer
         self.viewer = napari.Viewer()
-        self.viewer.add_image(self.image)
+        self.imageLayer = self.viewer.add_image(self.image)
         self.spotLayer = self.viewer.add_points(np.array([[0,0]]))
         self.spotLayer.features = {'names': ['0']}
         self.spotLayer.text = {
