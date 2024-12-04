@@ -7,13 +7,16 @@ import napari
 
 from qtpy.QtWidgets import (
     QApplication,QMainWindow,QWidget,QToolBar,QVBoxLayout, QFileDialog)
+
+import pyqtgraph.exporters
+
 import sys
 from pathlib import Path
 
+
+
 #from plim.algorithm.spotInfo import SpotInfo
 from plim.algorithm.spotData import SpotData
-
-
 
 from plim.gui.spectralViewer.plasmonViewer import PlasmonViewer
 from plim.gui.signalViewer.signalWidget import SignalWidget
@@ -99,7 +102,17 @@ class Window(QMainWindow):
             self.viewer.theme = "light"
             export_figure = self.viewer.screenshot(path=folder[0] +r"/image.png")
             self.viewer.theme = "dark"
-            print('data exported')
+            print('viewer data exported')
+
+            exporter = pyqtgraph.exporters.ImageExporter(self.sW.graph.plotItem)
+
+            # set export parameters if needed
+            #exporter.parameters()['width'] = 100   # (note this also affects height parameter)
+
+            # save to file
+            exporter.export(folder[0] +r"/signal.png")
+            print('signal data exported')
+
 
     def SavePressed(self):
         pass
