@@ -11,7 +11,15 @@ from magicgui import magicgui, widgets
 class SaveDataGUI(BaseGUI):
     ''' main class to save data'''
 
-    DEFAULT = {'nameGUI': 'Data'}
+    DEFAULT = {'nameGUI': 'Data',
+               'nameSet'  : {
+                            'flow':'_flowData.npz',
+                            'image': '_image.npz',
+                            'spot': '_spotData.npz',
+                            'fit': '_fit.npz',
+                            'info': '_info.dat'
+                            }
+            }
 
     def __init__(self, viscope, **kwargs):
         ''' initialise the class '''
@@ -28,13 +36,13 @@ class SaveDataGUI(BaseGUI):
                 call_button="Save")
         def saveGui(filePath= Path(self.viscope.dataFolder), fileName: str = 'Experiment1'):
 
-            np.savez(str(filePath / fileName) + '_spotData',self.device.spotData.signal,self.device.spotData.time)            
-            np.savez(str(filePath / fileName) + '_flowData',self.device.flowData.signal,self.device.flowData.time)            
-            np.savez(str(filePath / fileName) + '_image',
+            np.savez(str(filePath / fileName) + self.DEFAULT['spot'],self.device.spotData.signal,self.device.spotData.time)            
+            np.savez(str(filePath / fileName) + self.DEFAULT['flow'],self.device.flowData.signal,self.device.flowData.time)            
+            np.savez(str(filePath / fileName) + self.DEFAULT['image'],
             self.device.spotSpectra.spotPosition,
             self.device.spotSpectra.wxyImage,
             self.device.pF.wavelength)
-            np.savez(str(filePath / fileName) + '_fit',
+            np.savez(str(filePath / fileName) + self.DEFAULT['fit'],
             pxBcg = self.device.spotSpectra.pxBcg,
             pxAve = self.device.spotSpectra.pxAve,
             pxSpace = self.device.spotSpectra.pxSpace,

@@ -6,29 +6,32 @@ import numpy as np
 import napari
 
 from qtpy.QtWidgets import (
-    QApplication,QMainWindow,QWidget,QToolBar,QVBoxLayout, QFileDialog)
-
+    QApplication,QMainWindow,QWidget,QToolBar,QVBoxLayout, QFileDialog, QLabel)
 import pyqtgraph.exporters
+import csv
 
 import sys
 from pathlib import Path
 
-
-
-#from plim.algorithm.spotInfo import SpotInfo
 from plim.algorithm.spotData import SpotData
 
-from plim.gui.spectralViewer.plasmonViewer import PlasmonViewer
 from plim.gui.signalViewer.signalWidget import SignalWidget
 from plim.gui.signalViewer.flowRateWidget import FlowRateWidget
 from plim.gui.signalViewer.infoWidget import InfoWidget
 
 
 class Window(QMainWindow):
+    '''  main class for data analysis
+    TODO: range not in time but in acquisition points
+    TODO: update table when range is changed
+    '''
+
     DEFAULT = {'nameSet'  : {
                             'flow':'_flowData.npz',
                             'image': '_image.npz',
-                            'spot': '_spotData.npz'
+                            'spot': '_spotData.npz',
+                            'fit': '_fit.npz',
+                            'info': '_info.dat'
                             },
                 'fileMainName' : 'Experiment1',
                 'folder' : r'g:\office\work\projects - funded\21-10-01 LPI\LPI\24-08-28 spr_variable_array\iso_h20_1to4',
@@ -38,6 +41,10 @@ class Window(QMainWindow):
     def __init__(self,**kwarg):
         super().__init__(parent=None)
 
+        # file parameters
+        self.fileMainName = self.DEFAULT['fileMainName']
+        self.folder = self.DEFAULT['folder']
+    
         # data parameters
         self.spotPosition = None
         self.image = None
@@ -48,6 +55,7 @@ class Window(QMainWindow):
         self.sD = None
 
         # widget / widgets parameters
+        self.infoLabel = None
         self.viewer = None
         self.spotLayer = None
         self.imageLayer = None
@@ -99,29 +107,58 @@ class Window(QMainWindow):
             folder = dialog.selectedFiles()
         
         if folder is not None:
+            # save napari overview image
             self.viewer.theme = "light"
             export_figure = self.viewer.screenshot(path=folder[0] +r"/image.png")
             self.viewer.theme = "dark"
-            print('viewer data exported')
+            print('viewer image exported')
 
+            # save signal graph
             exporter = pyqtgraph.exporters.ImageExporter(self.sW.graph.plotItem)
-
             # set export parameters if needed
             #exporter.parameters()['width'] = 100   # (note this also affects height parameter)
-
-            # save to file
             exporter.export(folder[0] +r"/signal.png")
-            print('signal data exported')
+            print('signal graph exported')
 
+            # save flow graph
+            exporter = pyqtgraph.exporters.ImageExporter(self.fW.graph.plotItem)
+            # set export parameters if needed
+            #exporter.parameters()['width'] = 100   # (note this also affects height parameter)
+            exporter.export(folder[0] +r"/flow.png")
+            print('flow graph exported')
+
+            # save info table
+            _dict = {'dSignal': self.sD.dSignal, 'noise': self.sD.noise}
+            _dataDict = self.sD.table | _dict
+            
+            with open(folder[0] +r"/infoTable.txt", "w") as outfile:
+            
+                # pass the csv file to csv.writer function.
+                #writer = csv.writer(outfile, delimiter ='\t')
+                writer = csv.writer(outfile, delimiter =',')
+
+
+                # pass the dictionary keys to writerow
+                # function to frame the columns of the csv file
+                writer.writerow(_dataDict.keys())
+            
+                # make use of writerows function to append
+                # the remaining values to the corresponding
+                # columns using zip function.
+                writer.writerows(zip(*_dataDict.values()))
+            print('info data exported')
 
     def SavePressed(self):
-        pass
+        self._saveData()
 
     def LoadPressed(self):
 
         folder, fileMainName = self._selectFile()
-        if fileMainName is not None:        
-            self._loadData(folder=folder,fileMainName= fileMainName)
+        if fileMainName is not None:
+            self.folder = folder
+            self.fileMainName = fileMainName        
+            self._loadData()
+            self._updateInfoLabel()
 
         # update data widgets
         self.sW.sD = self.sD
@@ -131,11 +168,26 @@ class Window(QMainWindow):
         self.sW.lineParameter()
         self.sW.drawGraph()
 
+    def _updateInfoLabel(self):
+        ''' update info label '''
+        self.infoLabel.setText(self.folder + '\n' + self.fileMainName)
+
+    def _saveData(self, folder= None, fileMainName=None):
+
+        if folder is not None: self.folder = folder
+        if fileMainName is not None: self.fileMainName = fileMainName
+
+        self.sD.saveInfo(fullfile= str(self.folder + 
+                                       '/' + self.fileMainName 
+                                       + self.DEFAULT['nameSet']['info']))
+        print('saving info file')
+
+
     def _loadData(self,folder= None, fileMainName=None):
         ''' load all possible data from files '''
 
-        if folder is None: folder = self.DEFAULT['folder']
-        if fileMainName is None: fileMainName = self.DEFAULT['fileMainName']
+        if folder is None: folder = self.folder 
+        if fileMainName is None: fileMainName = self.fileMainName
         
         nameSet = self.DEFAULT['nameSet']
 
@@ -156,6 +208,12 @@ class Window(QMainWindow):
 
         # set default spot info
         self.sD = SpotData(self.signal, self.time)
+
+        try:
+            self.sD.loadInfo(folder + '/' + fileMainName + nameSet['info'])
+        except:
+            print('no file info')
+
 
     def closeAll(self):
         self.sW.close()
@@ -236,7 +294,6 @@ class Window(QMainWindow):
         self.iW.redrawWidget()
         self.sW.redrawWidget()
 
-
     def updateFromSW(self):
         ''' update napari and info widget '''
 
@@ -252,41 +309,12 @@ class Window(QMainWindow):
         self.sW.redrawWidget()
         self.redrawViewer()
 
-        if False:
-        #try:
-            # napari widget
-            #_sel = [x=='True' for x in self.sD.table['visible']]
-            #self.spotLayer.data = self.spotPosition[_sel]
-            #self.spotLayer.features = {
-            #    'names': np.array(self.sD.table['name'])[_sel].tolist()
-            #}
-            #self.spotLayer.face_color = np.array(self.sD.table['color'])[_sel].tolist()        
-
-            if np.any(self.spotLayer.data -self.spotPosition):
-                print('updating spot position')
-                self.spotLayer.data = self.spotPosition
-
-            self.spotLayer.features = {
-                'names': self.sD.table['name']
-            }
-            rgb = self.sD.table['color']
-            vis = self.sD.table['visible']
-            _color = [rgb[ii] + 'ff' if vis[ii]=='True' else rgb[ii] + '00' for ii in range(len(rgb))]
-
-            #self.spotLayer.face_color = self.sD.table['color']
-            self.spotLayer.face_color = _color
-
-            # signal widget
-            #self.sW.setData(self.signal[:,_sel],self.time)
-            #rgbaColor = [[int(x[1:3],16)/255,int(x[3:5],16)/255,int(x[5:7],16)/255,int(x[7:9],16)/255] for x in self.sI.table['color']]
-            #print(f'rgbaColor {rgbaColor}')
-            #self.sW.sD.table['color'] = self.sD.table['color']
-            #print(f"sW.sD.table['color'] {self.sW.sD.table['color']}")
-            self.sW.drawGraph()
-        #except:
-        #    print('error in updateFromIW')
-
     def _createWidget(self):
+
+        # info text 
+        self.infoLabel = QLabel('', self) 
+        self._updateInfoLabel()
+        self.setCentralWidget(self.infoLabel)
 
         # napari viewer
         self.viewer = napari.Viewer()
@@ -319,7 +347,6 @@ class Window(QMainWindow):
         
         # initial update
         self.updateFromSW()
-
 
 
 if __name__ == "__main__":

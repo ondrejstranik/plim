@@ -4,7 +4,7 @@ class for calculating spot spectra from 3D spectral cube
 #%%
 import numpy as np
 import time
-
+import pickle
 
 class SpotData:
     ''' class for processing signal from spots '''
@@ -35,6 +35,18 @@ class SpotData:
             'visible': None}
 
         if signal is not None: self.setData(signal,time)
+
+    def saveInfo(self,fullfile):
+        ''' save info of the class '''
+        with open(fullfile,'wb') as f:
+            pickle.dump((self.table,self.alignTime,self.range,self.evalTime,
+                         self.dTime),f)
+
+    def loadInfo(self,fullfile):
+        ''' load info into the class from file'''
+        with open(fullfile, 'rb') as f:
+            (self.table,self.alignTime,self.range,self.evalTime,
+                         self.dTime) = pickle.load(f)        
 
     def setTable(self,table=None):
         ''' set table with info about the spots '''
