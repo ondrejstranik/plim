@@ -10,7 +10,7 @@ import napari
 from plim.gui.signalViewer.signalWidget import SignalWidget
 from plim.gui.signalViewer.flowRateWidget import FlowRateWidget
 
-ffolder = r'F:\ondra\LPI\24-08-28 spr_variable_array\iso_h20_1to4'
+ffolder = r'd:\LPI\24-08-28 spr_variable_array\iso_h20_1to4'
 ffile = r'Experiment1'
 nameSet = {'flow':'_flowData.npz',
             'image': '_image.npz',

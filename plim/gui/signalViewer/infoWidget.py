@@ -5,7 +5,7 @@ class for viewing info from spots' plasmon resonance
 import pyqtgraph as pg
 from PyQt5.QtGui import QColor, QPen
 from qtpy.QtWidgets import QWidget,QVBoxLayout
-from qtpy.QtCore import Signal
+from qtpy.QtCore import Signal, Qt
 from magicgui import magicgui
 
 import numpy as np
@@ -32,8 +32,11 @@ class InfoWidget(QWidget):
     def keyPressEvent(self, evt):
         ''' react on the key pressed, when focused on the widget'''
         _text = evt.text()
+        #_key = evt.key()
 
-        if _text == 'v':
+        #TODO: shortcuts goes to name collums. Avoid it before activating shortcuts
+        #if _text == 'v':
+        if False:
             indexes = self.infoBox.infoTable.native.selectionModel().selectedRows()
             _idx = [index.row() for index in indexes]
             print(f'selected rows in the table {_idx}')
@@ -47,9 +50,12 @@ class InfoWidget(QWidget):
                 for ii in _idx:
                     self.sD.table['visible'][ii] = 'True'
 
-            self.updateData()
             # keep the keyPressEvent on the this signal widget
             self.setFocus()
+
+            self.redrawWidget()
+            # emit signal to eventually update data in other guis
+            self.sigUpdateData.emit()
 
 
     def _setWidget(self):
@@ -61,12 +67,19 @@ class InfoWidget(QWidget):
             infoTable: dict = self.sD.table | {'dSignal': self.sD.dSignal, 'noise': self.sD.noise}
             ):
             self.infoBox._auto_call = False
-            self.sD.table = dict(infoBox.infoTable)
+
+            self.sD.table = dict(self.infoBox.infoTable)
+            
+            print(f'sD.table from infoBox {self.sD.table}')
+
+
             self.sD.checkTableValues()
-            infoBox.infoTable.value = self.sD.table | {'dSignal': self.sD.dSignal, 'noise': self.sD.noise}
+            self.infoBox.infoTable.value = self.sD.table | {'dSignal': self.sD.dSignal, 'noise': self.sD.noise}
             self.infoBox._auto_call = True
+
+            # emit signal to eventually update data in other guis
             self.sigUpdateData.emit()
-            print('infoWidget: emitting signal')
+
 
         # fit parameter
         self.infoBox = infoBox

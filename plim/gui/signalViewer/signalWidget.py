@@ -50,7 +50,7 @@ class SignalWidget(QWidget):
         def fitParameter(
                 align: bool = self.align,
                 alignTime: float = self.sD.alignTime,
-                range: float = self.sD.range):
+                range: int = self.sD.range):
 
             self.align= align
             self.sD.setOffset(alignTime,range)
@@ -59,6 +59,9 @@ class SignalWidget(QWidget):
             self.lineParameter.noise.value =  f"{self.sD.noise[self.lineIndex]:.2E}"
 
             self.drawGraph()
+
+            # emit signal to eventually update data in other guis
+            self.sigUpdateData.emit()
 
         @magicgui(call_button=False,
                   acquisitionTime = {'label':'acquisition Time',
@@ -145,7 +148,7 @@ class SignalWidget(QWidget):
                 print('change of evaluation')
 
 
-            print('calling line Parameter in signal Widget')
+            # emit signal to eventually update data in other guis
             self.sigUpdateData.emit()
             
         # add graph

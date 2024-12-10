@@ -110,8 +110,9 @@ class SpotData:
     def getRange(self,time):
         ''' get the boolvector with the selected timespan according the self.range'''
 
-        idx1 = np.argmin(np.abs(self.time - self.time0 - time + self.range/2))
-        idx2 = np.argmin(np.abs(self.time - self.time0 - time - self.range/2))
+        idx0 = np.argmin(np.abs(self.time - self.time0 - time))
+        idx1 = np.min((0,np.abs(idx0 - self.range//2))).astype(int)
+        idx2 = np.min((len(self.time),idx0 + self.range//2)).astype(int)
 
         range = (self.time*0).astype('bool')
         range[idx1:idx2+1] = True

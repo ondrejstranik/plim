@@ -1,4 +1,4 @@
-''' script to process videos of hyperspectral images'''
+''' class to process videos of hyperspectral images'''
 #%%
 # import and parameter definition
 
@@ -44,22 +44,9 @@ class Window(QMainWindow):
         self.folder = self.DEFAULT['folder']
     
         # data parameters
-        self.spotPosition = None
-        self.image = None
-        self.w = None
-        self.flow = None
-        self.time = None
-        self.signal = None
-        self.sD = None
 
         # widget / widgets parameters
-        self.infoLabel = None
-        self.viewer = None
-        self.spotLayer = None
-        self.imageLayer = None
-        self.sW = None
-        self.fW = None
-        self.iW = None
+        self.pW = None
 
         self._createToolBar()
 
@@ -73,7 +60,6 @@ class Window(QMainWindow):
         tools = QToolBar()
         tools.addAction("Load", self.LoadPressed)
         tools.addAction("Save", self.SavePressed)
-        tools.addAction("Export", self.ExportPressed)
         tools.addAction("Exit", self.closeAll)
         self.addToolBar(tools)
 
@@ -84,7 +70,7 @@ class Window(QMainWindow):
         dialog = QFileDialog(self)
         dialog.setDirectory(__file__)
         dialog.setFileMode(QFileDialog.FileMode.ExistingFile)
-        dialog.setNameFilter("Numpy arrays (*.npz)")
+        dialog.setNameFilter("Numpy arrays (*.npy)")
         dialog.setViewMode(QFileDialog.ViewMode.List)
         if dialog.exec():
             filenames = dialog.selectedFiles()
@@ -97,54 +83,6 @@ class Window(QMainWindow):
         else:
             return None
     
-    def ExportPressed(self):
-        dialog = QFileDialog(self)
-        dialog.setDirectory(__file__)
-        dialog.setFileMode(QFileDialog.FileMode.Directory)
-        if dialog.exec():
-            folder = dialog.selectedFiles()
-        
-        if folder is not None:
-            # save napari overview image
-            self.viewer.theme = "light"
-            export_figure = self.viewer.screenshot(path=folder[0] +r"/image.png")
-            self.viewer.theme = "dark"
-            print('viewer image exported')
-
-            # save signal graph
-            exporter = pyqtgraph.exporters.ImageExporter(self.sW.graph.plotItem)
-            # set export parameters if needed
-            #exporter.parameters()['width'] = 100   # (note this also affects height parameter)
-            exporter.export(folder[0] +r"/signal.png")
-            print('signal graph exported')
-
-            # save flow graph
-            exporter = pyqtgraph.exporters.ImageExporter(self.fW.graph.plotItem)
-            # set export parameters if needed
-            #exporter.parameters()['width'] = 100   # (note this also affects height parameter)
-            exporter.export(folder[0] +r"/flow.png")
-            print('flow graph exported')
-
-            # save info table
-            _dict = {'dSignal': self.sD.dSignal, 'noise': self.sD.noise}
-            _dataDict = self.sD.table | _dict
-            
-            with open(folder[0] +r"/infoTable.txt", "w") as outfile:
-            
-                # pass the csv file to csv.writer function.
-                #writer = csv.writer(outfile, delimiter ='\t')
-                writer = csv.writer(outfile, delimiter =',')
-
-
-                # pass the dictionary keys to writerow
-                # function to frame the columns of the csv file
-                writer.writerow(_dataDict.keys())
-            
-                # make use of writerows function to append
-                # the remaining values to the corresponding
-                # columns using zip function.
-                writer.writerows(zip(*_dataDict.values()))
-            print('info data exported')
 
     def SavePressed(self):
         self._saveData()
