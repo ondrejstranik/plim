@@ -18,6 +18,7 @@ from plim.algorithm.spotData import SpotData
 from plim.gui.signalViewer.signalWidget import SignalWidget
 from plim.gui.signalViewer.flowRateWidget import FlowRateWidget
 from plim.gui.signalViewer.infoWidget import InfoWidget
+from plim.gui.spectralViewer.plasmonViewer import PlasmonViewer
 
 
 class Window(QMainWindow):
@@ -29,10 +30,11 @@ class Window(QMainWindow):
                             'image': '_image.npz',
                             'spot': '_spotData.npz',
                             'fit': '_fit.npz',
-                            'info': '_info.dat'
+                            'info': '_info.dat',
+                            'wavelength': 'wavelength.npy'
                             },
-                'fileMainName' : 'Experiment1',
-                'folder' : r'g:\office\work\projects - funded\21-10-01 LPI\LPI\24-08-28 spr_variable_array\iso_h20_1to4',
+                'fileMainName' : 'time_1726482816858315000.npy',
+                'folder' : r'D:\LPI\24-9-16 pfcamera\video',
                 'loadDefault': True }
 
 
@@ -44,9 +46,12 @@ class Window(QMainWindow):
         self.folder = self.DEFAULT['folder']
     
         # data parameters
+        self.image = None
+        self.w = None
 
         # widget / widgets parameters
-        self.pW = None
+        self.pV = None
+        self.infoLabel = None
 
         self._createToolBar()
 
@@ -58,8 +63,10 @@ class Window(QMainWindow):
 
     def _createToolBar(self):
         tools = QToolBar()
-        tools.addAction("Load", self.LoadPressed)
-        tools.addAction("Save", self.SavePressed)
+        tools.addAction("Load Image", self.LoadImagePressed)
+        tools.addAction("Load Point", self.LoadPointPressed)
+        tools.addAction("Save Point", self.SavePointPressed)
+        tools.addAction("Export Signal", self.ExportSignalPressed)
         tools.addAction("Exit", self.closeAll)
         self.addToolBar(tools)
 
@@ -77,17 +84,22 @@ class Window(QMainWindow):
         
         if filenames:
             p = Path(filenames[0])
-            _name = p.stem
-            fileMainName = '_'.join(_name.split('_')[:-1])
+            fileMainName = p.name 
             return str(p.parent) , fileMainName
         else:
             return None
     
 
-    def SavePressed(self):
+    def SavePointPressed(self):
         self._saveData()
 
-    def LoadPressed(self):
+    def LoadPointPressed(self):
+        pass
+
+    def ExportSignalPressed(self):
+        pass
+
+    def LoadImagePressed(self):
 
         folder, fileMainName = self._selectFile()
         if fileMainName is not None:
@@ -95,14 +107,8 @@ class Window(QMainWindow):
             self.fileMainName = fileMainName        
             self._loadData()
             self._updateInfoLabel()
-
-        # update data widgets
-        self.sW.sD = self.sD
-        self.iW.sD = self.sD
-        self.imageLayer.data = self.image
-        # update widgets
-        self.sW.lineParameter()
-        self.sW.drawGraph()
+            self.pV.setImage(self.image)
+            self.pV.setWavelength(self.w)
 
     def _updateInfoLabel(self):
         ''' update info label '''
@@ -113,10 +119,10 @@ class Window(QMainWindow):
         if folder is not None: self.folder = folder
         if fileMainName is not None: self.fileMainName = fileMainName
 
-        self.sD.saveInfo(fullfile= str(self.folder + 
-                                       '/' + self.fileMainName 
-                                       + self.DEFAULT['nameSet']['info']))
-        print('saving info file')
+        #self.sD.saveInfo(fullfile= str(self.folder + 
+        #                               '/' + self.fileMainName 
+        #                               + self.DEFAULT['nameSet']['info']))
+        #print('saving info file')
 
 
     def _loadData(self,folder= None, fileMainName=None):
@@ -126,36 +132,19 @@ class Window(QMainWindow):
         if fileMainName is None: fileMainName = self.fileMainName
         
         nameSet = self.DEFAULT['nameSet']
-
+        
         # load image
-        container1 = np.load(folder + '/' + fileMainName + nameSet['image'])
-        self.spotPosition = container1['arr_0']
-        self.image = container1['arr_1']
-        self.w = container1['arr_2']
+        self.image = np.load(self.folder + '/' + fileMainName)
+        self.w = np.load(self.folder + '/' + nameSet['wavelength'])
 
-        # load flow
-        container2 = np.load(folder + '/' + fileMainName + nameSet['flow'])
-        self.flow = container2['arr_0']
-        self.time = container2['arr_1']
+        #self._updateInfoLabel()
+        #self.pV.setImage(self.image)
+        #self.pV.setWavelength(self.w)
 
-        # load spot
-        container3 = np.load(folder + '/' + fileMainName + nameSet['spot'])
-        self.signal = container3['arr_0']
-
-        # set default spot info
-        self.sD = SpotData(self.signal, self.time)
-
-        try:
-            self.sD.loadInfo(folder + '/' + fileMainName + nameSet['info'])
-        except:
-            print('no file info')
 
 
     def closeAll(self):
-        self.sW.close()
-        self.iW.close()
-        self.fW.close()
-        self.viewer.close()
+        self.pV.viewer.close()
         self.close()
 
     def redrawViewer(self):
@@ -253,36 +242,7 @@ class Window(QMainWindow):
         self.setCentralWidget(self.infoLabel)
 
         # napari viewer
-        self.viewer = napari.Viewer()
-        self.imageLayer = self.viewer.add_image(self.image)
-        self.spotLayer = self.viewer.add_points(np.array([[0,0]]))
-        self.spotLayer.features = {'names': ['0']}
-        self.spotLayer.text = {
-                'string': '{names}',
-                'size': 20,
-                'color': 'green',
-                'translation': np.array([-5, 0])}
-        self.spotLayer._face.events.current_color.connect(self.updateColorFromNapari)
-        self.viewer.bind_key('s',lambda x: self.updateSelectionFromNapari())
-        self.viewer.bind_key('v',lambda x: self.updateVisibilityFromNapari())
-
-        # signal widget
-        self.sW = SignalWidget(spotData=self.sD)
-        #self.sW.sD = self.sD
-        self.sW.show()
-        self.sW.sigUpdateData.connect(self.updateFromSW)
-
-        # flow rate widget
-        self.fW = FlowRateWidget(signal=self.flow, time = self.time)
-        self.fW.show()
-
-        # info widget
-        self.iW = InfoWidget(self.sD)
-        self.iW.show()
-        self.iW.sigUpdateData.connect(self.updateFromIW)
-        
-        # initial update
-        self.updateFromSW()
+        self.pV = PlasmonViewer(self.image,self.w)
 
 
 if __name__ == "__main__":
