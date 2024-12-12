@@ -70,14 +70,15 @@ class Window(QMainWindow):
         tools.addAction("Exit", self.closeAll)
         self.addToolBar(tools)
 
-    def _selectFile(self):
+    def _selectFile(self,nameFilter= "all (*.*)"):
         ''' select file with the gui window
         return path -- string and fileMainName --string
         '''
+
         dialog = QFileDialog(self)
         dialog.setDirectory(__file__)
         dialog.setFileMode(QFileDialog.FileMode.ExistingFile)
-        dialog.setNameFilter("Numpy arrays (*.npy)")
+        dialog.setNameFilter(nameFilter)
         dialog.setViewMode(QFileDialog.ViewMode.List)
         if dialog.exec():
             filenames = dialog.selectedFiles()
@@ -94,14 +95,23 @@ class Window(QMainWindow):
         self._saveData()
 
     def LoadPointPressed(self):
-        pass
+        ''' loading the fitting parameters / spot positions'''
+
+        folder, fileMainName = self._selectFile(nameFilter="Zipped numpy arrays (*.npz)")
+
+        if fileMainName is not None:
+            fileType = '_'+fileMainName.split('_')[-1]  
+            #if fileType = 
+
+
+
 
     def ExportSignalPressed(self):
         pass
 
     def LoadImagePressed(self):
 
-        folder, fileMainName = self._selectFile()
+        folder, fileMainName = self._selectFile(nameFilter="Numpy arrays (*.npy)")
         if fileMainName is not None:
             self.folder = folder
             self.fileMainName = fileMainName        
@@ -119,6 +129,8 @@ class Window(QMainWindow):
         if folder is not None: self.folder = folder
         if fileMainName is not None: self.fileMainName = fileMainName
 
+        #TODO: save the data
+
         #self.sD.saveInfo(fullfile= str(self.folder + 
         #                               '/' + self.fileMainName 
         #                               + self.DEFAULT['nameSet']['info']))
@@ -126,7 +138,7 @@ class Window(QMainWindow):
 
 
     def _loadData(self,folder= None, fileMainName=None):
-        ''' load all possible data from files '''
+        ''' load image data from files '''
 
         if folder is None: folder = self.folder 
         if fileMainName is None: fileMainName = self.fileMainName
