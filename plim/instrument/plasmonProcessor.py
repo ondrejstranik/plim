@@ -86,8 +86,29 @@ class PlasmonProcessor(BaseProcessor):
         if newFlow is not None:
             self.flowData.addDataValue([newFlow],newTime)
 
+    def saveImageFile(self,folder,fileMainName):
+        ''' save image file'''
+        pass
 
-        
+    def saveFitFile(self,folder,fileMainName):
+        ''' save fit file'''
+        pass
+
+    def saveSpotFile(self,folder,fileMainName):
+        ''' save spot Data file'''
+        pass
+
+    def saveFlowFile(self,folder,fileMainName):
+        ''' save flow Data file'''
+        pass
+
+    def saveInfoFile(self,folder,fileMainName):
+        ''' save Info Data file'''
+        pass
+
+
+
+
 
 
 #%%

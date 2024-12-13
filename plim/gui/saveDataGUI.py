@@ -50,7 +50,8 @@ class SaveDataGUI(BaseGUI):
             wavelengthStartFit = self.device.pF.wavelengthStartFit,
             wavelengthStopFit = self.device.pF.wavelengthStopFit,
             orderFit = self.device.pF.orderFit,
-            wavelengthGuess = self.device.pF.wavelengthGuess,                        
+            wavelengthGuess = self.device.pF.wavelengthGuess,
+            peakWidth = self.device.pF.peakWidth                        
             )
 
         @magicgui(call_button="Reset")

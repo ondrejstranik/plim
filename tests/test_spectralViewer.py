@@ -47,3 +47,4 @@ def test_plasmonViewer():
 
     sViewer = PlasmonViewer(image, w)
     sViewer.run()
+

@@ -64,8 +64,7 @@ class Window(QMainWindow):
     def _createToolBar(self):
         tools = QToolBar()
         tools.addAction("Load Image", self.LoadImagePressed)
-        tools.addAction("Load Point", self.LoadPointPressed)
-        tools.addAction("Save Point", self.SavePointPressed)
+        tools.addAction("Load Info", self.LoadInfoPressed)
         tools.addAction("Export Signal", self.ExportSignalPressed)
         tools.addAction("Exit", self.closeAll)
         self.addToolBar(tools)
@@ -74,7 +73,6 @@ class Window(QMainWindow):
         ''' select file with the gui window
         return path -- string and fileMainName --string
         '''
-
         dialog = QFileDialog(self)
         dialog.setDirectory(__file__)
         dialog.setFileMode(QFileDialog.FileMode.ExistingFile)
@@ -90,24 +88,83 @@ class Window(QMainWindow):
         else:
             return None
     
-
-    def SavePointPressed(self):
-        self._saveData()
-
-    def LoadPointPressed(self):
+    def LoadInfoPressed(self):
         ''' loading the fitting parameters / spot positions'''
 
         folder, fileMainName = self._selectFile(nameFilter="Zipped numpy arrays (*.npz)")
 
         if fileMainName is not None:
             fileType = '_'+fileMainName.split('_')[-1]  
-            #if fileType = 
+            print(f'fileType = {fileType}')
 
+            # load fit parameter from file
+            if fileType == self.DEFAULT['nameSet']['fit']:
+                container = np.load(folder + '/' + fileMainName)
+                # update values if present in the file                
+                if 'wavelengthStartFit' in container: self.pV.fitParameterGui.wavelengthStart.value =container['wavelengthStartFit']
+                if 'wavelengthStopFit' in container: self.pV.fitParameterGui.wavelengthStop.value= container['wavelengthStopFit']
+                if 'orderFit' in container: self.pV.fitParameterGui.orderFit.value= container['orderFit']
+                if 'peakWidth' in container: self.pV.fitParameterGui.peakWidth.value = container ['peakWidth']
+                if 'wavelengthGuess' in container: self.pV.fitParameterGui.wavelengthGuess.value = container['wavelengthGuess']
+                self.pV.fitParameterGui()
 
+                if 'pxBcg' in container: self.pV.spectraParameterGui.pxBcg.value = container['pxBcg']
+                if 'pxAve' in container: self.pV.spectraParameterGui.pxAve.value = container['pxAve']
+                if 'pxSpace' in container: self.pV.spectraParameterGui.pxSpace.value = container['pxSpace']
+                if 'darkCount' in container: self.pV.spectraParameterGui.darkCount.value = container['darkCount']
+                if 'ratio' in container: self.pV.spectraParameterGui.ratio.value = container['value']
+                if 'angle' in container: self.pV.spectraParameterGui.angle.value = container['angle'] 
+                self.pV.spectraParameterGui()
+
+            # load spot position from file
+            if fileType == self.DEFAULT['nameSet']['image']:
+                container = np.load(folder + '/' + fileMainName)
+                self.pV.pointLayer.data = container['arr_0']
+                self.pV.updateSpectra()
+                print(f"loading spot position {container['arr_0']}")
 
 
     def ExportSignalPressed(self):
-        pass
+
+        options = QFileDialog.Options()
+        options |= QFileDialog.DontUseNativeDialog
+        fileName, _ = QFileDialog.getSaveFileName(self, 
+            "Export File Name", "", "All Files(*)", options = options)
+        
+        if fileName:
+            p=Path(fileName)
+            folder = str(p.parent)
+            fileMainName = str(p.stem)
+
+            np.savez(folder +'/' + fileMainName + self.DEFAULT['image'],
+            spotPosition = self.pV.spotSpectra.spotPosition,
+            image = self.pV.spotSpectra.wxyImage,
+            wavelength = self.pV.wavelength)
+            
+            np.savez(folder +'/' + fileMainName + self.DEFAULT['fit'],
+            pxBcg = self.pV.spotSpectra.pxBcg,
+            pxAve = self.pV.spotSpectra.pxAve,
+            pxSpace = self.pV.spotSpectra.pxSpace,
+            darkCount = self.pV.spotSpectra.darkCount,
+            wavelengthStartFit = self.pV.pF.wavelengthStartFit,
+            wavelengthStopFit = self.pV.pF.wavelengthStopFit,
+            orderFit = self.pV.pF.orderFit,
+            wavelengthGuess = self.pV.pF.wavelengthGuess,
+            peakWidth = self.pV.pF.peakWidth                        
+            )
+
+
+
+
+
+    def _generateSpotSignal(self):
+        ''' generate signal from the raw images'''
+
+
+
+
+
+
 
     def LoadImagePressed(self):
 
@@ -149,102 +206,12 @@ class Window(QMainWindow):
         self.image = np.load(self.folder + '/' + fileMainName)
         self.w = np.load(self.folder + '/' + nameSet['wavelength'])
 
-        #self._updateInfoLabel()
-        #self.pV.setImage(self.image)
-        #self.pV.setWavelength(self.w)
 
 
 
     def closeAll(self):
         self.pV.viewer.close()
         self.close()
-
-    def redrawViewer(self):
-        ''' update napari Viewer'''
-
-        # updating spots position
-        try:
-            if np.any(self.spotLayer.data -self.spotPosition):
-                self.spotLayer.data = self.spotPosition
-        except:
-            self.spotLayer.data = self.spotPosition
-
-
-        # updating spot features
-        self.spotLayer.features = {
-            'names': self.sD.table['name']
-        }
-        rgb = self.sD.table['color']
-        vis = self.sD.table['visible']
-        _color = [rgb[ii] + 'ff' if vis[ii]=='True' else rgb[ii] + '00' for ii in range(len(rgb))]
-
-        self.spotLayer.face_color = _color
-
-
-    def updateColorFromNapari(self):
-        ''' update color from Napari, update spot and info widget'''
- 
-        print(f'updating from Napari - color')
-    
-        # update color in spotData
-        _fc = 1*self.spotLayer.face_color #  deep copy of the colors
-        _fc[list(self.spotLayer.selected_data)] = self.spotLayer._face.current_color # adjust the just modified 
-        _fcHex = ['#{:02x}{:02x}{:02x}'.format( *ii.tolist()) for ii in (_fc*255).astype(int)]
-        self.sD.table['color'] = _fcHex
-
-        #TODO: this do not really update the color immediately. Try to figure out something else
-        # update the color selection according the visibility
-        rgb = self.sD.table['color']
-        vis = self.sD.table['visible']
-        _color = [rgb[ii] + 'ff' if vis[ii]=='True' else rgb[ii] + '00' for ii in list(self.spotLayer.selected_data)]
-        print(f'current_color {_color}')
-        self.spotLayer._face.current_color = _color
-
-        self.iW.redrawWidget()
-        self.sW.redrawWidget()
-
-    def updateSelectionFromNapari(self):
-
-        print(f'updating from Napari - selection')
-        # selected layers
-        spotList = list(self.spotLayer.selected_data)
-        if spotList:
-            self.sW.lineIndex = spotList[0]
-            self.sW.redrawWidget()
-            self.iW.updateSelect(spotList)
-
-    def updateVisibilityFromNapari(self):
-
-        print(f'updating from Napari - visibility')
-        # selected layers
-        _idx = list(self.spotLayer.selected_data)
-        if _idx == []:
-            return 
-        if self.sD.table['visible'][_idx[0]]=='True':
-            for ii in _idx:
-                self.sD.table['visible'][ii] = 'False'
-        else:
-            for ii in _idx:
-                self.sD.table['visible'][ii] = 'True'
-
-        self.redrawViewer()
-        self.iW.redrawWidget()
-        self.sW.redrawWidget()
-
-    def updateFromSW(self):
-        ''' update napari and info widget '''
-
-        print(f'updating from sW')
-        self.iW.redrawWidget()
-        self.iW.updateSelect(self.sW.lineIndex)
-        self.redrawViewer()
-
-    def updateFromIW(self,**kwargs):
-        ''' update napari and signal widget'''
-
-        print('updatingFrom IW')
-        self.sW.redrawWidget()
-        self.redrawViewer()
 
     def _createWidget(self):
 
@@ -253,8 +220,9 @@ class Window(QMainWindow):
         self._updateInfoLabel()
         self.setCentralWidget(self.infoLabel)
 
-        # napari viewer
+        # plasmon viewer
         self.pV = PlasmonViewer(self.image,self.w)
+
 
 
 if __name__ == "__main__":
