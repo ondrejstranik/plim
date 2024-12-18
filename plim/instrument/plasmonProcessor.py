@@ -20,7 +20,15 @@ from plim.algorithm.flowData import FlowData
 class PlasmonProcessor(BaseProcessor):
     ''' class to control processing of spectral images to get plasmon signals
     and collect flow rates from a pump'''
-    DEFAULT = {'name': 'PlasmonProcessor'}
+    DEFAULT = {'name': 'PlasmonProcessor',
+               'nameSet'  : {
+                            'flow':'_flowData.npz',
+                            'image': '_image.npz',
+                            'spot': '_spotData.npz',
+                            'fit': '_fit.npz',
+                            'info': '_info.dat'
+                            }
+                            }
 
     def __init__(self, name=None, **kwargs):
         ''' initialisation '''
@@ -86,21 +94,39 @@ class PlasmonProcessor(BaseProcessor):
         if newFlow is not None:
             self.flowData.addDataValue([newFlow],newTime)
 
+    # TODO: make it working and add reading as well
     def saveImageFile(self,folder,fileMainName):
         ''' save image file'''
-        pass
+        np.savez(folder + '/' +  fileMainName + self.DEFAULT['image'],
+        spotPosition = self.spotSpectra.spotPosition,
+        image = self.spotSpectra.wxyImage,
+        wavelength = self.pF.wavelength)
 
     def saveFitFile(self,folder,fileMainName):
         ''' save fit file'''
-        pass
+        np.savez(folder + '/' +  fileMainName + self.DEFAULT['fit'],
+        pxBcg = self.spotSpectra.pxBcg,
+        pxAve = self.spotSpectra.pxAve,
+        pxSpace = self.spotSpectra.pxSpace,
+        darkCount = self.spotSpectra.darkCount,
+        wavelengthStartFit = self.pF.wavelengthStartFit,
+        wavelengthStopFit = self.pF.wavelengthStopFit,
+        orderFit = self.pF.orderFit,
+        wavelengthGuess = self.pF.wavelengthGuess,
+        peakWidth = self.pF.peakWidth
+        )
 
     def saveSpotFile(self,folder,fileMainName):
         ''' save spot Data file'''
-        pass
+        np.savez(folder + '/' +  fileMainName + self.DEFAULT['spot'],
+        signal = self.spotData.signal,
+        time = self.spotData.time)            
 
     def saveFlowFile(self,folder,fileMainName):
         ''' save flow Data file'''
-        pass
+        np.savez(folder + '/' +  fileMainName  + self.DEFAULT['flow'],
+        signal = self.flowData.signal,
+        time = self.flowData.time)
 
     def saveInfoFile(self,folder,fileMainName):
         ''' save Info Data file'''
