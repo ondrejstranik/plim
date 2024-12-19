@@ -14,6 +14,7 @@ import sys
 from pathlib import Path
 
 from plim.algorithm.spotData import SpotData
+from plim.algorithm.fileData import FileData
 
 from plim.gui.signalViewer.signalWidget import SignalWidget
 from plim.gui.signalViewer.flowRateWidget import FlowRateWidget
@@ -51,6 +52,7 @@ class Window(QMainWindow):
         self.time = None
         self.signal = None
         self.sD = None
+        self.fileData = FileData()
 
         # widget / widgets parameters
         self.infoLabel = None
@@ -171,13 +173,13 @@ class Window(QMainWindow):
         self.infoLabel.setText(self.folder + '\n' + self.fileMainName)
 
     def _saveData(self, folder= None, fileMainName=None):
-
+        ''' save info Data '''
         if folder is not None: self.folder = folder
         if fileMainName is not None: self.fileMainName = fileMainName
 
-        self.sD.saveInfo(fullfile= str(self.folder + 
-                                       '/' + self.fileMainName 
-                                       + self.DEFAULT['nameSet']['info']))
+        # set the data into the saving data class fileData
+        self.fileData.spotData = self.sD
+        self.fileData.saveInfoFile(self.folder,self.fileMainName)
         print('saving info file')
 
 
@@ -187,31 +189,20 @@ class Window(QMainWindow):
         if folder is None: folder = self.folder 
         if fileMainName is None: fileMainName = self.fileMainName
         
-        nameSet = self.DEFAULT['nameSet']
+        self.fileData.loadAllFile(folder=folder,fileMainName=fileMainName)
 
-        # load image
-        container1 = np.load(folder + '/' + fileMainName + nameSet['image'])
-        self.spotPosition = container1['arr_0']
-        self.image = container1['arr_1']
-        self.w = container1['arr_2']
-
-        # load flow
-        container2 = np.load(folder + '/' + fileMainName + nameSet['flow'])
-        self.flow = container2['arr_0']
-        self.time = container2['arr_1']
-
-        # load spot
-        container3 = np.load(folder + '/' + fileMainName + nameSet['spot'])
-        self.signal = container3['arr_0']
+        # image data
+        self.spotPosition = self.fileData.spotSpectra.spotPosition
+        self.image = self.fileData.spotSpectra.wxyImage
+        self.w = self.fileData.pF.wavelength
+        # flow data
+        self.flow = self.fileData.flowData.signal
+        self.time = self.fileData.flowData.time
+        # spot data
+        self.signal = self.fileData.spotData.signal
 
         # set default spot info
-        self.sD = SpotData(self.signal, self.time)
-
-        try:
-            self.sD.loadInfo(folder + '/' + fileMainName + nameSet['info'])
-        except:
-            print('no file info')
-
+        self.sD = self.fileData.spotData
 
     def closeAll(self):
         self.sW.close()

@@ -231,6 +231,9 @@ class SignalWidget(QWidget):
 
         (signal, time) = self.sD.getData()
 
+        print(f'signal shape = {signal.shape}')
+        print(f'time shape = {time.shape}')
+
         # if there is no signal then do not continue
         if signal is None:
             return
@@ -241,7 +244,7 @@ class SignalWidget(QWidget):
         # set off set for the lines
         offSet = self.sD.offset
         if not self.align:
-            offSet = 0*offSet
+            offSet = np.zeros(signal.shape[1])
 
         #try:
             # draw lines
@@ -269,7 +272,9 @@ class SignalWidget(QWidget):
                 print('error occurred in drawGraph - signalWidget')
                 print(f"sD.signalColor {self.sD.table['color']}")
 
+            # TODO: temporarly changed
             lineplot.setData(time, signal[:,ii]-offSet[ii])
+
         #except:
         #    print('error occurred in drawSpectraGraph - pointSpectra')
 
