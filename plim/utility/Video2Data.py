@@ -12,8 +12,11 @@ import csv
 
 import sys
 from pathlib import Path
+import re
 
 from plim.algorithm.spotData import SpotData
+from plim.algorithm.spotSpectra import SpotSpectra
+from plim.algorithm.fileData import FileData
 
 from plim.gui.signalViewer.signalWidget import SignalWidget
 from plim.gui.signalViewer.flowRateWidget import FlowRateWidget
@@ -56,7 +59,7 @@ class Window(QMainWindow):
         self._createToolBar()
 
         if self.DEFAULT['loadDefault']:
-            self._loadData()
+            self._loadImage()
 
         self._createWidget()
 
@@ -78,6 +81,7 @@ class Window(QMainWindow):
         dialog.setFileMode(QFileDialog.FileMode.ExistingFile)
         dialog.setNameFilter(nameFilter)
         dialog.setViewMode(QFileDialog.ViewMode.List)
+        filenames = None
         if dialog.exec():
             filenames = dialog.selectedFiles()
         
@@ -91,44 +95,47 @@ class Window(QMainWindow):
     def LoadInfoPressed(self):
         ''' loading the fitting parameters / spot positions'''
 
-        folder, fileMainName = self._selectFile(nameFilter="Zipped numpy arrays (*.npz)")
+        folder, _fileMainName = self._selectFile(nameFilter="Zipped numpy arrays (*.npz)")
 
-        if fileMainName is not None:
-            fileType = '_'+fileMainName.split('_')[-1]  
+        if _fileMainName is not None:
+            fileType = '_'+_fileMainName.split('_')[-1]
+            fileMainName = '_'.join(_fileMainName.split('_')[:-1])
             print(f'fileType = {fileType}')
 
-            # load fit parameter from file
-            if fileType == self.DEFAULT['nameSet']['fit']:
-                container = np.load(folder + '/' + fileMainName)
-                # update values if present in the file                
-                if 'wavelengthStartFit' in container: self.pV.fitParameterGui.wavelengthStart.value =container['wavelengthStartFit']
-                if 'wavelengthStopFit' in container: self.pV.fitParameterGui.wavelengthStop.value= container['wavelengthStopFit']
-                if 'orderFit' in container: self.pV.fitParameterGui.orderFit.value= container['orderFit']
-                if 'peakWidth' in container: self.pV.fitParameterGui.peakWidth.value = container ['peakWidth']
-                if 'wavelengthGuess' in container: self.pV.fitParameterGui.wavelengthGuess.value = container['wavelengthGuess']
-                self.pV.fitParameterGui()
+            _fileData = FileData()
 
-                if 'pxBcg' in container: self.pV.spectraParameterGui.pxBcg.value = container['pxBcg']
-                if 'pxAve' in container: self.pV.spectraParameterGui.pxAve.value = container['pxAve']
-                if 'pxSpace' in container: self.pV.spectraParameterGui.pxSpace.value = container['pxSpace']
-                if 'darkCount' in container: self.pV.spectraParameterGui.darkCount.value = container['darkCount']
-                if 'ratio' in container: self.pV.spectraParameterGui.ratio.value = container['value']
-                if 'angle' in container: self.pV.spectraParameterGui.angle.value = container['angle'] 
-                self.pV.spectraParameterGui()
+            # load fit parameter from file
+            if fileType == _fileData.DEFAULT['nameSet']['fit']:
+                _fileData.loadFitFile(folder=folder, fileMainName= fileMainName)
+                self.pV.fitParameterGui(
+                    wavelengthStart= _fileData.pF.wavelengthStartFit,
+                    wavelengthStop = _fileData.pF.wavelengthStopFit,
+                    orderFit = _fileData.pF.orderFit,
+                    peakWidth = _fileData.pF.peakWidth,
+                    wavelengthGuess = _fileData.pF.wavelengthGuess)
+
+                self.pV.spectraParameterGui(
+                    circle= _fileData.spotSpectra.circle,
+                    pxAve= _fileData.spotSpectra.pxAve,
+                    pxBcg= _fileData.spotSpectra.pxBcg,
+                    pxSpace= _fileData.spotSpectra.pxSpace,
+                    ratio= _fileData.spotSpectra.ratio,
+                    angle= _fileData.spotSpectra.angle,
+                    darkCount= _fileData.spotSpectra.darkCount
+                )
 
             # load spot position from file
-            if fileType == self.DEFAULT['nameSet']['image']:
-                container = np.load(folder + '/' + fileMainName)
-                self.pV.pointLayer.data = container['arr_0']
+            if fileType == _fileData.DEFAULT['nameSet']['image']:
+                _fileData.loadImageFile(folder=folder, fileMainName= fileMainName)                
+                self.pV.pointLayer.data = _fileData.spotSpectra.spotPosition
+                print(f'spot position {_fileData.spotSpectra.spotPosition}')
                 self.pV.updateSpectra()
-                print(f"loading spot position {container['arr_0']}")
-
 
     def ExportSignalPressed(self):
 
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
-        fileName, _ = QFileDialog.getSaveFileName(self, 
+        (fileName, _ )  = QFileDialog.getSaveFileName(self, 
             "Export File Name", "", "All Files(*)", options = options)
         
         if fileName:
@@ -136,35 +143,55 @@ class Window(QMainWindow):
             folder = str(p.parent)
             fileMainName = str(p.stem)
 
-            np.savez(folder +'/' + fileMainName + self.DEFAULT['image'],
-            spotPosition = self.pV.spotSpectra.spotPosition,
-            image = self.pV.spotSpectra.wxyImage,
-            wavelength = self.pV.wavelength)
-            
-            np.savez(folder +'/' + fileMainName + self.DEFAULT['fit'],
-            pxBcg = self.pV.spotSpectra.pxBcg,
-            pxAve = self.pV.spotSpectra.pxAve,
-            pxSpace = self.pV.spotSpectra.pxSpace,
-            darkCount = self.pV.spotSpectra.darkCount,
-            wavelengthStartFit = self.pV.pF.wavelengthStartFit,
-            wavelengthStopFit = self.pV.pF.wavelengthStopFit,
-            orderFit = self.pV.pF.orderFit,
-            wavelengthGuess = self.pV.pF.wavelengthGuess,
-            peakWidth = self.pV.pF.peakWidth                        
-            )
+            _fileData = FileData(spotSpectra=self.pV.spotSpectra,
+                                 plasmonFit= self.pV.pF)
+            _fileData.spotSpectra.setImage(self.pV.spotSpectra.wxyImage)
 
+            _fileData.saveImageFile(folder=folder,fileMainName=fileMainName)
+            _fileData.saveFitFile(folder=folder,fileMainName=fileMainName)
 
-
-
+            _spotData = self._generateSpotSignal()
+            _fileData.spotData = _spotData
+            _fileData.saveSpotFile(folder=folder,fileMainName=fileMainName)
 
     def _generateSpotSignal(self):
         ''' generate signal from the raw images'''
+        import copy 
+
+        print('starting loading/fitting raw files')
+        _sS = copy.deepcopy(self.pV.spotSpectra)
+        _pF = copy.deepcopy(self.pV.pF)
+
+        # get the file name and the corresponding time
+        vfolder = Path(self.folder)
+        fileList = list(vfolder.glob("time_*.npy"))
+        fileName = [x.parts[-1] for x in fileList]
+        fileTime = [int(re.search('\d+',x).group(0)) for x in fileName]
+        # sorted order of the file according their time
+        sortedIdx = np.argsort(fileTime)
+        nFiles = len(sortedIdx)
+
+        _time = np.sort(fileTime)
+        _signal = np.zeros((nFiles,_sS.spotPosition.shape[0]))
+
+        for ii in range(nFiles):
+            print(f'{ii} out of {nFiles}')
+            _image = np.load(fileList[sortedIdx[ii]])
+            _sS.setImage(_image)
+            _sS.calculateSpectra()
+            _spectra = np.array(_sS.getA())
+            _pF.setSpectra(_spectra)
+            _pF.calculateFit()
+            _signal[ii,:] = _pF.getPosition()
+        
+
+        print(f'signal = {_signal}')
+        print(f'time = {_time}')
 
 
 
-
-
-
+        _spotData = SpotData(signal=_signal,time=_time)
+        return _spotData
 
     def LoadImagePressed(self):
 
@@ -172,7 +199,7 @@ class Window(QMainWindow):
         if fileMainName is not None:
             self.folder = folder
             self.fileMainName = fileMainName        
-            self._loadData()
+            self._loadImage()
             self._updateInfoLabel()
             self.pV.setImage(self.image)
             self.pV.setWavelength(self.w)
@@ -181,32 +208,15 @@ class Window(QMainWindow):
         ''' update info label '''
         self.infoLabel.setText(self.folder + '\n' + self.fileMainName)
 
-    def _saveData(self, folder= None, fileMainName=None):
-
-        if folder is not None: self.folder = folder
-        if fileMainName is not None: self.fileMainName = fileMainName
-
-        #TODO: save the data
-
-        #self.sD.saveInfo(fullfile= str(self.folder + 
-        #                               '/' + self.fileMainName 
-        #                               + self.DEFAULT['nameSet']['info']))
-        #print('saving info file')
-
-
-    def _loadData(self,folder= None, fileMainName=None):
+    def _loadImage(self,folder= None, fileMainName=None):
         ''' load image data from files '''
 
         if folder is None: folder = self.folder 
         if fileMainName is None: fileMainName = self.fileMainName
         
-        nameSet = self.DEFAULT['nameSet']
-        
         # load image
         self.image = np.load(self.folder + '/' + fileMainName)
-        self.w = np.load(self.folder + '/' + nameSet['wavelength'])
-
-
+        self.w = np.load(self.folder + '/' + FileData.DEFAULT['nameSet']['wavelength'])
 
 
     def closeAll(self):

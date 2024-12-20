@@ -216,7 +216,10 @@ class Window(QMainWindow):
         self.w = _fileData.pF.wavelength
         # flow data
         self.fD = FlowData()
-        self.fD.setData(signal=_fileData.flowData.signal, time=_fileData.flowData.time)
+        try:
+            self.fD.setData(signal=_fileData.flowData.signal, time=_fileData.flowData.time)
+        except:
+            print('error loading flow data')
         # spot Data 
         # done in this way, so that that all parameters in sD are properly updated
         self.sD = SpotData()

@@ -29,7 +29,8 @@ class FileData:
                             'image': '_image.npz',
                             'spot': '_spotData.npz',
                             'fit': '_fit.npz',
-                            'info': '_info.dat'
+                            'info': '_info.dat',
+                            'wavelength': 'wavelength.npy'
                             }
                             }
 
