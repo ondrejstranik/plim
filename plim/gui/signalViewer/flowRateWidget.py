@@ -18,11 +18,14 @@ class FlowRateWidget(QWidget):
     DEFAULT = {'nameGUI':'FlowRate'
     }
 
-    def __init__(self,signal=None, time= None, **kwargs):
+    def __init__(self,signal=None, time= None, flowData=None, **kwargs):
         ''' initialise the class '''
         super().__init__()
 
-        self.flowData = FlowData(signal,time)
+        if flowData is not None: self.flowData= flowData 
+        else:
+            self.flowData = FlowData(signal,time)
+
 
         # set this gui of this class
         FlowRateWidget._setWidget(self)

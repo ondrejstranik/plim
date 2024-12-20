@@ -274,6 +274,7 @@ class SignalWidget(QWidget):
 
             # TODO: temporarly changed
             lineplot.setData(time, signal[:,ii]-offSet[ii])
+            print(f'offset for line  {ii} is  {offSet[ii]}')
 
         #except:
         #    print('error occurred in drawSpectraGraph - pointSpectra')

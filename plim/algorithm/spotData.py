@@ -36,23 +36,13 @@ class SpotData:
 
         if signal is not None: self.setData(signal,time)
 
-    def saveInfo(self,fullfile):
-        ''' save info of the class '''
-        with open(fullfile,'wb') as f:
-            pickle.dump((self.table,self.alignTime,self.range,self.evalTime,
-                         self.dTime),f)
-
-    def loadInfo(self,fullfile):
-        ''' load info into the class from file'''
-        with open(fullfile, 'rb') as f:
-            (self.table,self.alignTime,self.range,self.evalTime,
-                         self.dTime) = pickle.load(f)        
-
     def setTable(self,table=None):
         ''' set table with info about the spots '''
         nSpot = self.signal.shape[1]
 
-        if table is not None and len(table['name']) == nSpot:
+        print(f'table {table}')
+
+        if table is not None and table['name'] is not None and len(table['name']) == nSpot:
             self.table = table
         else:
             self.table = {
@@ -111,7 +101,7 @@ class SpotData:
         ''' get the boolvector with the selected timespan according the self.range'''
 
         idx0 = np.argmin(np.abs(self.time - self.time0 - time))
-        idx1 = np.min((0,np.abs(idx0 - self.range//2))).astype(int)
+        idx1 = np.max((0,np.abs(idx0 - self.range//2))).astype(int)
         idx2 = np.min((len(self.time),idx0 + self.range//2)).astype(int)
 
         range = (self.time*0).astype('bool')
@@ -127,6 +117,7 @@ class SpotData:
         if range is not None: self.range = range
 
         range = self.getRange(self.alignTime)
+        print(f'range is {range}')
         self.offset = np.mean(self.signal[range,:],axis=0)
 
     def getDSignal(self,evalTime=None,dTime=None, range=None):

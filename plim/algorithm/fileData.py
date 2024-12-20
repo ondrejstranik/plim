@@ -33,14 +33,14 @@ class FileData:
                             }
                             }
 
-    def __init__(self, **kwargs):
+    def __init__(self,spotData=None,spotSpectra=None, plasmonFit=None, flowData=None, **kwargs):
         ''' initialisation '''
 
         # data container
-        self.pF = PlasmonFit()
-        self.spotSpectra = SpotSpectra()
-        self.spotData = SpotData()
-        self.flowData = FlowData()
+        self.pF = PlasmonFit() if spotData is None else plasmonFit
+        self.spotSpectra = SpotSpectra() if spotSpectra is None else spotSpectra
+        self.spotData = SpotData() if spotData is None else spotData
+        self.flowData = FlowData() if flowData is None else flowData
 
     def saveImageFile(self,folder,fileMainName):
         ''' save image file'''
@@ -167,7 +167,10 @@ class FileData:
 
     def loadInfoFile(self,folder,fileMainName):
         ''' load info into the class from file'''
-        with open(folder + '/' +  fileMainName  + self.DEFAULT['nameSet']['info'], 'rb') as f:
+        _file = Path(folder + '/' + fileMainName + self.DEFAULT['nameSet']['info'])        
+        if not _file.is_file():
+            return
+        with open(_file, 'rb') as f:
             (self.spotData.table,
              self.spotData.alignTime,
              self.spotData.range,

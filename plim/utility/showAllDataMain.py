@@ -14,6 +14,7 @@ import sys
 from pathlib import Path
 
 from plim.algorithm.spotData import SpotData
+from plim.algorithm.flowData import FlowData
 from plim.algorithm.fileData import FileData
 
 from plim.gui.signalViewer.signalWidget import SignalWidget
@@ -34,7 +35,7 @@ class Window(QMainWindow):
                             },
                 'fileMainName' : 'Experiment1',
                 'folder' : r'g:\office\work\projects - funded\21-10-01 LPI\LPI\24-08-28 spr_variable_array\iso_h20_1to4',
-                'loadDefault': True }
+                'loadDefault': False }
 
 
     def __init__(self,**kwarg):
@@ -50,9 +51,10 @@ class Window(QMainWindow):
         self.w = None
         self.flow = None
         self.time = None
-        self.signal = None
-        self.sD = None
-        self.fileData = FileData()
+        #self.signal = None
+        self.sD: SpotData = None
+        self.fD: FlowData = None
+        #self.fileData = FileData()
 
         # widget / widgets parameters
         self.infoLabel = None
@@ -66,6 +68,13 @@ class Window(QMainWindow):
         self._createToolBar()
 
         if self.DEFAULT['loadDefault']:
+            self._loadData()
+        else:
+            fileMainName = None
+            while fileMainName is None:
+                folder, fileMainName = self._selectFile()
+            self.folder = folder
+            self.fileMainName = fileMainName        
             self._loadData()
 
         self._createWidget()
@@ -88,6 +97,7 @@ class Window(QMainWindow):
         dialog.setFileMode(QFileDialog.FileMode.ExistingFile)
         dialog.setNameFilter("Numpy arrays (*.npz)")
         dialog.setViewMode(QFileDialog.ViewMode.List)
+        filenames = []
         if dialog.exec():
             filenames = dialog.selectedFiles()
         
@@ -97,12 +107,13 @@ class Window(QMainWindow):
             fileMainName = '_'.join(_name.split('_')[:-1])
             return str(p.parent) , fileMainName
         else:
-            return None
+            return None , None
     
     def ExportPressed(self):
         dialog = QFileDialog(self)
         dialog.setDirectory(__file__)
         dialog.setFileMode(QFileDialog.FileMode.Directory)
+        folder = None
         if dialog.exec():
             folder = dialog.selectedFiles()
         
@@ -165,7 +176,14 @@ class Window(QMainWindow):
         self.iW.sD = self.sD
         self.imageLayer.data = self.image
         # update widgets
-        self.sW.lineParameter()
+        self.sW.lineParameter(
+                lineIndex = self.sW.lineIndex,
+                lineName = self.sW.sD.table['name'][self.sW.lineIndex],
+                lineVisible = self.sW.sD.table['visible'][self.sW.lineIndex]=='True',
+                lineColor = self.sW.sD.table['color'][self.sW.lineIndex],
+                evalTime = self.sW.sD.evalTime,
+                dTime = self.sW.sD.dTime
+        )
         self.sW.drawGraph()
 
     def _updateInfoLabel(self):
@@ -178,8 +196,8 @@ class Window(QMainWindow):
         if fileMainName is not None: self.fileMainName = fileMainName
 
         # set the data into the saving data class fileData
-        self.fileData.spotData = self.sD
-        self.fileData.saveInfoFile(self.folder,self.fileMainName)
+        _fileData = FileData(spotData=self.sD)
+        _fileData.saveInfoFile(self.folder,self.fileMainName)
         print('saving info file')
 
 
@@ -188,21 +206,23 @@ class Window(QMainWindow):
 
         if folder is None: folder = self.folder 
         if fileMainName is None: fileMainName = self.fileMainName
-        
-        self.fileData.loadAllFile(folder=folder,fileMainName=fileMainName)
+
+        _fileData = FileData()
+        _fileData.loadAllFile(folder=folder,fileMainName=fileMainName)
 
         # image data
-        self.spotPosition = self.fileData.spotSpectra.spotPosition
-        self.image = self.fileData.spotSpectra.wxyImage
-        self.w = self.fileData.pF.wavelength
+        self.spotPosition = _fileData.spotSpectra.spotPosition
+        self.image = _fileData.spotSpectra.wxyImage
+        self.w = _fileData.pF.wavelength
         # flow data
-        self.flow = self.fileData.flowData.signal
-        self.time = self.fileData.flowData.time
-        # spot data
-        self.signal = self.fileData.spotData.signal
+        self.fD = FlowData()
+        self.fD.setData(signal=_fileData.flowData.signal, time=_fileData.flowData.time)
+        # spot Data 
+        # done in this way, so that that all parameters in sD are properly updated
+        self.sD = SpotData()
+        self.sD.setData(signal=_fileData.spotData.signal,time=_fileData.spotData.time,
+                        table=_fileData.spotData.table)
 
-        # set default spot info
-        self.sD = self.fileData.spotData
 
     def closeAll(self):
         self.sW.close()
@@ -326,7 +346,7 @@ class Window(QMainWindow):
         self.sW.sigUpdateData.connect(self.updateFromSW)
 
         # flow rate widget
-        self.fW = FlowRateWidget(signal=self.flow, time = self.time)
+        self.fW = FlowRateWidget(flowData=self.fD)
         self.fW.show()
 
         # info widget
