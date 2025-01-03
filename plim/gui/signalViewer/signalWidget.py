@@ -231,8 +231,8 @@ class SignalWidget(QWidget):
 
         (signal, time) = self.sD.getData()
 
-        print(f'signal shape = {signal.shape}')
-        print(f'time shape = {time.shape}')
+        #print(f'signal shape = {signal.shape}')
+        #print(f'time shape = {time.shape}')
 
         # if there is no signal then do not continue
         if signal is None:

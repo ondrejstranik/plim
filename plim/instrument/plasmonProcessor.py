@@ -93,49 +93,7 @@ class PlasmonProcessor(BaseProcessor):
                 self.flowData.setT0(t0)
         if newFlow is not None:
             self.flowData.addDataValue([newFlow],newTime)
-
-    # TODO: make it working and add reading as well
-    def saveImageFile(self,folder,fileMainName):
-        ''' save image file'''
-        np.savez(folder + '/' +  fileMainName + self.DEFAULT['image'],
-        spotPosition = self.spotSpectra.spotPosition,
-        image = self.spotSpectra.wxyImage,
-        wavelength = self.pF.wavelength)
-
-    def saveFitFile(self,folder,fileMainName):
-        ''' save fit file'''
-        np.savez(folder + '/' +  fileMainName + self.DEFAULT['fit'],
-        pxBcg = self.spotSpectra.pxBcg,
-        pxAve = self.spotSpectra.pxAve,
-        pxSpace = self.spotSpectra.pxSpace,
-        darkCount = self.spotSpectra.darkCount,
-        wavelengthStartFit = self.pF.wavelengthStartFit,
-        wavelengthStopFit = self.pF.wavelengthStopFit,
-        orderFit = self.pF.orderFit,
-        wavelengthGuess = self.pF.wavelengthGuess,
-        peakWidth = self.pF.peakWidth
-        )
-
-    def saveSpotFile(self,folder,fileMainName):
-        ''' save spot Data file'''
-        np.savez(folder + '/' +  fileMainName + self.DEFAULT['spot'],
-        signal = self.spotData.signal,
-        time = self.spotData.time)            
-
-    def saveFlowFile(self,folder,fileMainName):
-        ''' save flow Data file'''
-        np.savez(folder + '/' +  fileMainName  + self.DEFAULT['flow'],
-        signal = self.flowData.signal,
-        time = self.flowData.time)
-
-    def saveInfoFile(self,folder,fileMainName):
-        ''' save Info Data file'''
-        pass
-
-
-
-
-
+    
 
 #%%
 

@@ -283,8 +283,8 @@ class Plim():
 if __name__ == "__main__":
 
     #Plim.runReal()
-    #Plim.runVirtual()
-    Plim.runRealMicroscope()
+    Plim.runVirtual()
+    #Plim.runRealMicroscope()
     
 #%%
 

@@ -1,5 +1,5 @@
 """
-FileData - class for unified saving loadin data generated in plim
+FileData - class for unified saving/loading data generated in plim experiment
 
 Created on Mon Nov 15 12:08:51 2021
 
