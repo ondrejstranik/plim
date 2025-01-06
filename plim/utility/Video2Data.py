@@ -1,4 +1,6 @@
-''' class to process videos of hyperspectral images'''
+''' 
+script to run  gui for processing video of hyper-spectral images
+'''
 #%%
 # import and parameter definition
 
@@ -14,6 +16,8 @@ import sys
 from pathlib import Path
 import re
 
+from spectralCamera.algorithm.fileSIVideo import FileSIVideo
+
 from plim.algorithm.spotData import SpotData
 from plim.algorithm.spotSpectra import SpotSpectra
 from plim.algorithm.fileData import FileData
@@ -25,18 +29,10 @@ from plim.gui.spectralViewer.plasmonViewer import PlasmonViewer
 
 
 class Window(QMainWindow):
-    '''  main class for data analysis
+    '''  gui class for data analysis of the videos of spectral images
     '''
 
-    DEFAULT = {'nameSet'  : {
-                            'flow':'_flowData.npz',
-                            'image': '_image.npz',
-                            'spot': '_spotData.npz',
-                            'fit': '_fit.npz',
-                            'info': '_info.dat',
-                            'wavelength': 'wavelength.npy'
-                            },
-                'fileMainName' : 'time_1726482816858315000.npy',
+    DEFAULT = { 'fileMainName' : 'time_1726482816858315000.npy',
                 'folder' : r'D:\LPI\24-9-16 pfcamera\video',
                 'loadDefault': True }
 
@@ -59,7 +55,9 @@ class Window(QMainWindow):
         self._createToolBar()
 
         if self.DEFAULT['loadDefault']:
-            self._loadImage()
+            _fileSIVideo = FileSIVideo(folder=self.folder)
+            self.w = _fileSIVideo.loadWavelength()
+            self.image = _fileSIVideo.loadImage(self.fileMainName)
 
         self._createWidget()
 
@@ -162,21 +160,18 @@ class Window(QMainWindow):
         _sS = copy.deepcopy(self.pV.spotSpectra)
         _pF = copy.deepcopy(self.pV.pF)
 
-        # get the file name and the corresponding time
-        vfolder = Path(self.folder)
-        fileList = list(vfolder.glob("time_*.npy"))
-        fileName = [x.parts[-1] for x in fileList]
-        fileTime = [int(re.search('\d+',x).group(0)) for x in fileName]
-        # sorted order of the file according their time
-        sortedIdx = np.argsort(fileTime)
-        nFiles = len(sortedIdx)
+        _fileSIVideo = FileSIVideo(self.folder)
+        
+        fileName, fileTime =_fileSIVideo.getImageInfo()
+        nFiles = len(fileName)
+        
+        _time = fileTime/1e9 # convert to seconds
+        _signal = np.zeros((nFiles,_sS.spotPosition.shape[0])) # define matrix
 
-        _time = np.sort(fileTime)
-        _signal = np.zeros((nFiles,_sS.spotPosition.shape[0]))
-
-        for ii in range(nFiles):
+        # process the images
+        for ii,_fileImage in enumerate(fileName):
             print(f'{ii} out of {nFiles}')
-            _image = np.load(fileList[sortedIdx[ii]])
+            _image = _fileSIVideo.loadImage(_fileImage)
             _sS.setImage(_image)
             _sS.calculateSpectra()
             _spectra = np.array(_sS.getA())
@@ -184,11 +179,8 @@ class Window(QMainWindow):
             _pF.calculateFit()
             _signal[ii,:] = _pF.getPosition()
         
-
         print(f'signal = {_signal}')
-        print(f'time = {_time}')
-
-
+        print(f'time [s]= {_time}')
 
         _spotData = SpotData(signal=_signal,time=_time)
         return _spotData
@@ -199,7 +191,9 @@ class Window(QMainWindow):
         if fileMainName is not None:
             self.folder = folder
             self.fileMainName = fileMainName        
-            self._loadImage()
+            _fileSIVideo = FileSIVideo(folder=self.folder)
+            self.w = _fileSIVideo.loadWavelength()
+            self.image = _fileSIVideo.loadImage(self.fileMainName)
             self._updateInfoLabel()
             self.pV.setImage(self.image)
             self.pV.setWavelength(self.w)
@@ -207,17 +201,6 @@ class Window(QMainWindow):
     def _updateInfoLabel(self):
         ''' update info label '''
         self.infoLabel.setText(self.folder + '\n' + self.fileMainName)
-
-    def _loadImage(self,folder= None, fileMainName=None):
-        ''' load image data from files '''
-
-        if folder is None: folder = self.folder 
-        if fileMainName is None: fileMainName = self.fileMainName
-        
-        # load image
-        self.image = np.load(self.folder + '/' + fileMainName)
-        self.w = np.load(self.folder + '/' + FileData.DEFAULT['nameSet']['wavelength'])
-
 
     def closeAll(self):
         self.pV.viewer.close()
