@@ -44,7 +44,7 @@ class FileData:
 
     def saveImageFile(self,folder,fileMainName):
         ''' save image file'''
-        np.savez(folder + '/' +  fileMainName + self.DEFAULT['nameSet']['image'],
+        np.savez(str(folder) + '/' +  str(fileMainName) + self.DEFAULT['nameSet']['image'],
         spotPosition = self.spotSpectra.spotPosition,
         image = self.spotSpectra.wxyImage,
         wavelength = self.pF.wavelength)
@@ -72,7 +72,7 @@ class FileData:
 
     def saveFitFile(self,folder,fileMainName):
         ''' save fit file'''
-        np.savez(folder + '/' +  fileMainName + self.DEFAULT['nameSet']['fit'],
+        np.savez(str(folder) + '/' +  str(fileMainName) + self.DEFAULT['nameSet']['fit'],
         pxBcg = self.spotSpectra.pxBcg,
         pxAve = self.spotSpectra.pxAve,
         pxSpace = self.spotSpectra.pxSpace,
@@ -113,7 +113,7 @@ class FileData:
 
     def saveSpotFile(self,folder,fileMainName):
         ''' save spot Data file'''
-        np.savez(folder + '/' +  fileMainName + self.DEFAULT['nameSet']['spot'],
+        np.savez(str(folder) + '/' +  str(fileMainName) + self.DEFAULT['nameSet']['spot'],
         signal = self.spotData.signal,
         time = self.spotData.time)            
 
@@ -135,7 +135,7 @@ class FileData:
 
     def saveFlowFile(self,folder,fileMainName):
         ''' save flow Data file'''
-        np.savez(folder + '/' +  fileMainName  + self.DEFAULT['nameSet']['flow'],
+        np.savez(str(folder) + '/' +  str(fileMainName)  + self.DEFAULT['nameSet']['flow'],
         signal = self.flowData.signal,
         time = self.flowData.time)
 
@@ -157,7 +157,7 @@ class FileData:
 
     def saveInfoFile(self,folder,fileMainName):
         ''' save Info Data file'''
-        with open(folder + '/' +  fileMainName  + self.DEFAULT['nameSet']['info'],'wb') as f:
+        with open(str(folder) + '/' +  str(fileMainName)  + self.DEFAULT['nameSet']['info'],'wb') as f:
             pickle.dump((self.spotData.table,
                          self.spotData.alignTime,
                          self.spotData.range,

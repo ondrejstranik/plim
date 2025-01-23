@@ -250,8 +250,11 @@ class SignalWidget(QWidget):
             # draw lines
         for ii in np.arange(signal.shape[1]):
 
-            if self.sD.table['visible'][ii] != 'True':
-                continue
+            try: # TODO: correct for it
+                if self.sD.table['visible'][ii] != 'True':
+                    continue
+            except:
+                print('sd table visible not defined')
 
             mypen = QPen()
             mypen.setColor(QColor("White"))
