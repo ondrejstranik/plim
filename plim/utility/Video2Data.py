@@ -20,11 +20,9 @@ from spectralCamera.algorithm.fileSIVideo import FileSIVideo
 
 from plim.algorithm.spotData import SpotData
 from plim.algorithm.spotSpectra import SpotSpectra
+from plim.algorithm.flowData import FlowData
 from plim.algorithm.fileData import FileData
 
-from plim.gui.signalViewer.signalWidget import SignalWidget
-from plim.gui.signalViewer.flowRateWidget import FlowRateWidget
-from plim.gui.signalViewer.infoWidget import InfoWidget
 from plim.gui.spectralViewer.plasmonViewer import PlasmonViewer
 
 
@@ -47,6 +45,7 @@ class Window(QMainWindow):
         # data parameters
         self.image = None
         self.w = None
+        self.flowData = None
 
         # widget / widgets parameters
         self.pV = None
@@ -129,6 +128,12 @@ class Window(QMainWindow):
                 print(f'spot position {_fileData.spotSpectra.spotPosition}')
                 self.pV.updateSpectra()
 
+            # load flow data from file
+            if fileType == _fileData.DEFAULT['nameSet']['flow']:
+                _fileData.loadFlowFile(folder=folder, fileMainName= fileMainName)
+                self.flowData = _fileData.flowData
+
+
     def ExportSignalPressed(self):
 
         options = QFileDialog.Options()
@@ -148,9 +153,16 @@ class Window(QMainWindow):
             _fileData.saveImageFile(folder=folder,fileMainName=fileMainName)
             _fileData.saveFitFile(folder=folder,fileMainName=fileMainName)
 
+            if self.flowData is not None:
+                _fileData.flowData = self.flowData
+                _fileData.saveFlowFile(folder=folder,fileMainName=fileMainName)
+
             _spotData = self._generateSpotSignal()
             _fileData.spotData = _spotData
             _fileData.saveSpotFile(folder=folder,fileMainName=fileMainName)
+
+
+
 
     def _generateSpotSignal(self):
         ''' generate signal from the raw images'''

@@ -1,4 +1,4 @@
-''' script to process videos of hyperspectral images'''
+''' script to analyse the signals from plasmon spots'''
 #%%
 # import and parameter definition
 
@@ -26,14 +26,7 @@ class Window(QMainWindow):
     '''  main class for data analysis
     '''
 
-    DEFAULT = {'nameSet'  : {
-                            'flow':'_flowData.npz',
-                            'image': '_image.npz',
-                            'spot': '_spotData.npz',
-                            'fit': '_fit.npz',
-                            'info': '_info.dat'
-                            },
-                'fileMainName' : 'Experiment1',
+    DEFAULT = { 'fileMainName' : 'Experiment1',
                 'folder' : r'g:\office\work\projects - funded\21-10-01 LPI\LPI\24-08-28 spr_variable_array\iso_h20_1to4',
                 'loadDefault': False }
 
@@ -225,6 +218,11 @@ class Window(QMainWindow):
         self.sD = SpotData()
         self.sD.setData(signal=_fileData.spotData.signal,time=_fileData.spotData.time,
                         table=_fileData.spotData.table)
+        
+        # synchronise the origin of the time0 
+        # this is necessary only in the case when spotData are generated from raw images
+        if self.fD is not None:
+            self.sD.time0 = self.fD.time0
 
 
     def closeAll(self):
@@ -366,7 +364,7 @@ if __name__ == "__main__":
     window = Window()
     window.show()
     sys.exit(app.exec())
-    #napari.run()
+
 
 
 
