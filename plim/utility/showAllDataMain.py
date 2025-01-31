@@ -207,22 +207,30 @@ class Window(QMainWindow):
         self.spotPosition = _fileData.spotSpectra.spotPosition
         self.image = _fileData.spotSpectra.wxyImage
         self.w = _fileData.pF.wavelength
+
+        # spot Data 
+        # done in this way, so that that all parameters in sD are properly updated
+        #self.sD = SpotData()
+
+        # copy info data parameters as well
+        self.sD = _fileData.spotData
+
+        #self.sD.setData(signal=_fileData.spotData.signal,time=_fileData.spotData.time,
+        #                table=_fileData.spotData.table)
+
         # flow data
         self.fD = FlowData()
         try:
             self.fD.setData(signal=_fileData.flowData.signal, time=_fileData.flowData.time)
+            # synchronise the origin of the time0 with flow data if provided
+            self.sD.time0 = self.fD.time0
         except:
             print('error loading flow data')
-        # spot Data 
-        # done in this way, so that that all parameters in sD are properly updated
-        self.sD = SpotData()
-        self.sD.setData(signal=_fileData.spotData.signal,time=_fileData.spotData.time,
-                        table=_fileData.spotData.table)
-        
-        # synchronise the origin of the time0 
-        # this is necessary only in the case when spotData are generated from raw images
-        if self.fD is not None:
-            self.sD.time0 = self.fD.time0
+
+        # update spotData
+        self.sD.setOffset()
+        self.sD.getDSignal()
+        self.sD.getNoise()
 
 
     def closeAll(self):

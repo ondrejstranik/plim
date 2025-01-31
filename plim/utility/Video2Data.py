@@ -87,7 +87,7 @@ class Window(QMainWindow):
             fileMainName = p.name 
             return str(p.parent) , fileMainName
         else:
-            return None
+            return None, None
     
     def LoadInfoPressed(self):
         ''' loading the fitting parameters / spot positions'''
@@ -179,6 +179,7 @@ class Window(QMainWindow):
         
         _time = fileTime/1e9 # convert to seconds
         _signal = np.zeros((nFiles,_sS.spotPosition.shape[0])) # define matrix
+
 
         # process the images
         for ii,_fileImage in enumerate(fileName):
