@@ -40,7 +40,7 @@ class SpotData:
         ''' set table with info about the spots '''
         nSpot = self.signal.shape[1]
 
-        print(f'table {table}')
+        #print(f'table {table}')
 
         if table is not None and table['name'] is not None and len(table['name']) == nSpot:
             self.table = table
@@ -117,7 +117,7 @@ class SpotData:
         if range is not None: self.range = range
 
         range = self.getRange(self.alignTime)
-        print(f'range is {range}')
+        #print(f'range is {range}')
         self.offset = np.mean(self.signal[range,:],axis=0)
 
     def getDSignal(self,evalTime=None,dTime=None, range=None):

@@ -231,6 +231,7 @@ class Window(QMainWindow):
         self.sD.setOffset()
         self.sD.getDSignal()
         self.sD.getNoise()
+        self.sD.setTable(table=self.sD.table)
 
 
     def closeAll(self):
@@ -327,6 +328,15 @@ class Window(QMainWindow):
         self.sW.redrawWidget()
         self.redrawViewer()
 
+    def addDeltaSignalLayer(self):
+        ''' add delta signal layer into napari '''
+        _image = self.image*0
+
+        
+        
+        
+        self.viewer
+
     def _createWidget(self):
 
         # info text 
@@ -347,6 +357,8 @@ class Window(QMainWindow):
         self.spotLayer._face.events.current_color.connect(self.updateColorFromNapari)
         self.viewer.bind_key('s',lambda x: self.updateSelectionFromNapari())
         self.viewer.bind_key('v',lambda x: self.updateVisibilityFromNapari())
+        self.viewer.bind_key('d',lambda x: self.addDeltaSignalLayer())
+
 
         # signal widget
         self.sW = SignalWidget(spotData=self.sD)
@@ -357,6 +369,7 @@ class Window(QMainWindow):
         # flow rate widget
         self.fW = FlowRateWidget(flowData=self.fD)
         self.fW.show()
+        self.sW.graph.setXLink(self.fW.graph) # connect time axis 
 
         # info widget
         self.iW = InfoWidget(self.sD)

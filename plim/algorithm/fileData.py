@@ -54,6 +54,7 @@ class FileData:
 
         _file = Path(folder + '/' + fileMainName + self.DEFAULT['nameSet']['image'])        
         if not _file.is_file():
+            print(f'could not find file {_file}')
             return
 
         container1 = np.load(_file)
@@ -89,6 +90,7 @@ class FileData:
 
         _file = Path(folder + '/' + fileMainName + self.DEFAULT['nameSet']['fit'])        
         if not _file.is_file():
+            print(f'could not find file {_file}')
             return
 
         container1 = np.load(_file)
@@ -121,6 +123,7 @@ class FileData:
         ''' load spot Data file'''
         _file = Path(folder + '/' + fileMainName + self.DEFAULT['nameSet']['spot'])        
         if not _file.is_file():
+            print(f'could not find file {_file}')
             return
 
         container1 = np.load(_file)
@@ -143,6 +146,7 @@ class FileData:
         ''' load flow Data file'''
         _file = Path(folder + '/' + fileMainName + self.DEFAULT['nameSet']['flow'])        
         if not _file.is_file():
+            print(f'could not find file {_file}')
             return
 
         container1 = np.load(_file)
@@ -169,6 +173,7 @@ class FileData:
         ''' load info into the class from file'''
         _file = Path(folder + '/' + fileMainName + self.DEFAULT['nameSet']['info'])        
         if not _file.is_file():
+            print(f'could not find file {_file}')
             return
         with open(_file, 'rb') as f:
             (self.spotData.table,
