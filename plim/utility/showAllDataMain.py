@@ -178,6 +178,7 @@ class Window(QMainWindow):
                 dTime = self.sW.sD.dTime
         )
         self.sW.drawGraph()
+        self.fW.drawGraph()
 
     def _updateInfoLabel(self):
         ''' update info label '''
@@ -219,7 +220,8 @@ class Window(QMainWindow):
         #                table=_fileData.spotData.table)
 
         # flow data
-        self.fD = FlowData()
+        if self.fD is None:
+            self.fD = FlowData()
         try:
             self.fD.setData(signal=_fileData.flowData.signal, time=_fileData.flowData.time)
             # synchronise the origin of the time0 with flow data if provided
@@ -330,12 +332,18 @@ class Window(QMainWindow):
 
     def addDeltaSignalLayer(self):
         ''' add delta signal layer into napari '''
-        _image = self.image*0
+        _image = np.zeros(self.image.shape[1:])
+        spotR = int(np.mean(self.spotLayer.size[0])/2)
 
-        
-        
-        
-        self.viewer
+        for ii,_spotPosition in enumerate(self.spotPosition):
+            if self.sD.table['visible'][ii]=='True':
+                _y = int(_spotPosition[0])
+                _x = int(_spotPosition[1])
+                _image[_y-spotR+1:_y+spotR+1,
+                      _x-spotR+1:_x+spotR+1] = self.sD.dSignal[ii]
+
+        _name = f'delta Signal @ {self.sD.evalTime+self.sD.dTime} s '
+        self.signalLayer = self.viewer.add_image(_image, name= _name)
 
     def _createWidget(self):
 

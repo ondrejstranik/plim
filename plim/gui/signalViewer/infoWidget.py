@@ -70,11 +70,15 @@ class InfoWidget(QWidget):
 
             self.sD.table = dict(self.infoBox.infoTable)
             
-            print(f'sD.table from infoBox {self.sD.table}')
+            #print(f'sD.table from infoBox {self.sD.table}')
 
 
             self.sD.checkTableValues()
             self.infoBox.infoTable.value = self.sD.table | {'dSignal': self.sD.dSignal, 'noise': self.sD.noise}
+
+            for ii,_color in enumerate(self.sD.table['color']):
+                self.infoBox.infoTable.native.item(ii,1).setBackground(QColor(_color))
+
             self.infoBox._auto_call = True
 
             # emit signal to eventually update data in other guis
@@ -84,6 +88,7 @@ class InfoWidget(QWidget):
         # fit parameter
         self.infoBox = infoBox
         self.infoBox.infoTable.native.setSelectionMode(4)
+        self.redrawWidget()
 
         layout = QVBoxLayout()
         layout.addWidget(self.infoBox.native)
@@ -92,10 +97,17 @@ class InfoWidget(QWidget):
     def redrawWidget(self):
         ''' redraw all values in the widget from class parameters'''
         
+        # switch off auto_call 
         _temp =  self.infoBox._auto_call
         self.infoBox._auto_call = False
+        # update values
         _dict = {'dSignal': self.sD.dSignal, 'noise': self.sD.noise}
         self.infoBox.infoTable.value = self.sD.table | _dict
+        
+        for ii,_color in enumerate(self.sD.table['color']):
+            self.infoBox.infoTable.native.item(ii,1).setBackground(QColor(_color))
+
+        # switch auto_call on initial value
         self.infoBox._auto_call = _temp
 
     def updateSelect(self,idx):

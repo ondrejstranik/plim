@@ -34,7 +34,7 @@ class FlowRateWidget(QWidget):
 
     def _setWidget(self):
         ''' prepare the gui '''
-
+        
         # add graph
         self.graph = pg.plot()
         self.graph.setTitle(f'Flow Rate')

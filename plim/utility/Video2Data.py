@@ -192,8 +192,8 @@ class Window(QMainWindow):
             _pF.calculateFit()
             _signal[ii,:] = _pF.getPosition()
         
-        print(f'signal = {_signal}')
-        print(f'time [s]= {_time}')
+        #print(f'signal = {_signal}')
+        #print(f'time [s]= {_time}')
 
         _spotData = SpotData(signal=_signal,time=_time)
         return _spotData
