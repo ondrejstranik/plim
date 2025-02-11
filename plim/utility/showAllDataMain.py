@@ -345,6 +345,40 @@ class Window(QMainWindow):
         _name = f'delta Signal @ {self.sD.evalTime+self.sD.dTime} s '
         self.signalLayer = self.viewer.add_image(_image, name= _name)
 
+    def addColorBar(self):
+        ''' create image of a color bar in new viewer '''
+
+        try:
+            _layer = self.viewer.layers.selection.active
+            barViewer = napari.Viewer()
+            
+            im = _layer.data
+            gamma = _layer.gamma
+            LMax = _layer.contrast_limits[1]
+            LMin = _layer.contrast_limits[0]
+            yMin = np.max((_layer.contrast_limits[0],im.min()))
+            yMax =  np.min((_layer.contrast_limits[1],im.max()))
+
+            yRange = np.linspace(yMin,yMax)
+            xRange = ((yRange - LMin)/(LMax - LMin))**(1/gamma)
+            
+            length = 50
+            cb = _layer.colormap.map(xRange)
+            cb = cb[::-1,None,...]
+            barViewer.add_image(cb, name= 'colorbar ' + _layer.name)
+            points = np.array([[length,0],[0,0]])
+            features = {'value': np.array([yMin, yMax])}
+            text = {
+                'string': '{value:.2f}',
+                'size': 20,
+                'color': 'green',
+                'translation': np.array([0,5]),
+            }
+            points_layer = barViewer.add_points(
+                points, features=features,text=text,size=0)
+        except:
+            print('can not create colorbar')
+
     def _createWidget(self):
 
         # info text 
@@ -366,6 +400,7 @@ class Window(QMainWindow):
         self.viewer.bind_key('s',lambda x: self.updateSelectionFromNapari())
         self.viewer.bind_key('v',lambda x: self.updateVisibilityFromNapari())
         self.viewer.bind_key('d',lambda x: self.addDeltaSignalLayer())
+        self.viewer.bind_key('b',lambda x: self.addColorBar())
 
 
         # signal widget
