@@ -218,10 +218,12 @@ class Window(QMainWindow):
 
         #self.sD.setData(signal=_fileData.spotData.signal,time=_fileData.spotData.time,
         #                table=_fileData.spotData.table)
+        self.sD.time0 = self.sD.time[0]
 
         # flow data
         if self.fD is None:
             self.fD = FlowData()
+
         try:
             self.fD.setData(signal=_fileData.flowData.signal, time=_fileData.flowData.time)
             # synchronise the origin of the time0 with flow data if provided
@@ -371,7 +373,7 @@ class Window(QMainWindow):
             text = {
                 'string': '{value:.2f}',
                 'size': 20,
-                'color': 'green',
+                'color': 'white',
                 'translation': np.array([0,5]),
             }
             points_layer = barViewer.add_points(
