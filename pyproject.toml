@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools >= 77.0.3"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name="plim"
+version="0.0.1"
+dependencies = [
+        #'spectralCamera@git+https://github.com/ondrejstranik/spectralCamera',
+       'pyserial'
+        ]
+requires-python='>=3.9'
+authors = [
+        {name = "Ondrej Stranik", email = "ondra.stranik@gmail.com"},
+]
+
+description="package for plasmon imaging"
+readme = "README.md"
+license = "MIT"
+keywords = ["instrumentation"]
+classifiers = [
+  "Development Status :: 3- Alpha",
+  "Intended Audience :: Developers",
+  "Programming Language :: Python :: 3",
+]
+[project.urls]
+Repository = "https://github.com/ondrejstranik/plim"
