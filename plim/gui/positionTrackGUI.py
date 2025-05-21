@@ -43,6 +43,10 @@ class PositionTrackGUI(BaseGUI):
         ''' connect with other gui'''
         self.pvGui = plasmonViewerGUI
 
+        # connect signals
+        self.positionTrack.sigUpdateData.connect(self.updatePlasmonViewer)
+        self.pvGui.plasmonViewer.sigUpdateData.connect(self.updatePositionTrack)
+
     def setDevice(self,device):
         super().setDevice(device)
         # connect data container with device container
@@ -52,12 +56,39 @@ class PositionTrackGUI(BaseGUI):
         # connect signals
         self.device.worker.yielded.connect(self.guiUpdateTimed)
 
+    def updatePlasmonViewer(self):
+        ''' update plasmonViewer because data in position track changed '''
+
+        # update colors in the plasmonViewerGUI
+        if self.pvGui is not None:
+            print('updating plasmonViewer Color')
+            rgb = self.positionTrack.sD.table['color']
+            vis = self.positionTrack.sD.table['visible']
+            _color = [rgb[ii] + 'ff' if vis[ii]=='True' else rgb[ii] + '00' for ii in range(len(rgb))]
+
+        self.pvGui.plasmonViewer.pointLayer.face_color = _color        
+
+    def updatePositionTrack(self):
+        ''' update color in position Track because color in plasmon viewer changed'''
+
+        print(f'updating from Napari - color')
+    
+        # update color in spotData
+        _fc = 1*self.pvGui.plasmonViewer.pointLayer.face_color #  deep copy of the colors
+        _fc[list(self.pvGui.plasmonViewer.pointLayer.selected_data)] = self.pvGui.plasmonViewer.pointLayer._face.current_color # adjust the just modified 
+        _fcHex = ['#{:02x}{:02x}{:02x}'.format( *ii.tolist()) for ii in (_fc*255).astype(int)]
+        self.positionTrack.sD.table['color'] = _fcHex
+
+
+
     def updateGui(self):
         ''' update the data in gui '''
 
         # connect the color of the line with the plasmon viewer
-        self.positionTrack.sD.signalColor = self.pvGui.plasmonViewer.pointLayer.face_color
-        
+        #self.positionTrack.sD.signalColor = self.pvGui.plasmonViewer.pointLayer.face_color
+        #self.positionTrack.sD.table['color'] = self.pvGui.plasmonViewer.pointLayer.face_color
+
+
         # update the graph
         self.positionTrack.drawGraph()
         self.flowTrack.drawGraph()

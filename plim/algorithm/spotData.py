@@ -85,6 +85,7 @@ class SpotData:
                 self.time0 = self.time[0] # reset time0
             else:
                 self.time0 = 0
+            self.setTable()
             return self.time0
                 
     def getData(self):

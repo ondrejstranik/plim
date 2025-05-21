@@ -92,8 +92,8 @@ class SignalWidget(QWidget):
                 noise = None):
 
             # line index out of range
-            if lineIndex >= len(self.sD.dSignal):
-                lineIndex = len(self.sD.dSignal)-1
+            if lineIndex >= len(self.sD.table['name']):
+                lineIndex = len(self.sD.table['name'])-1
                 self.lineParameter._auto_call = False
                 self.lineParameter.lineIndex.value = lineIndex
                 self.lineParameter._auto_call = True
@@ -103,6 +103,10 @@ class SignalWidget(QWidget):
             if self.lineIndex != lineIndex:
                 # change of the line focus
                 self.lineIndex = lineIndex
+
+                # recalculate the dSignal and noise
+                self.sD.getDSignal()
+                self.sD.getNoise()
 
                 # set the display values
                 self.lineParameter._auto_call = False
@@ -262,6 +266,16 @@ class SignalWidget(QWidget):
             if ii == self.lineIndex:
                 mypen.setStyle(2)
 
+
+            hexColor = self.sD.table['color'][ii]
+            rgbaColor = [int(hexColor[1:3],16)/255,
+                            int(hexColor[3:5],16)/255,
+                            int(hexColor[5:7],16)/255,
+                            1]
+            mypen.setColor(QColor.fromRgbF(*list(rgbaColor)))
+            lineplot = self.graph.plot(pen= mypen)
+
+            '''
             try:
                 hexColor = self.sD.table['color'][ii]
                 rgbaColor = [int(hexColor[1:3],16)/255,
@@ -274,7 +288,7 @@ class SignalWidget(QWidget):
                 lineplot = self.graph.plot(pen= mypen)
                 print('error occurred in drawGraph - signalWidget')
                 print(f"sD.signalColor {self.sD.table['color']}")
-
+            '''
             # TODO: temporarly changed
             lineplot.setData(time, signal[:,ii]-offSet[ii])
             #print(f'offset for line  {ii} is  {offSet[ii]}')
