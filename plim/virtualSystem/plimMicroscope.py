@@ -18,7 +18,7 @@ import napari
 
 class PlimMicroscope(BaseSystem):
     ''' class to emulate microscope '''
-    DEFAULT = {'photonFlux':1e6,
+    DEFAULT = {'photonFlux':1e7,
                 'lampWavelength': np.arange(400,800,10), # nm
                 'lampPeak': 800 , #nm
     }

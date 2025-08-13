@@ -30,9 +30,11 @@ class Window(QMainWindow):
     '''  gui class for data analysis of the videos of spectral images
     '''
 
-    DEFAULT = { 'fileMainName' : 'time_1726482816858315000.npy',
-                'folder' : r'D:\LPI\24-9-16 pfcamera\video',
-                'loadDefault': True }
+    #DEFAULT = { 'fileMainName' : 'time_1726482816858315000.npy',
+    DEFAULT =  {'fileMainName' : 'time_1751460596704307800.npy',
+                #'folder' : r'D:\LPI\24-9-16 pfcamera\video',
+                'folder': r'D:\ondra\LPI\25-07-02 dna\raw',
+                'loadDefault': False }
 
 
     def __init__(self,**kwarg):
@@ -208,8 +210,9 @@ class Window(QMainWindow):
             self.w = _fileSIVideo.loadWavelength()
             self.image = _fileSIVideo.loadImage(self.fileMainName)
             self._updateInfoLabel()
-            self.pV.setImage(self.image)
             self.pV.setWavelength(self.w)
+            self.pV.setImage(self.image)
+
 
     def _updateInfoLabel(self):
         ''' update info label '''
