@@ -10,7 +10,7 @@ from scipy.special import erf
 
 
 ffile = r'Experiment1'
-ffolder = r'D:\ondra\LPI\25-07-02 dna'
+ffolder = r'F:\ondra\LPI\25-07-02 dna'
 
 #%%
 
@@ -28,7 +28,7 @@ sig = fData.spotData.signal[:,idx]-fData.spotData.offset[idx]
 sig = fData.spotData.signal[:,idx]-fData.spotData.offset[idx]
 
 #%%
-
+'''
 def funcPFO(x,x0,a=1,b=1):
     res = x*0
     xb = x>=x0
@@ -36,6 +36,13 @@ def funcPFO(x,x0,a=1,b=1):
     res[xa] = 0
     res[xb] = a*(1-np.exp(-(x[xb]-x0)*b))
     return res
+'''
+
+def funcPFO(x,x0,a=1,b=1):
+    xMod = (erf((x-x0)/10)+1)/2*(x-x0)
+    res = a*(1-np.exp(-xMod*b))
+    return res    
+
 
 def funcP1(x,y0,c=0):
     res = y0 + c*x
@@ -88,7 +95,7 @@ fig, ax = plt.subplots()
 
 for ii in range(len(idx)-1):
     y = sig[fTimeMask,ii]
-    popt,pocv = curve_fit(funcBK,x,y,p0 = (700,0,1.0,1/300,1))
+    popt,pocv = curve_fit(funcBK,x,y,p0 = (700,0,1.0,1/300,0))
     tauList.append(1/popt[3])
     sigList.append(popt[2])
 
