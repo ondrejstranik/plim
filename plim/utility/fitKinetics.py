@@ -7,6 +7,8 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 from scipy.special import erf
+from plim.algorithm.kineticFit import KineticFit
+
 
 
 ffile = r'Experiment1'
@@ -113,3 +115,30 @@ ax.set_title(f'tau = {np.array(tauList).mean():.1f} +- {np.array(tauList).std():
 plt.show()
 # %%
 
+kFit = KineticFit()
+kFit.setSignal(sig[fTimeMask,:-1])
+kFit.setTime(time[fTimeMask])
+kFit.setFitParameter(fitEstimate=(700,1,300,0,0))
+
+kFit.calculateFit()
+
+fig, ax = plt.subplots()
+
+# plot result
+
+for ii in range(kFit.fitParam.shape[0]):
+    ax.plot(kFit.time,kFit.signal[:,ii])
+    ax.plot(kFit.time,kFit.bcgFunction(kFit.time,*kFit.fitParam[ii,-2:]))
+    ax.plot(kFit.time,kFit.fitFunction(kFit.time,*kFit.fitParam[ii,:]))
+
+ax.set_xlabel('time /s')
+ax.set_ylabel('signal /nm')
+
+ax.set_title(f'tau = {kFit.fitParam[:,2].mean():.1f} +- {kFit.fitParam[:,2].std():.1f} s')
+
+plt.show()
+
+
+
+
+# %%
