@@ -20,6 +20,7 @@ from plim.algorithm.fileData import FileData
 from plim.gui.signalViewer.signalWidget import SignalWidget
 from plim.gui.signalViewer.flowRateWidget import FlowRateWidget
 from plim.gui.signalViewer.infoWidget import InfoWidget
+from plim.gui.signalViewer.fitWidget import FitWidget
 
 
 class Window(QMainWindow):
@@ -421,6 +422,11 @@ class Window(QMainWindow):
         self.iW.show()
         self.iW.sigUpdateData.connect(self.updateFromIW)
         
+        # fit widget
+        self.fW = FitWidget()
+        self.fW.show()
+        self.fW.connectSignalWidget(self.sW)
+
         # initial update
         self.updateFromSW()
 

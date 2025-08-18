@@ -26,6 +26,9 @@ class FitWidget(QWidget):
             if signal is not None: self.kF.setSignal(signal)
             if time is not None: self.kF.setTime(time)
 
+
+        self.signalWidget = None
+
         # set this gui of this class
         FitWidget._setWidget(self)
 
@@ -46,20 +49,50 @@ class FitWidget(QWidget):
             self.kF.calculateFit()
 
             self.drawGraph()
+            #self.infoBox((1/self.kF.fitParam[:,2]).mean(), (1/self.kF.fitParam[:,2]).std())
             self.infoBox(self.kF.fitParam[:,2].mean(), self.kF.fitParam[:,2].std())
 
             print('fiting the data')
 
-
-        @magicgui(call_button=False,
+        @magicgui(layout='horizontal', call_button=False,
                   tau = {'label':'tau','widget_type': 'Label'},
                   std = {'label':'std','widget_type': 'Label'} )
         def infoBox(tau = 0, std= 0):
             self.infoBox.tau.value = tau
             self.infoBox.std.value = std
 
+        @magicgui(call_button='transfer data')
+        def dataBox():
+            if self.signalWidget is not None:
+
+                (signal, time) = self.signalWidget.sD.getData()
+                if not self.signalWidget.align:
+                    offSet = np.zeros(signal.shape[1])
+                else:
+                    offSet = self.signalWidget.sD.offset
+                signal = signal - offSet
+
+                print(f'visible table {self.signalWidget.sD.table["visible"]}')
+
+                _vis = [True if ii=='True' else False for ii in self.signalWidget.sD.table['visible']]
+                print(f'visible {_vis}')
+                signal = signal[:,_vis]
+
+                timeMask = ((time>self.signalWidget.sD.evalTime) & 
+                            (time<(self.signalWidget.sD.evalTime + self.signalWidget.sD.dTime)))
+
+                print(f'timeMask {timeMask}')
+                print(self.signalWidget.sD.evalTime)
+                print((self.signalWidget.sD.evalTime + self.signalWidget.sD.dTime))
+
+                self.setData(signal[timeMask,:],time[timeMask])
+
+                self.drawGraph(onlyData=True)
+
+
+
         # add graph
-        self.graph = pg.plot()
+        self.graph = pg.PlotWidget()
         self.graph.setTitle(f'Fits')
         self.graph.setLabel('left', 'Signal', units='nm')
         self.graph.setLabel('bottom', 'time', units= 's')
@@ -67,43 +100,62 @@ class FitWidget(QWidget):
         # widgets
         self.fitParameter = fitParameter
         self.infoBox = infoBox
+        self.dataBox = dataBox
 
         layout = QVBoxLayout()
         layout.addWidget(self.graph)
+        layout.addWidget(self.dataBox.native)
         layout.addWidget(self.infoBox.native)
         layout.addWidget(self.fitParameter.native)
         self.setLayout(layout)
 
-    def drawGraph(self):
+    def drawGraph(self, onlyData=False):
         ''' draw all new lines in the spectraGraph '''
 
         # remove all lines
         self.graph.clear()
 
-        mypen = QPen()
 
-        for ii in range(self.kF.fitParam.shape[0]):
+        mypen2 = QPen()
+        mypen2.setWidth(0)        
 
+        mypen3 = QPen()
+        mypen3.setWidth(0)        
+
+
+        for ii in range(self.kF.signal.shape[1]):
+            mypen = QPen()
+            mypen.setWidth(0)
             mypen.setColor(QColor("White"))
-            mypen.setWidth(0)
-            mypen.setStyle(0)
-            lineplot = self.graph.plot()
-            lineplot.setData(self.kF.time,self.kF.signal[:,ii])
+            mypen.setStyle(1)
+            #lineplot = self.graph.plot(pen=mypen)
+            #lineplot.setData(self.kF.time,self.kF.signal[:,ii])
+            self.graph.plot(self.kF.time,self.kF.signal[:,ii],pen=mypen)
 
+            if onlyData: continue
+
+            mypen = QPen()
+            mypen.setWidth(0)        
             mypen.setColor(QColor("Yellow"))
-            mypen.setWidth(0)
-            mypen.setStyle(0)
-            lineplot = self.graph.plot()
-            lineplot.setData(self.kF.time,
-                             self.kF.bcgFunction(self.kF.time,*self.kF.fitParam[ii,-2:]))
-            
-            mypen.setColor(QColor("Red"))
-            mypen.setWidth(0)
+            #lineplot = self.graph.plot(pen=mypen)
             mypen.setStyle(2)
-            lineplot = self.graph.plot()
-            lineplot.setData(self.kF.time,
-                             self.kF.fitFunction(self.kF.time,*self.kF.fitParam[ii,:]))
-            
+            #lineplot.setData(self.kF.time,
+            #                 self.kF.bcgFunction(self.kF.time,*self.kF.fitParam[ii,-2:]))
+            self.graph.plot(self.kF.time,
+                             self.kF.bcgFunction(self.kF.time,*self.kF.fitParam[ii,-2:]),
+                              pen=mypen)
+            mypen = QPen()
+            mypen.setWidth(0)        
+            mypen.setColor(QColor("Red"))
+            mypen.setStyle(1)
+            #lineplot = self.graph.plot(pen=mypen)
+            #lineplot.setData(self.kF.time,
+            #                 self.kF.fitFunction(self.kF.time,*self.kF.fitParam[ii,:]))
+            self.graph.plot(self.kF.time,
+                             self.kF.fitFunction(self.kF.time,*self.kF.fitParam[ii,:]),
+                             pen= mypen)
+
+
 
     def connectSignalWidget(self,signalWidget=None):
         ''' connect data from signal Widget'''

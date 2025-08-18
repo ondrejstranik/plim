@@ -4,7 +4,21 @@ package to fit binding kinetic data
 
 import numpy as np
 from scipy.optimize import curve_fit
+from scipy.special import erf
 import inspect
+
+
+#def functionPFO(x,x0,a,b):
+#    ''' pseudo first order binding curve'''
+#    res = x*0
+#    xb = x>=x0
+#    xa = x< x0
+#    res[xa] = 0
+#    if b!=0:
+#        res[xb] = a*(1-np.exp(-(x[xb]-x0)/b))
+#    else:
+#        res[xb] = a + x[xb]*0
+#    return res
 
 def functionPFO(x,x0,a,b):
     ''' pseudo first order binding curve'''
@@ -12,15 +26,19 @@ def functionPFO(x,x0,a,b):
     xb = x>=x0
     xa = x< x0
     res[xa] = 0
-    if b!=0:
-        res[xb] = a*(1-np.exp(-(x[xb]-x0)/b))
-    else:
-        res[xb] = a + x[xb]*0
+    res[xb] = a*(1-np.exp(-(x[xb]-x0)/(b+1e-6)))
     return res
 
-def funcP1(x,p0,p1):
+#def functionPFO(x,x0,a,b):
+#    xMod = (erf((x-x0)/10)+1)/2*(x-x0)
+#    res = a*(1-np.exp(-xMod*b))
+#    return res
+
+
+
+def funcP1(x,c0,c1):
     ''' linear function'''
-    res = p0 + p1*x
+    res = c0 + c1*x
     return res
 
 
@@ -63,8 +81,10 @@ class KineticFit:
             self.fitType = fitType
             self.setFitFunction()
         if time0 is not None: self.fitEstimate[0] = time0
-        if tau is not None: self.fitEstimate[1] = tau
-        if amp is not None: self.fitEstimate[2] = amp
+        if amp is not None: self.fitEstimate[1] = amp
+        #if tau is not None: self.fitEstimate[2] = 1/tau
+        if tau is not None: self.fitEstimate[2] = tau
+
         if fitEstimate is not None: self.fitEstimate = fitEstimate
 
     def setFitFunction(self):
@@ -72,7 +92,7 @@ class KineticFit:
         if self.fitType == 'adsorption':
             _fitFunction = functionPFO
             self.bcgFunction = funcP1
-            self.fitFunction = lambda x,x0,a,b,p0,p1 : _fitFunction(x,x0,a,b) + self.bcgFunction(x,p0,p1)
+            self.fitFunction = lambda x,x0,a,b,c0,c1 : _fitFunction(x,x0,a,b) + self.bcgFunction(x,c0,c1)
             
             sig = inspect.signature(self.fitFunction)
             self.fitEstimate = np.zeros(len(sig.parameters)-1)
@@ -81,11 +101,11 @@ class KineticFit:
         ''' calculate fits'''
         nFit = self.signal.shape[1]
         self.fitParam = np.zeros((nFit,len(self.fitEstimate)))
-        for ii in range(nFit-1):
+        for ii in range(nFit):
             try:
                 x = self.time
                 y = self.signal[:,ii]
-                popt,pocv = curve_fit(self.fitFunction,x,y,p0 = self.fitEstimate)
+                popt,pocv = curve_fit(self.fitFunction,x,y,p0 = self.fitEstimate.tolist())
                 self.fitParam[ii,:] = popt
             except:
                 print(f'did not find fit for signal {ii}')

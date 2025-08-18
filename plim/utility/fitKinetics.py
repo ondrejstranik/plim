@@ -130,6 +130,7 @@ for ii in range(kFit.fitParam.shape[0]):
     ax.plot(kFit.time,kFit.signal[:,ii])
     ax.plot(kFit.time,kFit.bcgFunction(kFit.time,*kFit.fitParam[ii,-2:]))
     ax.plot(kFit.time,kFit.fitFunction(kFit.time,*kFit.fitParam[ii,:]))
+    print(f'fitting parameter {kFit.fitParam[ii,:]}')   
 
 ax.set_xlabel('time /s')
 ax.set_ylabel('signal /nm')
