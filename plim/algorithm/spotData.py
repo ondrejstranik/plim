@@ -5,6 +5,7 @@ class for calculating spot spectra from 3D spectral cube
 import numpy as np
 import time
 import pickle
+import csv
 
 class SpotData:
     ''' class for processing signal from spots '''
@@ -149,9 +150,6 @@ class SpotData:
 
         return self.noise
 
-
-
-
     def clearData(self):
         ''' clear the data '''
         self.signal = None
@@ -162,6 +160,45 @@ class SpotData:
             'name': None,
             'color': None,
             'visible': None}
+
+    def saveInfoFile(self,folder,fileName):
+        ''' save dSignal and noise with info table into .txt file'''
+
+        _dict = {'dSignal': self.dSignal, 'noise': self.noise}
+        _dataDict = self.table | _dict
+        
+        with open(folder +"/" + fileName, "w") as outfile:
+        
+            # pass the csv file to csv.writer function.
+            #writer = csv.writer(outfile, delimiter ='\t')
+            writer = csv.writer(outfile, delimiter =',')
+
+
+            # pass the dictionary keys to writerow
+            # function to frame the columns of the csv file
+            writer.writerow(_dataDict.keys())
+        
+            # make use of writerows function to append
+            # the remaining values to the corresponding
+            # columns using zip function.
+            writer.writerows(zip(*_dataDict.values()))
+
+    def loadInfoFile(self,folder,fileName):
+        ''' load dSignal and noise with info table info from .txt file'''
+        name, color, dSignal, noise = [],[],[],[]
+
+        with open(folder + "/" + fileName) as csvfile:
+            spamreader = csv.reader(csvfile, delimiter=',')
+            for row in spamreader:
+                if row == []: continue
+                if row[2]=='True':
+                    name.append(row[0])
+                    color.append(row[1])
+                    dSignal.append(float(row[3]))
+                    noise.append(float(row[4]))
+
+        return name, color, np.array(dSignal), np.array(noise)
+
 
         
 #%%

@@ -133,24 +133,7 @@ class Window(QMainWindow):
             print('flow graph exported')
 
             # save info table
-            _dict = {'dSignal': self.sD.dSignal, 'noise': self.sD.noise}
-            _dataDict = self.sD.table | _dict
-            
-            with open(folder[0] +r"/infoTable.txt", "w") as outfile:
-            
-                # pass the csv file to csv.writer function.
-                #writer = csv.writer(outfile, delimiter ='\t')
-                writer = csv.writer(outfile, delimiter =',')
-
-
-                # pass the dictionary keys to writerow
-                # function to frame the columns of the csv file
-                writer.writerow(_dataDict.keys())
-            
-                # make use of writerows function to append
-                # the remaining values to the corresponding
-                # columns using zip function.
-                writer.writerows(zip(*_dataDict.values()))
+            self.sD.saveInfoFile(folder[0],"infoTable.txt")
             print('info data exported')
 
     def SavePressed(self):
@@ -425,7 +408,7 @@ class Window(QMainWindow):
         # fit widget
         self.fW = FitWidget()
         self.fW.show()
-        self.fW.connectSignalWidget(self.sW)
+        self.fW.connectDataObject(self.sW)
 
         # initial update
         self.updateFromSW()

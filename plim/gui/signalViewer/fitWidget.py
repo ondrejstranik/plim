@@ -4,9 +4,11 @@ class for viewing signals and their Fits
 
 import pyqtgraph as pg
 from PyQt5.QtGui import QColor, QPen
-from qtpy.QtWidgets import QWidget,QVBoxLayout
+from qtpy.QtWidgets import QWidget,QVBoxLayout, QFileDialog
 from qtpy import QtCore
 from magicgui import magicgui
+from plim.gui.signalViewer.signalWidget import SignalWidget
+from pathlib import Path
 
 import numpy as np
 from plim.algorithm.kineticFit import KineticFit
@@ -27,7 +29,7 @@ class FitWidget(QWidget):
             if time is not None: self.kF.setTime(time)
 
 
-        self.signalWidget = None
+        self.dataObject = None
 
         # set this gui of this class
         FitWidget._setWidget(self)
@@ -36,11 +38,13 @@ class FitWidget(QWidget):
     def _setWidget(self):
         ''' prepare the gui '''
 
-        @magicgui(layout='horizontal')
+        @magicgui(layout='horizontal', call_button='fit',
+                  time0 = {'max':1e6},
+                  tau= {'max':1e6})
         def fitParameter(
                 time0: float = 0.0,
-                tau: float = 0.0,
-                amp: float = 0.0):
+                tau: float = 1.0,
+                amp: float = 1.0):
 
             self.kF.setFitParameter(time0=time0)
             self.kF.setFitParameter(tau=tau)
@@ -63,32 +67,41 @@ class FitWidget(QWidget):
 
         @magicgui(call_button='transfer data')
         def dataBox():
-            if self.signalWidget is not None:
+            if isinstance(self.dataObject, SignalWidget):
 
-                (signal, time) = self.signalWidget.sD.getData()
-                if not self.signalWidget.align:
+                (signal, time) = self.dataObject.sD.getData()
+                self.kF
+                if not self.dataObject.align:
                     offSet = np.zeros(signal.shape[1])
                 else:
-                    offSet = self.signalWidget.sD.offset
+                    offSet = self.dataObject.sD.offset
                 signal = signal - offSet
 
-                print(f'visible table {self.signalWidget.sD.table["visible"]}')
-
-                _vis = [True if ii=='True' else False for ii in self.signalWidget.sD.table['visible']]
-                print(f'visible {_vis}')
+                _vis = np.array([True if ii=='True' else False for ii in self.dataObject.sD.table['visible']])
                 signal = signal[:,_vis]
 
-                timeMask = ((time>self.signalWidget.sD.evalTime) & 
-                            (time<(self.signalWidget.sD.evalTime + self.signalWidget.sD.dTime)))
+                timeMask = ((time>self.dataObject.sD.evalTime) & 
+                            (time<(self.dataObject.sD.evalTime + self.dataObject.sD.dTime)))
 
-                print(f'timeMask {timeMask}')
-                print(self.signalWidget.sD.evalTime)
-                print((self.signalWidget.sD.evalTime + self.signalWidget.sD.dTime))
+                table = {'name': [self.dataObject.sD.table["name"][ii] for ii in range(len(_vis)) if _vis[ii]==True]}
 
-                self.setData(signal[timeMask,:],time[timeMask])
+
+                self.setData(signal[timeMask,:],time[timeMask],table=table)
 
                 self.drawGraph(onlyData=True)
 
+        @magicgui(call_button='save fit')
+        def saveBox():
+            dialog = QFileDialog(self)
+            dialog.setDirectory(__file__)
+            file = None
+            if dialog.exec():
+                file = dialog.selectedFiles()
+
+            if file is not None:
+                myPath = Path(file[0])
+                self.kF.saveFitInfo(str(myPath.parent), str(myPath.name))
+                print('fit info exported')
 
 
         # add graph
@@ -101,12 +114,14 @@ class FitWidget(QWidget):
         self.fitParameter = fitParameter
         self.infoBox = infoBox
         self.dataBox = dataBox
+        self.saveBox = saveBox
 
         layout = QVBoxLayout()
         layout.addWidget(self.graph)
         layout.addWidget(self.dataBox.native)
         layout.addWidget(self.infoBox.native)
         layout.addWidget(self.fitParameter.native)
+        layout.addWidget(self.saveBox.native)
         self.setLayout(layout)
 
     def drawGraph(self, onlyData=False):
@@ -157,14 +172,15 @@ class FitWidget(QWidget):
 
 
 
-    def connectSignalWidget(self,signalWidget=None):
+    def connectDataObject(self,dataObject=None):
         ''' connect data from signal Widget'''
-        self.signalWidget = signalWidget
+        self.dataObject = dataObject
 
-    def setData(self, signal,time):
+    def setData(self, signal,time,table=None):
         ''' set the data '''
         self.kF.setSignal(signal)
         self.kF.setTime(time)
+        self.kF.setTable(table)
 
 if __name__ == "__main__":
 
@@ -199,10 +215,8 @@ if __name__ == "__main__":
     fW.show()
     app.exec()
 
-        
-
-
-
+if __name__ == "__main__":
+    pass
 
 
 

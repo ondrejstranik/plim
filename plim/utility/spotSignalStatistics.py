@@ -4,10 +4,11 @@
 import numpy as np
 import csv
 from pathlib import Path
+from plim.algorithm.spotData import SpotData
 
 # %% set parameters
 #ffolder = r'D:\ondra\LPI\25-07-02 dna\results\redDot'
-ffolder = r'D:\ondra\LPI\25-07-02 dna\results\redDotEnd'
+ffolder = r'F:\ondra\LPI\25-07-02 dna\results\redDotEnd'
 ffile = r'infoTable.txt'
 
 myPath = Path(ffolder)
@@ -17,23 +18,20 @@ colorNdm = '#ff0000'
 
 #color = colorNdm
 #color = colorRef
-color = colorNdm
+colorSel = colorNdm
 
 #%% process
 
-dSignal = []
-noise = []
+sD = SpotData()
 
-with open(myPath / ffile) as csvfile:
-    spamreader = csv.reader(csvfile, delimiter=',')
-    for row in spamreader:
-        if row == []: continue
-        if (row[1]==color) and row[2]=='True':
-            dSignal.append(float(row[3]))
-            noise.append(float(row[4]))
+name, color, dSignal, noise = sD.loadInfoFile(ffolder,ffile)
 
-dSignal = np.array(dSignal)
-noise = np.array(noise)
+_sel= [True if ii==colorSel else False for ii in color]
+
+dSignal = dSignal[_sel]
+noise = noise[_sel]
+
+print(f'dSignal {dSignal}')
 
 meanDSignal = np.mean(dSignal)
 meanNoise = np.mean(noise)
