@@ -101,7 +101,10 @@ class KineticFit:
         if self.fitType == 'adsorption':
             _fitFunction = functionPFO
             self.bcgFunction = funcP1
-            self.fitFunction = lambda x,x0,a,b,c0,c1 : _fitFunction(x,x0,a,b) + self.bcgFunction(x,c0,c1)
+
+            keys = ('x0','a','b','c0','c1')
+            self.fitFunction = lambda x,*keys : (_fitFunction(x,keys[0],keys[1],keys[2]) 
+                                                 + self.bcgFunction(x,keys[3],keys[4]))
             
             sig = inspect.signature(self.fitFunction)
             self.fitEstimate = np.zeros(len(sig.parameters)-1)
@@ -110,15 +113,17 @@ class KineticFit:
         ''' calculate fits'''
         nFit = self.signal.shape[1]
         self.fitParam = np.zeros((nFit,len(self.fitEstimate)))
-        if self.fixedParam is None: self.fixedParam = np.ones(len(self.fitEstimate),dtype=bool)
+        if self.fixedParam is None: self.fixedParam = np.zeros(len(self.fitEstimate),dtype=bool)
 
-        self.fixedParam[4] = False
+        self.fixedParam[4] = True
 
         print(f'fixedParam {self.fixedParam}')
 
         # TODO: not Working! correct it!
-        minBound = [-np.inf if ii==True else self.fitEstimate[ii] for ii in self.fixedParam]
-        maxBound = [np.inf if ii==True else self.fitEstimate[ii] for ii in self.fixedParam]
+        minBound = [-np.inf if fp==False else fe 
+                    for fe,fp in zip(self.fitEstimate, self.fixedParam)]
+        maxBound = [np.inf if fp==False else fe+1e-6 
+                    for fe,fp  in zip(self.fitEstimate, self.fixedParam)]
 
         print(minBound)
         print(maxBound)
