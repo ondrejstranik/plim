@@ -41,3 +41,5 @@ print(f'parameter best values: {result.best_values}')
 
 
 
+
+# %%

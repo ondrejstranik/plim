@@ -7,7 +7,7 @@ from scipy.optimize import curve_fit
 from scipy.special import erf
 import inspect
 import csv
-
+from lmfit import Model
 
 #def functionPFO(x,x0,a,b):
 #    ''' pseudo first order binding curve'''
@@ -23,11 +23,14 @@ import csv
 
 def functionPFO(x,x0,a,b):
     ''' pseudo first order binding curve'''
-    res = x*0
+    res = x*0.0
     xb = x>=x0
     xa = x< x0
-    res[xa] = 0
-    res[xb] = a*(1-np.exp(-(x[xb]-x0)/(b+1e-6)))
+    res[xa] = 0.0
+    #b = np.abs(b) + 1e-6
+    b += 1e-6
+
+    res[xb] = a*(1-np.exp(-(x[xb]-x0)/b))
     return res
 
 #def functionPFO(x,x0,a,b):
@@ -35,12 +38,13 @@ def functionPFO(x,x0,a,b):
 #    res = a*(1-np.exp(-xMod*b))
 #    return res
 
-
-
-def funcP1(x,c0,c1):
+def functionP1(x,c0,c1):
     ''' linear function'''
     res = c0 + c1*x
     return res
+
+def functionBinding(x,time0,tau,amp,p0,p1):
+    return functionPFO(x,time0,amp,tau) + functionP1(x,p0,p1)
 
 
 class KineticFit:
@@ -56,17 +60,15 @@ class KineticFit:
         # data
         self.time = None # numpy 1D array
         self.signal = None # numpy array each column represent one set
-        self.fitEstimate = None
 
         # info about the data
         self.table = {'name': None}
 
         # fitting parameters
-        self.fitParam = None
-        self.fixedParam = None
+        self.fittedParam = None
         self.fitType = self.DEFAULT['fitType']
-        self.fitFunction = None
-        self.bcgFunction = None
+        self.model = None
+        self.modelParams = None
 
         self.setFitFunction()
 
@@ -82,72 +84,56 @@ class KineticFit:
         ''' set additional info about the fitting data '''
         self.table = table         
 
-    def setFitParameter(self,time0=None,tau=None,amp=None,
-                        fitType=None, fitEstimate = None, fixedParam=None):
+    def setFitParameter(self,name = None,value = None, fixed= None, fitType=None):
         ''' set fitting parameters '''
 
-        if fitType is not None: 
+        if fitType is not None: self.setFitFunction(fitType)
+
+        if name is not None:
+            if value is not None:
+                self.modelParams[name].value = value
+            if fixed is not None:
+                self.modelParams[name].vary = ~fixed
+
+    def setFitFunction(self, fitType=None):
+        ''' define fit function '''
+        if fitType is not None:
             self.fitType = fitType
-            self.setFitFunction()
-        if time0 is not None: self.fitEstimate[0] = time0
-        if amp is not None: self.fitEstimate[1] = amp
-        if tau is not None: self.fitEstimate[2] = tau
-        if fitEstimate is not None: self.fitEstimate = fitEstimate
-
-        if fixedParam is not None: self.fixedParam = fixedParam
-
-    def setFitFunction(self):
-        ''' define fit function depending on the number of polynomial parameters of background'''
         if self.fitType == 'adsorption':
-            _fitFunction = functionPFO
-            self.bcgFunction = funcP1
-
-            keys = ('x0','a','b','c0','c1')
-            self.fitFunction = lambda x,*keys : (_fitFunction(x,keys[0],keys[1],keys[2]) 
-                                                 + self.bcgFunction(x,keys[3],keys[4]))
-            
-            sig = inspect.signature(self.fitFunction)
-            self.fitEstimate = np.zeros(len(sig.parameters)-1)
+            self.model = Model(functionBinding)
+            self.modelParams = self.model.make_params()
 
     def calculateFit(self):
         ''' calculate fits'''
         nFit = self.signal.shape[1]
-        self.fitParam = np.zeros((nFit,len(self.fitEstimate)))
-        if self.fixedParam is None: self.fixedParam = np.zeros(len(self.fitEstimate),dtype=bool)
-
-        self.fixedParam[4] = True
-
-        print(f'fixedParam {self.fixedParam}')
-
-        # TODO: not Working! correct it!
-        minBound = [-np.inf if fp==False else fe 
-                    for fe,fp in zip(self.fitEstimate, self.fixedParam)]
-        maxBound = [np.inf if fp==False else fe+1e-6 
-                    for fe,fp  in zip(self.fitEstimate, self.fixedParam)]
-
-        print(minBound)
-        print(maxBound)
-
+        self.fittedParam = np.zeros((nFit,len(self.modelParams)))
 
         for ii in range(nFit):
             try:
-                x = self.time
-                y = self.signal[:,ii]
-                popt,pocv = curve_fit(self.fitFunction,x,y,p0 = self.fitEstimate.tolist(),
-                                      bounds=(minBound,maxBound))
-                self.fitParam[ii,:] = popt
+                result = self.model.fit(self.signal[:,ii],self.modelParams, x= self.time)
+                self.fittedParam[ii,:] = np.array([result.best_values[_name] 
+                                                for _name in result.best_values.keys()])
             except:
-                print(f'did not find fit for signal {ii}')
+                print(f'could not fit signal{ii}')
+
+
+    def getFittedSignal(self,idx):
+        return self.model.func(self.time,*self.fittedParam[idx,:])
+    
+    def getFittedBackground(self,idx):
+        _param = self.fittedParam[idx,:]*1.0
+        _param[2]= 0 # set aplitude of binding to zero
+        return self.model.func(self.time,*_param)
 
     def saveFitInfo(self,folder,fileName):
         ''' save fits info into .txt file'''
         # save info table
         _dataDict = {'name': self.table['name'],
-                 'time0': self.fitParam[:,0],
-                 'amp': self.fitParam[:,1],
-                 'tau': self.fitParam[:,2],
-                 'c0': self.fitParam[:,3],
-                 'c1': self.fitParam[:,4]}
+                 'time0': self.fittedParam[:,0],
+                 'amp': self.fittedParam[:,1],
+                 'tau': self.fittedParam[:,2],
+                 'p0': self.fittedParam[:,3],
+                 'p1': self.fittedParam[:,4]}
 
         with open(folder +"/" + fileName, "w") as outfile:
         
@@ -169,8 +155,8 @@ class KineticFit:
         time0 = []
         amp = []
         tau = []
-        c0 = []
-        c1 = []
+        p0 = []
+        p1 = []
         with open(folder +"/" + fileName) as csvfile:
             spamreader = csv.reader(csvfile, delimiter=',')
             # skip header
@@ -181,10 +167,10 @@ class KineticFit:
                 time0.append(float(row[1]))
                 amp.append(float(row[2]))
                 tau.append(float(row[3]))
-                c0.append(float(row[4]))
-                c1.append(float(row[5]))
+                p0.append(float(row[4]))
+                p1.append(float(row[5]))
 
-        fitParam = np.array([time0,amp,tau,c0,c1])
+        fitParam = np.array([time0,amp,tau,p0,p1])
 
         return name, fitParam
 

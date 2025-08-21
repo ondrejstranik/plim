@@ -3,6 +3,7 @@ class for viewing signals and their Fits
 '''
 
 import pyqtgraph as pg
+import pyqtgraph.exporters
 from PyQt5.QtGui import QColor, QPen
 from qtpy.QtWidgets import QWidget,QVBoxLayout, QFileDialog
 from qtpy import QtCore
@@ -28,7 +29,7 @@ class FitWidget(QWidget):
             if signal is not None: self.kF.setSignal(signal)
             if time is not None: self.kF.setTime(time)
 
-
+        # instance from where signal and time can be obtained
         self.dataObject = None
 
         # set this gui of this class
@@ -40,30 +41,46 @@ class FitWidget(QWidget):
 
         @magicgui(layout='horizontal', call_button='fit',
                   time0 = {'max':1e6},
-                  tau= {'max':1e6})
-        def fitParameter(
-                time0: float = 0.0,
-                tau: float = 1.0,
-                amp: float = 1.0):
+                  tau= {'max':1e6},
+                  p1 = {'step': 1e-6},
+                  varyTime0 = {'label':' '},
+                  varyTau = {'label':' '},
 
-            self.kF.setFitParameter(time0=time0)
-            self.kF.setFitParameter(tau=tau)
-            self.kF.setFitParameter(amp=amp)
+                   )
+        def fitParameter(
+                time0: float = 0.0, varyTime0 = True,
+                tau: float = 1.0, varyTau = True,
+                amp: float = 1.0, varyAmp = True,
+                p0: float = 0.0, varyP0 = True,
+                p1: float = 0.0, varyP1 = True):
+
+            self.kF.setFitParameter(name='time0',value=time0,fixed=~varyTime0)
+            self.kF.setFitParameter(name='tau',value=tau,fixed=~varyTau)
+            self.kF.setFitParameter(name='amp',value=amp,fixed=~varyAmp)
+            self.kF.setFitParameter(name='p0',value=p0,fixed=~varyP0)
+            self.kF.setFitParameter(name='p1',value=p1,fixed=~varyP1)
 
             self.kF.calculateFit()
 
             self.drawGraph()
             #self.infoBox((1/self.kF.fitParam[:,2]).mean(), (1/self.kF.fitParam[:,2]).std())
-            self.infoBox(self.kF.fitParam[:,2].mean(), self.kF.fitParam[:,2].std())
+            self.infoBox(self.kF.fittedParam[:,2].mean(), self.kF.fittedParam[:,2].std(),
+                         self.kF.fittedParam[:,-1].mean(), self.kF.fittedParam[:,-1].std())
 
-            print('fiting the data')
+            print('fitting the data')
 
         @magicgui(layout='horizontal', call_button=False,
                   tau = {'label':'tau','widget_type': 'Label'},
-                  std = {'label':'std','widget_type': 'Label'} )
-        def infoBox(tau = 0, std= 0):
+                  stdTau = {'label':'std','widget_type': 'Label'},
+                  drift = {'label':'drift','widget_type': 'Label'},
+                  stdDrift = {'label':'std','widget_type': 'Label'}  )
+        def infoBox(tau = 0, stdTau= 0, drift=0, stdDrift=0):
             self.infoBox.tau.value = tau
-            self.infoBox.std.value = std
+            self.infoBox.stdTau.value = stdTau
+            self.infoBox.drift.value = drift
+            self.infoBox.stdDrift.value = stdDrift
+
+
 
         @magicgui(call_button='transfer data')
         def dataBox():
@@ -102,6 +119,15 @@ class FitWidget(QWidget):
                 myPath = Path(file[0])
                 self.kF.saveFitInfo(str(myPath.parent), str(myPath.name))
                 print('fit info exported')
+
+                # save signal graph
+                exporter = pyqtgraph.exporters.ImageExporter(self.graph.plotItem)
+                # set export parameters if needed
+                #exporter.parameters()['width'] = 100   # (note this also affects height parameter)
+                exporter.export(str(myPath.parent /myPath.name)  +r"_graph.png")
+                print('fit graph exported')
+
+
 
 
         # add graph
@@ -157,17 +183,17 @@ class FitWidget(QWidget):
             #lineplot.setData(self.kF.time,
             #                 self.kF.bcgFunction(self.kF.time,*self.kF.fitParam[ii,-2:]))
             self.graph.plot(self.kF.time,
-                             self.kF.bcgFunction(self.kF.time,*self.kF.fitParam[ii,-2:]),
+                             self.kF.getFittedBackground(idx = ii),
                               pen=mypen)
             mypen = QPen()
             mypen.setWidth(0)        
             mypen.setColor(QColor("Red"))
             mypen.setStyle(1)
-            #lineplot = self.graph.plot(pen=mypen)
+            lineplot = self.graph.plot(pen=mypen)
             #lineplot.setData(self.kF.time,
             #                 self.kF.fitFunction(self.kF.time,*self.kF.fitParam[ii,:]))
             self.graph.plot(self.kF.time,
-                             self.kF.fitFunction(self.kF.time,*self.kF.fitParam[ii,:]),
+                             self.kF.getFittedSignal(idx=ii),
                              pen= mypen)
 
 
@@ -183,44 +209,8 @@ class FitWidget(QWidget):
         self.kF.setTable(table)
 
 if __name__ == "__main__":
-
-    # load data
-    from plim.algorithm.fileData import FileData
-    from qtpy.QtWidgets import QApplication
-
-    ffile = r'Experiment1'
-    ffolder = r'F:\ondra\LPI\25-07-02 dna'
-
-    fData = FileData()
-    fData.loadAllFile(ffolder,fileMainName=ffile)    
-
-    fData.spotData.time0 = fData.flowData.time[0]
-    fData.spotData.setOffset(alignTime=700, range=5)
-    time = fData.spotData.time-fData.spotData.time0
-
-    idx = np.array((68,58,50,40,34))
-    sig = fData.spotData.signal[:,idx]-fData.spotData.offset[idx]
-
-    fTime = np.array([200,1800])
-    fTimeMask = (time>fTime[0]) & (time<fTime[1])
-  
-    app = QApplication([])
-
-    fW = FitWidget()
-    fW.setData(signal=sig[fTimeMask,:],time=time[fTimeMask])
-    fW.fitParameter.time0.value = 700
-    fW.fitParameter.tau.value = 300
-    fW.fitParameter.amp.value = 1
-
-    fW.show()
-    app.exec()
-
-if __name__ == "__main__":
     pass
 
-
-
-#%%
 
 
 

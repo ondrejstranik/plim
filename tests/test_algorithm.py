@@ -133,3 +133,49 @@ def test_flowData():
     print(f'time {time}')
 
     assert signal.shape[0]==50
+
+
+@pytest.mark.GUI
+def test_kineticFit():
+    ''' check if spectra are fitted'''
+    import numpy as np
+    from plim.algorithm.kineticFit import KineticFit
+    import matplotlib.pyplot as plt
+    from plim.algorithm.kineticFit import functionBinding
+
+    
+    kF = KineticFit()
+
+    # generate data set    
+    time = np.arange(1000)
+    nFit = 5
+    # trueParam .... time0,tau,amp,p0,p1
+    trueParam = np.array((100,50,10,20,1e-3))
+    signal = np.zeros((len(time),nFit))
+    for ii in range(nFit):
+        _Param = trueParam + (ii,ii,ii,ii,0)
+        signal[:,ii] = kF.model.func(time,*_Param) + np.random.rand(len(time))*5
+    
+    # set data
+    kF.setTime(time)
+    kF.setSignal(signal)
+    kF.setTable({'name':['a','b','c','d','e']})
+    # set parameters 
+    kF.setFitParameter(name= 'time0',value=trueParam[0],fixed = False)
+    kF.setFitParameter(name= 'tau',value=trueParam[1],fixed = False)
+    kF.setFitParameter(name= 'amp',value=trueParam[2],fixed = False)
+    kF.setFitParameter(name= 'p0',value=trueParam[3],fixed = False)
+    kF.setFitParameter(name= 'p1',value=trueParam[4],fixed = True)
+
+    kF.calculateFit()
+
+    print(kF.fittedParam)
+
+    fig, ax = plt.subplots()
+    ax.plot(time,signal)
+
+    for ii in range(nFit):
+        ax.plot(time,kF.getFittedSignal(ii))
+        ax.plot(time,kF.getFittedBackground(ii))
+
+    plt.show()
