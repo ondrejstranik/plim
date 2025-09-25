@@ -10,6 +10,9 @@ from skimage.transform import rotate
 
 class SpotSpectra:
     ''' class for calculating spot spectra '''
+    
+    maskType = {'circle','square','offCentre'}
+    
     DEFAULT = {'circle': True, # circle or square
                 'pxBcg': 3, # thickness of the background shell
                 'pxAve': 3, # radius of the spot
@@ -76,8 +79,10 @@ class SpotSpectra:
             self.maskSpot = maskR<self.pxAve
             self.maskBcg = (maskR>(self.pxAve+self.pxSpace)) & (maskR<self.pxAve+self.pxSpace + self.pxBcg)
             
-        # mask has a squares
+
         else:
+            '''
+            # mask has a squares
             a = (self.pxBcg + self.pxAve + self.pxSpace)
             b = (self.pxBcg + self.pxAve*self.ratio + self.pxSpace)
             self.maskSize = 2*int(np.sqrt(a**2 + b**2)) +1
@@ -96,6 +101,21 @@ class SpotSpectra:
 
             self.maskSpot = rotate(self.maskSpot,self.angle)
             self.maskBcg = rotate(self.maskBcg,self.angle)
+            '''
+            # mask has a squares with off set
+            self.maskSize = int(2*self.pxAve + self.pxSpace)
+            xx, yy = np.meshgrid(np.arange(self.maskSize) - self.maskSize//2,
+                                 np.arange(self.maskSize) - self.maskSize//2)
+
+            self.maskSpot = (xx<-self.pxSpace/2) & (np.abs(yy)<self.pxAve/2)
+            self.maskBcg = (xx> self.pxSpace/2) & (np.abs(yy)<self.pxAve/2)
+
+            self.maskSpot = rotate(self.maskSpot,self.angle)
+            self.maskBcg = rotate(self.maskBcg,self.angle)
+
+            #print(f'maskSpot \n  {self.maskSpot}')
+            #print(f'maskBcg \n  {self.maskSpot}')
+
 
         # set mask image (for visualisation only)
         if hasattr(self,'wxyImage'):
