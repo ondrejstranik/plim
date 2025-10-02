@@ -221,7 +221,9 @@ class Plim():
         #camera
         camera = PFCamera(name='pfCamera')
         camera.connect()
-        camera.setParameter('exposureTime',30)
+        camera.setParameter('exposureTime',2)
+        camera.setParameter('nFrame',33)
+
         camera.setParameter('threadingNow',True)
 
         sCal = CalibratePFImage()
@@ -283,8 +285,8 @@ class Plim():
 if __name__ == "__main__":
 
     #Plim.runReal()
-    Plim.runVirtual()
-    #Plim.runRealMicroscope()
+    #Plim.runVirtual()
+    Plim.runRealMicroscope()
     
 #%%
 
