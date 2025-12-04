@@ -211,6 +211,8 @@ class Plim():
         from spectralCamera.algorithm.calibratePFImage import CalibratePFImage
         from spectralCamera.instrument.sCamera.sCamera import SCamera
         from viscope.instrument.virtual.virtualPump import VirtualPump
+        from plim.instrument.pump.regloICC import RegloICC
+
         from plim.instrument.plasmonProcessor import PlasmonProcessor
 
 
@@ -236,10 +238,14 @@ class Plim():
         sCamera.setParameter('threadingNow',True)
 
         # pump
-        pump = VirtualPump('pump')
+        #pump = VirtualPump('pump')
+        RegloICC.DEFAULT['port'] = 'COM3'
+        pump = RegloICC('pump')
+        
         pump.connect()
         pump.setParameter('flowRate',30)
         pump.setParameter('flow',False)
+
 
         # plasmon data processor    
         pP = PlasmonProcessor()
@@ -285,8 +291,8 @@ class Plim():
 if __name__ == "__main__":
 
     #Plim.runReal()
-    #Plim.runVirtual()
-    Plim.runRealMicroscope()
+    Plim.runVirtual()
+    #Plim.runRealMicroscope()
     
 #%%
 

@@ -159,11 +159,14 @@ class SpotSpectra:
 
         for myspot in self.spotPosition:
             # image of the single spots with surrounding 
-            myAreaImage = self.wxyImage[:,int(myspot[0])-self.maskSize//2:int(myspot[0])+self.maskSize//2+1,
-                            int(myspot[1])-self.maskSize//2:int(myspot[1])+self.maskSize//2+1]
-            myAreaImageFlatten = myAreaImage.reshape(myAreaImage.shape[0],-1)
 
             try:
+
+                myAreaImage = self.wxyImage[:,int(myspot[0])-self.maskSize//2:int(myspot[0])+self.maskSize//2+1,
+                                int(myspot[1])-self.maskSize//2:int(myspot[1])+self.maskSize//2+1]
+                myAreaImageFlatten = myAreaImage.reshape(myAreaImage.shape[0],-1)
+
+
                 spectraRawSpot = np.mean(myAreaImageFlatten[:,maskSpotFlatten], axis=1)
                 spectraRawBcg = np.mean(myAreaImageFlatten[:,maskBcgFlatten], axis=1)
 

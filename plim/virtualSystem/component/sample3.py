@@ -37,7 +37,7 @@ class Sample3(Sample2):
                         ):
 
         DEFAULT = { 'samplePixelSize':1, # um
-                    'samplePosition': np.array([0,0,0]),  # pixels
+                    'samplePosition': np.array([10,10,0]),  # pixels
                     'arraySize': np.array([5,10]),
                     'spotDiameter': 5,  # pixels
                     'wavelength': np.arange(400,800,10),
