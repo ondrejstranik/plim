@@ -17,6 +17,7 @@ from PyQt5.QtGui import QColor, QPen
 from magicgui import magicgui
 from enum import Enum
 from typing import Annotated, Literal
+import traceback
 
 import numpy as np
 
@@ -134,6 +135,7 @@ class PlasmonViewer(SpotSpectraViewer):
                     self.lineplotList4[ii].setValue(peakPosition[ii])
             except:
                 print('error occurred in update_spectraGraph - fitSpectra')
+                traceback.print_exc()
 
 
 

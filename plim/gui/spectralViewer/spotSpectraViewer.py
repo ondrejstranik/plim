@@ -17,7 +17,7 @@ from enum import Enum
 from typing import Annotated, Literal
 
 import numpy as np
-
+import traceback
 
 class SpotSpectraViewer(XYWViewer):
     ''' class viewing spectra of plasmon spots'''
@@ -163,6 +163,7 @@ class SpotSpectraViewer(XYWViewer):
                     self.lineplotList.append(lineplot)
             except:
                 print('error occurred in drawSpectraGraph')
+                traceback.print_exc()
         else:
             for ii in np.arange(len(self.pointSpectra)):
                 mypen = QPen(QColor.fromRgbF(*list(
@@ -184,7 +185,8 @@ class SpotSpectraViewer(XYWViewer):
         ''' update the lines in the spectra graph '''
         if self.showRawSpectra:
             try:
-                for ii in np.arange(len(self.pointSpectra)):
+                indLen = np.min((len(self.spotSpectra.spectraRawSpot),len(self.spotSpectra.spectraRawBcg)))
+                for ii in np.arange(indLen):
                     myline = self.lineplotList[2*ii]
                     mypen = QPen(QColor.fromRgbF(*list(
                         self.pointLayer.face_color[ii])))
@@ -194,6 +196,10 @@ class SpotSpectraViewer(XYWViewer):
                     myline.setData(self.wavelength,self.spotSpectra.spectraRawBcg[ii], pen = mypen)
             except:
                 print('error occurred in updateSpectraGraph')
+                print(f'indLen {indLen}')
+                print(f'iii {ii}')
+                print(f'len(self.spotSpectra.spectraRawSpot) {len(self.spotSpectra.spectraRawSpot)}')
+                traceback.print_exc()
         else:
             try:
                 self.pointSpectra = self.spotSpectra.getA()
@@ -207,6 +213,7 @@ class SpotSpectraViewer(XYWViewer):
 
             except:
                 print('error occurred in updateSpectraGraph')
+                traceback.print_exc()
 
 
 
