@@ -71,13 +71,16 @@ class PositionTrackGUI(BaseGUI):
     def updatePositionTrack(self):
         ''' update color in position Track because color in plasmon viewer changed'''
 
-        print(f'updating from Napari - color')
+        print(f'updating from Napari - color or number of spots')
     
         # update color in spotData
         _fc = 1*self.pvGui.plasmonViewer.pointLayer.face_color #  deep copy of the colors
         _fc[list(self.pvGui.plasmonViewer.pointLayer.selected_data)] = self.pvGui.plasmonViewer.pointLayer._face.current_color # adjust the just modified 
         _fcHex = ['#{:02x}{:02x}{:02x}'.format( *ii.tolist()) for ii in (_fc*255).astype(int)]
         self.positionTrack.sD.table['color'] = _fcHex
+
+        # update the offset for data
+        self.positionTrack.sD.setOffset()
 
 
 

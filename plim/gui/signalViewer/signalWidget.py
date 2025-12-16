@@ -8,6 +8,7 @@ from qtpy.QtWidgets import QWidget,QVBoxLayout
 from qtpy import QtCore
 from magicgui import magicgui
 from qtpy.QtCore import Signal
+import traceback
 
 import numpy as np
 from plim.algorithm.spotData import SpotData
@@ -233,22 +234,20 @@ class SignalWidget(QWidget):
     def drawGraph(self):
         ''' draw all new lines in the spectraGraph '''
 
+        # copy the data
         (signal, time) = self.sD.getData()
-
-        #print(f'signal shape = {signal.shape}')
-        #print(f'time shape = {time.shape}')
+        offSet = self.sD.getOffset()
 
         # if there is no signal then do not continue
         if signal is None:
             return
 
-        # remove all lines
-        self.graph.clear()
-
         # set off set for the lines
-        offSet = self.sD.offset
         if not self.align:
             offSet = np.zeros(signal.shape[1])
+
+        # remove all lines
+        self.graph.clear()
 
         #try:
             # draw lines
@@ -266,7 +265,7 @@ class SignalWidget(QWidget):
             if ii == self.lineIndex:
                 mypen.setStyle(2)
 
-
+            '''
             hexColor = self.sD.table['color'][ii]
             rgbaColor = [int(hexColor[1:3],16)/255,
                             int(hexColor[3:5],16)/255,
@@ -285,12 +284,23 @@ class SignalWidget(QWidget):
                 mypen.setColor(QColor.fromRgbF(*list(rgbaColor)))
                 lineplot = self.graph.plot(pen= mypen)
             except:
+                traceback.print_exc()
                 lineplot = self.graph.plot(pen= mypen)
                 print('error occurred in drawGraph - signalWidget')
                 print(f"sD.signalColor {self.sD.table['color']}")
-            '''
+
+            try:
+                lineplot.setData(time, signal[:,ii]-offSet[ii])
+            except:
+                print('error occurred in drawGraph - signalWidget')                
+                print(f' ii = {ii}')
+                print(f' len(offSet) {len(offSet)}')
+
+                traceback.print_exc()
+
+
             # TODO: temporarly changed
-            lineplot.setData(time, signal[:,ii]-offSet[ii])
+            #lineplot.setData(time, signal[:,ii]-offSet[ii])
             #print(f'offset for line  {ii} is  {offSet[ii]}')
 
         #except:

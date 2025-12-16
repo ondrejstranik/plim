@@ -122,6 +122,10 @@ class SpotData:
         #print(f'range is {range}')
         self.offset = np.mean(self.signal[range,:],axis=0)
 
+    def getOffset(self):
+        ''' return the offset'''
+        return self.offset
+
     def getDSignal(self,evalTime=None,dTime=None, range=None):
         ''' get the difference value of signal'''
 
