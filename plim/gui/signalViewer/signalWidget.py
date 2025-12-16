@@ -236,8 +236,7 @@ class SignalWidget(QWidget):
 
         # copy the data
         (signal, time) = self.sD.getData()
-        offSet = self.sD.getOffset()
-
+  
         # if there is no signal then do not continue
         if signal is None:
             return
@@ -245,6 +244,10 @@ class SignalWidget(QWidget):
         # set off set for the lines
         if not self.align:
             offSet = np.zeros(signal.shape[1])
+        else:
+            self.sD.setOffset()
+            offSet = self.sD.getOffset()
+
 
         # remove all lines
         self.graph.clear()
@@ -294,7 +297,11 @@ class SignalWidget(QWidget):
             except:
                 print('error occurred in drawGraph - signalWidget')                
                 print(f' ii = {ii}')
-                print(f' len(offSet) {len(offSet)}')
+                if offSet is not None:
+                    print(f' len(offSet) {len(offSet)}')
+                else:
+                    print(' offset is None')
+
 
                 traceback.print_exc()
 

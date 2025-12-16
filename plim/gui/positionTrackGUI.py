@@ -80,7 +80,7 @@ class PositionTrackGUI(BaseGUI):
         self.positionTrack.sD.table['color'] = _fcHex
 
         # update the offset for data
-        self.positionTrack.sD.setOffset()
+        #self.positionTrack.sD.setOffset()
 
 
 

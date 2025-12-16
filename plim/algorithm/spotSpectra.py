@@ -42,6 +42,10 @@ class SpotSpectra:
         self.maskSize = None # total size of the mask
         self.maskSpot = None # weights for calculation of spots spectra
         self.maskBcg = None # weight for calculation of background spectra
+        self.maskSpotIdx = None # indexes of of the mask
+        self.maskBcgIdx = None # indexes of of the mask
+
+
         self.maskImage = None # for visualisation only
  
         self.spectraRawSpot = []
@@ -115,6 +119,15 @@ class SpotSpectra:
 
             #print(f'maskSpot \n  {self.maskSpot}')
             #print(f'maskBcg \n  {self.maskSpot}')
+
+        # get the indexes of the masks
+        self.maskSpotIdx = np.argwhere(self.maskSpot)
+        self.maskBcgIdx = np.argwhere(self.maskBcg)
+
+
+
+
+
 
 
         # set mask image (for visualisation only)
