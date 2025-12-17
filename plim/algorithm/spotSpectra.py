@@ -6,6 +6,7 @@ class for calculating spot spectra from 3D spectral cube
 
 import numpy as np
 from skimage.transform import rotate
+import traceback
 
 
 class SpotSpectra:
@@ -59,6 +60,7 @@ class SpotSpectra:
     def setMask(self,pxAve=None,pxBcg= None, pxSpace = None, 
                 circle= None, ratio = None, angle = None):
         ''' set the geometry of spots and bcg mask  and calculate spectra'''
+
 
         if pxAve is not None:
             self.pxAve = int(pxAve)
@@ -120,53 +122,68 @@ class SpotSpectra:
             #print(f'maskSpot \n  {self.maskSpot}')
             #print(f'maskBcg \n  {self.maskSpot}')
 
-        # get the indexes of the masks
-        _maskSpotIdx = np.argwhere(self.maskSpot)
-        _maskBcgIdx = np.argwhere(self.maskBcg)
-
-
-        #TODO: finish this part of the code - vectorial calculation
-        # set mask image
-        self.maskSpotIdx = (
-        _maskSpotIdx[0]+ self.spotPosition[:,0][:,None]-self.maskSize//2,
-        _maskSpotIdx[1]+ self.spotPosition[:,1][:,None]-self.maskSize//2
-        )
-
-        ol1 = np.any((self.maskSpotIdx[0]<0, 
-                      self.maskSpotIdx[0]>99, 
-                      self.maskSpotIdx[1]<0,
-                      self.maskSpotIdx[1]>199),axis=0)
-        outliers = np.any(ol1,axis=1)
-
-        allMaskIdxX = allMaskIdx[0][~outliers,:]
-        allMaskIdxY = allMaskIdx[1][~outliers,:]
-
-
-
-
-        '''
-        # set mask image (for visualisation only)
-        if hasattr(self,'wxyImage'):
-            self.maskImage = 0*self.wxyImage[0,:,:]
-            for myspot in self.spotPosition:
-                try:
-                    self.maskImage[int(myspot[0])-self.maskSize//2:int(myspot[0])+self.maskSize//2+1,
-                                    int(myspot[1])-self.maskSize//2:int(myspot[1])+self.maskSize//2+1] = \
-                                    self.maskSpot*2
-                    self.maskImage[int(myspot[0])-self.maskSize//2:int(myspot[0])+self.maskSize//2+1,
-                                    int(myspot[1])-self.maskSize//2:int(myspot[1])+self.maskSize//2+1] += \
-                                    self.maskBcg*1
-                except:
-                    print('error in setting self.maskImage')
-                    pass
-
-        '''
-                    
+        # calculate the spectra with the new mask
         self.calculateSpectra()
+
+
+        # get the maskimage and identify the spots with the mask in the image
+
+        if not hasattr(self,'wxyImage'):
+            return
+        else:
+            self.maskImage = 0*self.wxyImage[0,:,:]
+
+        # convert self.spotPosition to numpy array. it is better to operate on
+        _spotPosition = np.array(self.spotPosition, dtype=int)
+
+        if _spotPosition.size ==0:
+            return
+
+        try:
+            # get the indexes of the masks and bcgMask
+            _maskSpotIdx = np.where(self.maskSpot)
+            _maskBcgIdx = np.where(self.maskBcg)
+
+            self.maskSpotIdx = (
+            _maskSpotIdx[0]+ _spotPosition[:,0][:,None]-self.maskSize//2,
+            _maskSpotIdx[1]+ _spotPosition[:,1][:,None]-self.maskSize//2
+            )
+            self.maskBcgIdx = (
+            _maskBcgIdx[0]+ _spotPosition[:,0][:,None]-self.maskSize//2,
+            _maskBcgIdx[1]+ _spotPosition[:,1][:,None]-self.maskSize//2
+            )
+
+            # outliers ... points, which our outside the image (mask and bcg)
+            _olm = np.any((
+                self.maskSpotIdx[0]<0, 
+                self.maskSpotIdx[0]>self.maskImage.shape[0]-1, 
+                self.maskSpotIdx[1]<0,
+                self.maskSpotIdx[1]>self.maskImage.shape[1]-1,
+                ),axis=0)
+            _olb = np.any((
+                self.maskBcgIdx[0]<0, 
+                self.maskBcgIdx[0]>self.maskImage.shape[0]-1, 
+                self.maskBcgIdx[1]<0,
+                self.maskBcgIdx[1]>self.maskImage.shape[1]-1,
+                ),axis=0)
+
+            outliers = np.any([np.any(_olm,axis=1), np.any(_olb,axis=1)], axis=0)
+
+            # set mask to one
+            self.maskImage[self.maskSpotIdx[0][~outliers,:],
+                        self.maskSpotIdx[1][~outliers,:]] = 1
+            
+            # set bcg to two
+            self.maskImage[self.maskBcgIdx[0][~outliers,:],
+                        self.maskBcgIdx[1][~outliers,:]] = 2
+            
+        except:
+            print('error in setting self.maskImage')
+            traceback.print_exc()
 
     def setSpot(self, spotPosition):
         ''' set position of the spots  and calculate spectra'''
-        self.spotPosition = spotPosition
+        self.spotPosition = np.array(spotPosition)
 
         self.setMask()
         #self.calculateSpectra()

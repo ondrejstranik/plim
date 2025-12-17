@@ -197,7 +197,7 @@ class SpotSpectraViewer(XYWViewer):
             except:
                 print('error occurred in updateSpectraGraph')
                 print(f'indLen {indLen}')
-                print(f'iii {ii}')
+                print(f'ii {ii}')
                 print(f'len(self.spotSpectra.spectraRawSpot) {len(self.spotSpectra.spectraRawSpot)}')
                 traceback.print_exc()
         else:
