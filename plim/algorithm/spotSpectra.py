@@ -48,7 +48,9 @@ class SpotSpectra:
 
 
         self.maskImage = None # for visualisation
- 
+        self.outliers = None # bool vector with spotPosition, which are outside the image
+
+
         self.spectraRawSpot = []
         self.spectraRawBcg = []
         self.spectraSpot = []
@@ -139,6 +141,8 @@ class SpotSpectra:
         if _spotPosition.size ==0:
             return
 
+        self.outliers = np.zeros(_spotPosition.shape[0], dtype=bool)
+
         try:
             # get the indexes of the masks and bcgMask
             _maskSpotIdx = np.where(self.maskSpot)
@@ -153,7 +157,6 @@ class SpotSpectra:
             _maskBcgIdx[1]+ _spotPosition[:,1][:,None]-self.maskSize//2
             )
 
-            # outliers ... points, which our outside the image (mask and bcg)
             _olm = np.any((
                 self.maskSpotIdx[0]<0, 
                 self.maskSpotIdx[0]>self.maskImage.shape[0]-1, 
@@ -167,15 +170,15 @@ class SpotSpectra:
                 self.maskBcgIdx[1]>self.maskImage.shape[1]-1,
                 ),axis=0)
 
-            outliers = np.any([np.any(_olm,axis=1), np.any(_olb,axis=1)], axis=0)
+            self.outliers = np.any([np.any(_olm,axis=1), np.any(_olb,axis=1)], axis=0)
 
             # set mask to one
-            self.maskImage[self.maskSpotIdx[0][~outliers,:],
-                        self.maskSpotIdx[1][~outliers,:]] = 1
+            self.maskImage[self.maskSpotIdx[0][~self.outliers,:],
+                        self.maskSpotIdx[1][~self.outliers,:]] = 1
             
             # set bcg to two
-            self.maskImage[self.maskBcgIdx[0][~outliers,:],
-                        self.maskBcgIdx[1][~outliers,:]] = 2
+            self.maskImage[self.maskBcgIdx[0][~self.outliers,:],
+                        self.maskBcgIdx[1][~self.outliers,:]] = 2
             
         except:
             print('error in setting self.maskImage')
@@ -197,43 +200,42 @@ class SpotSpectra:
     def calculateSpectra(self):
         ''' calculate the spectra '''
 
-        self.spectraRawSpot = []
-        self.spectraRawBcg = []
-        self.spectraSpot = []
+        if self.spotPosition is None or len(self.spotPosition)==0:
+            return
+        else:
+            nSpot = len(self.spotPosition)
+        
+        if (self.maskSpotIdx is None) or (self.maskBcgIdx is None):
+            print('no self.maskSpotIdx or self.maskBcgIdx')
+            return
+        
+        if not hasattr(self,'wxyImage') or self.wxyImage is None:
+            return
 
-        maskSpotFlatten = self.maskSpot.flatten()
-        maskBcgFlatten = self.maskBcg.flatten()
+        _spectraRawSpot = np.ones((nSpot,self.wxyImage.shape[0]))
+        _spectraRawBcg = np.ones((nSpot,self.wxyImage.shape[0]))
 
-        for myspot in self.spotPosition:
-            # image of the single spots with surrounding 
+        try:
+            _spectraRawSpot[~self.outliers,:] = np.sum(
+                self.wxyImage[:,
+                            self.maskSpotIdx[0][~self.outliers,:],
+                            self.maskSpotIdx[1][~self.outliers,:]
+                            ],axis=2).T
 
-            try:
+            _spectraRawBcg[~self.outliers,:] = np.sum(
+                self.wxyImage[:,
+                            self.maskBcgIdx[0][~self.outliers,:],
+                            self.maskBcgIdx[1][~self.outliers,:]
+                            ],axis=2).T
+        except:
+            print('error in calculateSpectra')
+            traceback.print_exc()
 
-                myAreaImage = self.wxyImage[:,int(myspot[0])-self.maskSize//2:int(myspot[0])+self.maskSize//2+1,
-                                int(myspot[1])-self.maskSize//2:int(myspot[1])+self.maskSize//2+1]
-                myAreaImageFlatten = myAreaImage.reshape(myAreaImage.shape[0],-1)
 
-
-                spectraRawSpot = np.mean(myAreaImageFlatten[:,maskSpotFlatten], axis=1)
-                spectraRawBcg = np.mean(myAreaImageFlatten[:,maskBcgFlatten], axis=1)
-
-                spectraRawSpot = spectraRawSpot - self.darkCount
-                spectraRawBcg  = spectraRawBcg -  self.darkCount
-
-                spectraRawSpot[spectraRawSpot <=1] = 1 # avoid small numbers and negative
-                spectraRawBcg[spectraRawBcg <=1] = 1 # avoid division by small numbers and negative 
-
-                spectraSpot = spectraRawSpot/spectraRawBcg
-
-            except:
-                spectraRawSpot = np.ones(self.wxyImage.shape[0])
-                spectraRawBcg = np.ones(self.wxyImage.shape[0])
-
-                spectraSpot = spectraRawSpot/spectraRawBcg
-
-            self.spectraRawSpot.append(spectraRawSpot)        
-            self.spectraRawBcg.append(spectraRawBcg)        
-            self.spectraSpot.append(spectraSpot)  
+        _spectraSpot = _spectraRawSpot/_spectraRawBcg
+        self.spectraRawSpot = _spectraRawSpot.tolist()
+        self.spectraRawBcg = _spectraRawBcg.tolist()
+        self.spectraSpot = _spectraSpot.tolist()
 
 
     def getMask(self):

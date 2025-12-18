@@ -301,14 +301,8 @@ class SignalWidget(QWidget):
                     print(f' len(offSet) {len(offSet)}')
                 else:
                     print(' offset is None')
-
-
                 traceback.print_exc()
 
-
-            # TODO: temporarly changed
-            #lineplot.setData(time, signal[:,ii]-offSet[ii])
-            #print(f'offset for line  {ii} is  {offSet[ii]}')
 
         #except:
         #    print('error occurred in drawSpectraGraph - pointSpectra')
