@@ -23,23 +23,27 @@ class SignalWidget(QWidget):
         ''' initialise the class '''
         super().__init__()
 
+        # define the data
         if spotData is not None: self.sD = spotData 
         else:
             if signal is not None: self.sD = SpotData(signal,time)
             else:
+                # these are default data
                 self.sD = SpotData(np.arange(10*3).reshape(10,3))
 
+        # parameters of the graph
         self.align = False
         self.lineIndex = 0
+        self.linePlotList = []
+        self.vLine = []
       
-
         #define position of mouse on the graph - use for selection
         self.mousePoint = QtCore.QPointF()
 
         # set this gui of this class
         SignalWidget._setWidget(self)
 
-        # set the values and graph lines in the gui
+        # set the values and graph lines in the gui +  draw the graph
         self.lineParameter()
 
     def _setWidget(self):
@@ -128,6 +132,7 @@ class SignalWidget(QWidget):
                     self.sD.table['visible'][lineIndex]='False'
                 self.drawGraph()
                 print('change of visibility')
+                print(f"line {lineIndex} is now {self.sD.table['visible'][lineIndex]}")
 
 
             # color is changed            
@@ -163,6 +168,20 @@ class SignalWidget(QWidget):
         self.graph.setLabel('left', 'Position', units='nm')
         self.graph.setLabel('bottom', 'time', units= 's')
         self.graph.scene().sigMouseMoved.connect(self.mouse_moved)
+        # add vertical lines
+        # vLine[0] ... position signal1
+        vLine = pg.InfiniteLine(angle=90, movable=False, pen=pg.mkPen('g', width=0, style=QtCore.Qt.SolidLine), pos=0)
+        self.graph.addItem(vLine, ignoreBounds=True)
+        self.vLine.append(vLine)
+        # vLine[1] ... position signal2
+        vLine = pg.InfiniteLine(angle=90, movable=False, pen=pg.mkPen('r', width=0, style=QtCore.Qt.SolidLine),pos=0)
+        self.graph.addItem(vLine, ignoreBounds=True)
+        self.vLine.append(vLine)
+        # vLine[2] ... position alignment
+        vLine = pg.InfiniteLine(angle=90, movable=False, pen=pg.mkPen('b', width=0, style=QtCore.Qt.SolidLine), pos=0)
+        vLine.setPos(self.sD.alignTime)
+        self.graph.addItem(vLine, ignoreBounds=True)
+        self.vLine.append(vLine)
 
         # widgets
         self.fitParameter = fitParameter
@@ -236,95 +255,84 @@ class SignalWidget(QWidget):
 
         # copy the data
         (signal, time) = self.sD.getData()
-  
+        table = self.sD.getTable()
+
         # if there is no signal then do not continue
         if signal is None:
             return
+        nSig = signal.shape[1]
 
         # set off set for the lines
         if not self.align:
-            offSet = np.zeros(signal.shape[1])
+            offSet = np.zeros(nSig)
         else:
             self.sD.setOffset()
             offSet = self.sD.getOffset()
 
+        mypen = QPen()
+        mypen.setColor(QColor("White"))
+        mypen.setWidth(0)
 
-        # remove all lines
-        self.graph.clear()
+        #print(f"table['visible']= {table['visible']}")
 
-        #try:
-            # draw lines
-        for ii in np.arange(signal.shape[1]):
+        #print(repr(table['visible']), type(table['visible']))
 
-            try: # TODO: correct for it
-                if self.sD.table['visible'][ii] != 'True':
-                    continue
-            except:
-                print('sd table visible not defined')
 
-            mypen = QPen()
-            mypen.setColor(QColor("White"))
-            mypen.setWidth(0)
+
+        for ii in np.arange(nSig):
+
+            #try:
+            #    if self.sD.table['visible'][ii] != 'True':
+            #        continue
+            #except:
+            #    print('sd table visible not defined')
+
             if ii == self.lineIndex:
                 mypen.setStyle(2)
+            else:
+                mypen.setStyle(1)
 
-            '''
-            hexColor = self.sD.table['color'][ii]
-            rgbaColor = [int(hexColor[1:3],16)/255,
-                            int(hexColor[3:5],16)/255,
-                            int(hexColor[5:7],16)/255,
-                            1]
-            mypen.setColor(QColor.fromRgbF(*list(rgbaColor)))
-            lineplot = self.graph.plot(pen= mypen)
-
-            '''
             try:
-                hexColor = self.sD.table['color'][ii]
+                hexColor = table['color'][ii]
                 rgbaColor = [int(hexColor[1:3],16)/255,
-                              int(hexColor[3:5],16)/255,
-                              int(hexColor[5:7],16)/255,
-                              1]
+                                int(hexColor[3:5],16)/255,
+                                int(hexColor[5:7],16)/255,
+                                1]
                 mypen.setColor(QColor.fromRgbF(*list(rgbaColor)))
-                lineplot = self.graph.plot(pen= mypen)
             except:
-                traceback.print_exc()
-                lineplot = self.graph.plot(pen= mypen)
-                print('error occurred in drawGraph - signalWidget')
-                print(f"sD.signalColor {self.sD.table['color']}")
+                print('sd table color is not defined')
 
             try:
-                lineplot.setData(time, signal[:,ii]-offSet[ii])
+                if ii == len(self.linePlotList):
+                        self.linePlotList.append(self.graph.plot())
+                self.linePlotList[ii].setData(time, signal[:,ii]-offSet[ii], pen=mypen)
+                if table['visible'][ii] == "True":
+                    self.linePlotList[ii].show()
+                else:
+                    self.linePlotList[ii].hide()
+
             except:
                 print('error occurred in drawGraph - signalWidget')                
-                print(f' ii = {ii}')
-                if offSet is not None:
-                    print(f' len(offSet) {len(offSet)}')
-                else:
-                    print(' offset is None')
                 traceback.print_exc()
 
 
-        #except:
-        #    print('error occurred in drawSpectraGraph - pointSpectra')
 
-        # display infinity lines
-        vLine = pg.InfiniteLine(angle=90, movable=False, pen=pg.mkPen('g', width=0, style=QtCore.Qt.SolidLine))
-        vLine.setPos(self.sD.evalTime)
-        self.graph.addItem(vLine, ignoreBounds=True)
-        vLine = pg.InfiniteLine(angle=90, movable=False, pen=pg.mkPen('r', width=0, style=QtCore.Qt.SolidLine))
-        vLine.setPos(self.sD.evalTime+self.sD.dTime)
-        self.graph.addItem(vLine, ignoreBounds=True)
+        # remove extra lines
+        while len(self.linePlotList)>nSig:
+            self.graph.removeItem(self.linePlotList[-1])
+            self.linePlotList.pop(-1)
+            print('removing extra lines')
 
-        # display infinity lines -  aliment
-        if self.align:
-            vLine = pg.InfiniteLine(angle=90, movable=False, pen=pg.mkPen('b', width=0, style=QtCore.Qt.SolidLine))
-            vLine.setPos(self.sD.alignTime)
-            self.graph.addItem(vLine, ignoreBounds=True)
+        # set position of vertical lines
+        self.vLine[0].setPos(self.sD.evalTime)
+        self.vLine[1].setPos(self.sD.evalTime+self.sD.dTime)
+        self.vLine[2].setPos(self.sD.alignTime)
 
         # display delta time
         if len(time) >1:
             self.infoBox(time[-1] - time[-2])
 
+           
     def setData(self, signal,time=None):
         ''' set the data '''
         self.sD.setData(signal,time)

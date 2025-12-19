@@ -52,6 +52,10 @@ class SpotData:
             'visible': ['True' for x in range(nSpot)]
             }           
 
+    def getTable(self):
+        return self.table
+    
+
     def checkTableValues(self):
         self.table['visible'] = [
             'True' if str(x).lower() in ("true", "1") else 'False' for x in self.table['visible']

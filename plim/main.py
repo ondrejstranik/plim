@@ -116,6 +116,9 @@ class Plim():
         # main event loop
         viscope.run()
 
+        pvGui.viewer.close()
+        cvGui.viewer.close()
+
         sCamera.disconnect()
         camera.disconnect()
         camera2.disconnect()
