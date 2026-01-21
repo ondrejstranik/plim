@@ -242,7 +242,7 @@ class Plim():
 
         # pump
         #pump = VirtualPump('pump')
-        RegloICC.DEFAULT['port'] = 'COM3'
+        RegloICC.DEFAULT['port'] = 'COM6'
         pump = RegloICC('pump')
         
         pump.connect()
@@ -294,8 +294,8 @@ class Plim():
 if __name__ == "__main__":
 
     #Plim.runReal()
-    Plim.runVirtual()
-    #Plim.runRealMicroscope()
+    #Plim.runVirtual()
+    Plim.runRealMicroscope()
     
 #%%
 
