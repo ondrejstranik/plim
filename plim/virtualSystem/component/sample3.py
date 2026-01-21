@@ -58,6 +58,7 @@ class Sample3(Sample2):
         diameter=DEFAULT['spotDiameter'] if spotDiameter is None else spotDiameter
 
         size = aSize*4*diameter
+        #self.size = size
         _sample = np.zeros((self.wavelength.shape[0],*size))
 
         xIdx, yIdx = np.meshgrid(np.arange(aSize[1]), np.arange(aSize[0]))

@@ -30,7 +30,7 @@ class PlimMicroscope(BaseSystem):
 
         # set default spectral sample
         self.sample = Sample3()
-        self.sample.setPlasmonArray(arraySize=np.array([4,4]))
+        self.sample.setPlasmonArray(arraySize=np.array([10,20]), spotDiameter= 3)
 
         # set lamp spectrum
         self.lampWavelength = self.DEFAULT['lampWavelength']
