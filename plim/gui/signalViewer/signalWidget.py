@@ -305,6 +305,7 @@ class SignalWidget(QWidget):
             try:
                 if ii == len(self.linePlotList):
                         self.linePlotList.append(self.graph.plot())
+                self.linePlotList[ii] = self._speedUpLineDrawing(self.linePlotList[ii])
                 self.linePlotList[ii].setData(time, signal[:,ii]-offSet[ii], pen=mypen)
                 if table['visible'][ii] == "True":
                     self.linePlotList[ii].show()
@@ -364,6 +365,14 @@ class SignalWidget(QWidget):
 
         # graph widget
         self.drawGraph()
+
+    def _speedUpLineDrawing(self,line):
+        ''' set parameter of a line in a pyqtplot so that it is quicker'''
+        line.setDownsampling(auto=True)
+        line.setClipToView(True)
+        line.setSkipFiniteCheck(True)
+        return line
+
 
 if __name__ == "__main__":
     pass

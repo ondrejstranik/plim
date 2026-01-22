@@ -161,6 +161,8 @@ class SpotSpectraViewer(XYWViewer):
                     self.lineplotList.append(lineplot)
                     # raw bcg
                     lineplot = self.spectraGraph.plot(pen= mypen)
+                    # speeding up drawing
+                    lineplot = self._speedUpLineDrawing(lineplot)                    
                     lineplot.setData(self.wavelength, self.spotSpectra.spectraRawBcg[ii])
                     self.lineplotList.append(lineplot)
             except:

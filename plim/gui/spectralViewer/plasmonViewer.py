@@ -114,9 +114,8 @@ class PlasmonViewer(SpotSpectraViewer):
                     lineplot.setData(w, fitSpectra[ii])
                     self.lineplotList3.append(lineplot)
 
+                    # vertical line
                     lineplot = self.spectraGraph.addLine(x = peakPosition[ii], pen= mypen)
-                    # speeding up drawing
-                    #lineplot = self._speedUpLineDrawing(lineplot)
                     self.lineplotList4.append(lineplot)
             except:
                 print('error occurred in drawSpectraGraph')                
@@ -137,6 +136,8 @@ class PlasmonViewer(SpotSpectraViewer):
                         self.pointLayer.face_color[ii])))
                     mypen.setWidth(0)
                     myline.setData(w,fitSpectra[ii], pen = mypen)
+                    
+                    # horizontal line 
                     self.lineplotList4[ii].setValue(peakPosition[ii])
             except:
                 print('error occurred in update_spectraGraph - fitSpectra')
