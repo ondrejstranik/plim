@@ -74,6 +74,53 @@ class PlasmonFit:
             self.fitSpectra.append(f(self.wavelength[self.wRange]))
             self.peakPosition.append(peakfun(f,**pfvar))
 
+    '''
+    def calculateFit2(self):
+
+
+        # parallel least square fitting
+        import numpy as np
+        from numpy.polynomial import polynomial as P
+
+        # 1. Share the same x-coordinates for all sets
+        x = np.linspace(0, 10, 100)
+
+        # 2. Define multiple datasets in a 2D array (Shape: Points x Datasets)
+        # Example: 500 different datasets, each with 100 points
+        y_datasets = np.random.rand(100, 500)
+
+        # 3. Fit all 500 datasets to a 3rd-degree polynomial in one call
+        # polyfit returns a 2D array (Degree+1 x Datasets)
+        coeffs = P.polyfit(x, y_datasets, deg=3)
+
+        print(coeffs.shape)  # Output: (4, 500) -> 4 coefficients for each of the 500 fits
+
+
+
+            
+                    
+        import jax
+        import jax.numpy as jnp
+        from jax import vmap
+
+        # 1. Create a batch of coefficients for 1,000 polynomials
+        # Each row represents one polynomial: [a, b, c, d]
+        # Example: f(x) = 1x^3 - 6x^2 + 11x - 6 (Roots are 1, 2, 3)
+        num_polys = 1000
+        coeffs = jnp.array([[1.0, -6.0, 11.0, -6.0]] * num_polys)
+
+        # 2. Vectorize the jnp.roots function
+        # strip_zeros=False is REQUIRED for JAX transformations like vmap or jit
+        vectorized_roots = vmap(lambda p: jnp.roots(p, strip_zeros=False))
+
+        # 3. Solve all polynomials at once
+        # This replaces a Python for-loop and runs in parallel
+        all_roots = vectorized_roots(coeffs)
+
+        print(f"Shape of roots: {all_roots.shape}")  # (1000, 3)
+        print(f"First polynomial roots: {all_roots[0]}")
+
+    '''
 
     def getFit(self):
         ''' get the fitted curves '''
