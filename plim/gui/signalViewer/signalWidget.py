@@ -9,6 +9,7 @@ from qtpy import QtCore
 from magicgui import magicgui
 from qtpy.QtCore import Signal
 import traceback
+from timeit import default_timer as timer
 
 import numpy as np
 from plim.algorithm.spotData import SpotData
@@ -253,6 +254,8 @@ class SignalWidget(QWidget):
     def drawGraph(self):
         ''' draw all new lines in the spectraGraph '''
 
+        start = timer()
+
         # copy the data
         (signal, time) = self.sD.getData()
         table = self.sD.getTable()
@@ -332,6 +335,9 @@ class SignalWidget(QWidget):
         # display delta time
         if len(time) >1:
             self.infoBox(time[-1] - time[-2])
+
+        end = timer()
+        print(f'signal widget evaluation time {end -start} s')
 
            
     def setData(self, signal,time=None):

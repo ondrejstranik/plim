@@ -18,6 +18,7 @@ from magicgui import magicgui
 from enum import Enum
 from typing import Annotated, Literal
 import traceback
+from timeit import default_timer as timer
 
 import numpy as np
 
@@ -84,10 +85,14 @@ class PlasmonViewer(SpotSpectraViewer):
 
     def redraw(self):
         ''' only redraw the images, spectra. It does not recalculate it '''
+        start = timer()
+        
         self.spectraLayer.data = self.xywImage
         self.updateSpectraGraph()
         self.updateHistogram()
 
+        end = timer()
+        print(f'plasmonViewer redraw evaluation time {end -start} s')
 
 
     def drawSpectraGraph(self):

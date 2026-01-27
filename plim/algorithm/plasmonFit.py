@@ -4,6 +4,7 @@ class for calculating plasmon peak from a spectra
 
 import numpy as np
 from plim.algorithm.plasmonPeakFit import (fit_polynom, get_peakmax, get_peakcenter)
+from timeit import default_timer as timer
 
 class PlasmonFit:
     ''' class for calculating plasmon peaks'''
@@ -55,6 +56,8 @@ class PlasmonFit:
     def calculateFit(self):
         ''' calculate fits'''
 
+        start = timer()
+
         fitfunction = fit_polynom
         ffvar =  {'Np':self.orderFit}
         #peakfun = get_peakmax
@@ -73,6 +76,9 @@ class PlasmonFit:
             f = fitfunction(self.wavelength[self.wRange],mypointSpectra[self.wRange],**ffvar)
             self.fitSpectra.append(f(self.wavelength[self.wRange]))
             self.peakPosition.append(peakfun(f,**pfvar))
+
+        end = timer()
+        print(f'plasmon fit evaluation time {end -start} s')
 
     '''
     def calculateFit2(self):
