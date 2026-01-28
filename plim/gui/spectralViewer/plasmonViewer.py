@@ -129,6 +129,10 @@ class PlasmonViewer(SpotSpectraViewer):
         ''' update the lines in the spectra graph '''
         super().updateSpectraGraph()
 
+        mypen = QPen()
+        mypen.setColor(QColor("White"))
+        mypen.setWidth(0)  
+
         if self.showRawSpectra == False:
             try:
                 fitSpectra = self.pF.getFit()
@@ -137,7 +141,7 @@ class PlasmonViewer(SpotSpectraViewer):
                 # pointSpectra
                 for ii in np.arange(len(fitSpectra)):
                     myline = self.lineplotList3[ii]
-                    mypen = QPen(QColor.fromRgbF(*list(
+                    mypen.setColor(QColor.fromRgbF(*list(
                         self.pointLayer.face_color[ii])))
                     mypen.setWidth(0)
                     myline.setData(w,fitSpectra[ii], pen = mypen)

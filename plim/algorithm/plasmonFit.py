@@ -5,6 +5,11 @@ class for calculating plasmon peak from a spectra
 import numpy as np
 from plim.algorithm.plasmonPeakFit import (fit_polynom, get_peakmax, get_peakcenter)
 from timeit import default_timer as timer
+from numpy.polynomial import polynomial as P
+from numpy.polynomial import Polynomial
+from scipy.optimize import brentq
+from scipy.optimize import newton
+
 
 class PlasmonFit:
     ''' class for calculating plasmon peaks'''
@@ -12,7 +17,7 @@ class PlasmonFit:
     DEFAULT = {'orderFit': 8,
                 'wavelengthGuess': 550,
                 'peakWidth': 40,
-                'wavelengthStartFit': 500,
+                'wavelengthStartFit': 450,
                 'wavelengthStopFit': 650}
 
 
@@ -53,7 +58,7 @@ class PlasmonFit:
         if wavelengthStopFit is not None: self.wavelengthStopFit = wavelengthStopFit
         if wavelengthStartFit is not None: self.wavelengthStartFit = wavelengthStartFit
 
-    def calculateFit(self):
+    def _calculateFit(self):
         ''' calculate fits'''
 
         start = timer()
@@ -80,31 +85,78 @@ class PlasmonFit:
         end = timer()
         print(f'plasmon fit evaluation time {end -start} s')
 
+    def calculateFit(self):
+        ''' parallel least square fitting with polynomial'''
+
+        start = timer()
+
+        self.wRange = ((self.wavelength> self.wavelengthStartFit) &
+                    (self.wavelength < self.wavelengthStopFit))
+
+        self.fitSpectra = []
+        self.peakPosition = []
+
+        # x-coordinates for all sets
+        x = self.wavelength[self.wRange]
+
+        # y-coordinates
+        y_datasets = np.array(self.spectraList)
+        try:
+            if y_datasets.ndim >1:
+                y_datasets = np.array(self.spectraList)[:,self.wRange].T
+            else:
+                y_datasets = np.array(self.spectraList)[self.wRange].T
+        except:
+            return
+
+        # polyfit returns a 2D array (Degree+1 x Datasets)
+        coeffs = P.polyfit(x, y_datasets, deg=self.orderFit)
+
+        # define aux functions
+        p1 = Polynomial([0, 1]) # p1(x) = x
+        shift = Polynomial([self.peakWidth, 1]) # shift(x) = self.peakWidth + x 
+
+        for c in coeffs.T:
+            # define the polynomial function
+            f = Polynomial(c)
+            # define aux function
+            fpeak = f - f(shift)
+            fpeakDeriv = fpeak.deriv()
+            fpeakDeriv2 = fpeakDeriv.deriv()
+            If = f.integ()
+            fp1 = f*p1
+            Ifp1 = fp1.integ()
+
+            try:            
+                # calculate the beginning of the peak - newton method
+                if False:
+                    lstart = newton(fpeak,self.wavelengthGuess-self.peakWidth/2, 
+                                    fprime=fpeakDeriv,
+                                    fprime2=fpeakDeriv2, tol=1e-4)
+
+                # calculate the beginning of the peak - brentq
+                else:
+                    lstart = brentq(fpeak,self.wavelengthGuess-self.peakWidth,
+                                    self.wavelengthGuess, xtol= 1e-4)
+
+                # get weighted centre of the peak 
+                nom = Ifp1(lstart + self.peakWidth) - Ifp1(lstart)
+                denom = If(lstart + self.peakWidth) - If(lstart)
+                peakcenter = nom/denom
+            except:
+                peakcenter = 0
+
+            self.peakPosition.append(peakcenter)
+            self.fitSpectra.append(f(self.wavelength[self.wRange]))
+
+        end = timer()
+        print(f'plasmon fit evaluation time {end -start} s')
+
+
     '''
     def calculateFit2(self):
 
-
-        # parallel least square fitting
-        import numpy as np
-        from numpy.polynomial import polynomial as P
-
-        # 1. Share the same x-coordinates for all sets
-        x = np.linspace(0, 10, 100)
-
-        # 2. Define multiple datasets in a 2D array (Shape: Points x Datasets)
-        # Example: 500 different datasets, each with 100 points
-        y_datasets = np.random.rand(100, 500)
-
-        # 3. Fit all 500 datasets to a 3rd-degree polynomial in one call
-        # polyfit returns a 2D array (Degree+1 x Datasets)
-        coeffs = P.polyfit(x, y_datasets, deg=3)
-
-        print(coeffs.shape)  # Output: (4, 500) -> 4 coefficients for each of the 500 fits
-
-
-
-            
-                    
+                   
         import jax
         import jax.numpy as jnp
         from jax import vmap

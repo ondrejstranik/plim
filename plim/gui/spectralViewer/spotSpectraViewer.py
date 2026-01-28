@@ -187,14 +187,21 @@ class SpotSpectraViewer(XYWViewer):
 
     def updateSpectraGraph(self):
         ''' update the lines in the spectra graph '''
+
+        self.spectraGraph.setUpdatesEnabled(False)
+
+        mypen = QPen()
+        mypen.setColor(QColor("White"))
+        mypen.setWidth(0)        
+
         if self.showRawSpectra:
             try:
                 indLen = np.min((len(self.spotSpectra.spectraRawSpot),len(self.spotSpectra.spectraRawBcg)))
                 for ii in np.arange(indLen):
                     myline = self.lineplotList[2*ii]
-                    mypen = QPen(QColor.fromRgbF(*list(
+                    mypen.setColor(QColor.fromRgbF(*list(
                         self.pointLayer.face_color[ii])))
-                    mypen.setWidth(0)
+
                     myline.setData(self.wavelength,self.spotSpectra.spectraRawSpot[ii], pen = mypen)
                     myline = self.lineplotList[2*ii+1]
                     myline.setData(self.wavelength,self.spotSpectra.spectraRawBcg[ii], pen = mypen)
@@ -209,15 +216,17 @@ class SpotSpectraViewer(XYWViewer):
                 self.pointSpectra = self.spotSpectra.getA()
                 for ii in np.arange(len(self.pointSpectra)):
                     myline = self.lineplotList[ii]
-                    mypen = QPen(QColor.fromRgbF(*list(
+                    mypen.setColor(QColor.fromRgbF(*list(
                         self.pointLayer.face_color[ii])))
-                    mypen.setWidth(0)
                     
                     myline.setData(self.wavelength,self.pointSpectra[ii], pen = mypen)
 
             except:
                 print('error occurred in updateSpectraGraph')
                 traceback.print_exc()
+
+        self.spectraGraph.setUpdatesEnabled(True)
+        self.spectraGraph.repaint()
 
 
 

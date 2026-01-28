@@ -53,6 +53,7 @@ def test_spotSpectra():
     # calculate spectra
     sS = SpotSpectra(image,myPosition,pxAve=int(myRadius), 
                      sphere= False, ratio= 1.4, angle=25)
+    sS.calculateSpectra()
 
     # show images
     import napari
@@ -86,6 +87,7 @@ def test_plamonFit():
 
     # calculate spectra
     sS = SpotSpectra(image,spotPosition=myPosition)
+    sS.calculateSpectra()
 
     # fit plasmon peak
     pF = PlasmonFit(spectraList=sS.getA(),wavelength=w)
