@@ -15,8 +15,9 @@ from plim.algorithm.flowData import FlowData
 
 class FlowRateWidget(QWidget):
     ''' main class for viewing flow rates of the pump channel'''
-    DEFAULT = {'nameGUI':'FlowRate'
-    }
+    DEFAULT = {'nameGUI':'FlowRate',
+               'maxNLine': 4, # maxNLine ... max number of line plotted in the gra
+            }
 
     def __init__(self,signal=None, time= None, flowData=None, **kwargs):
         ''' initialise the class '''
@@ -26,6 +27,8 @@ class FlowRateWidget(QWidget):
         else:
             self.flowData = FlowData(signal,time)
 
+        self.linePlotList = []
+        self.maxNLine = FlowRateWidget.DEFAULT['maxNLine']
 
         # set this gui of this class
         FlowRateWidget._setWidget(self)
@@ -35,36 +38,46 @@ class FlowRateWidget(QWidget):
     def _setWidget(self):
         ''' prepare the gui '''
         
-        # add graph
-        self.graph = pg.plot()
+        # add graph Widget
+        self.graph = pg.PlotWidget()
         self.graph.setTitle(f'Flow Rate')
         styles = {'color':'r', 'font-size':'20px'}
         self.graph.setLabel('left', 'Flow Rate', units='ul/min')
         self.graph.setLabel('bottom', 'time', units= 's')
-
+        # pre allocate lines for the graph
+        for ii in range(self.maxNLine):
+            self.linePlotList.append(self.graph.plot())
+            self.linePlotList[-1].hide()
+  
         layout = QVBoxLayout()
         layout.addWidget(self.graph)
         self.setLayout(layout)
 
     def drawGraph(self):
-        ''' draw all new lines in the spectraGraph '''
-
+        ''' draw all valid lines in the graph '''
+        # copy the data
         (signal, time) = self.flowData.getData()
-
         # if there is no signal then do not continue
         if signal is None:
             return
+        nSig = signal.shape[1]
 
-        # remove all lines
-        self.graph.clear()
+        # define pen object
+        mypen = QPen()
+        mypen.setColor(QColor("White"))
+        mypen.setWidth(0)
+        mypen.setStyle(1)
 
-        # draw lines
-        for ii in np.arange(signal.shape[1]):
-            mypen = QPen()
-            mypen.setWidth(0)
-            lineplot = self.graph.plot()
+        self.graph.setUpdatesEnabled(False)
+        # update data         
+        for ii in np.arange(nSig):
+            self.linePlotList[ii].setData(time, signal[:,ii], pen=mypen)
+            self.linePlotList[ii+nSig].show()
+        # hide extra lines
+        for ii in np.arange(self.maxNLine - nSig):
+            self.linePlotList[ii+nSig].hide()
 
-            lineplot.setData(time, signal[:,ii])
+        self.graph.setUpdatesEnabled(True)
 
     def setData(self, signal,time=None):
         ''' set the data '''

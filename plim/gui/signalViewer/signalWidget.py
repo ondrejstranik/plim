@@ -17,7 +17,8 @@ from plim.algorithm.spotData import SpotData
 
 class SignalWidget(QWidget):
     ''' main class for viewing signal'''
-    DEFAULT = {'nameGUI':'Signal'}
+    DEFAULT = {'nameGUI':'Signal',
+               'maxNLine': 200} # maxNLine ... max number of line plotted in the graph
     sigUpdateData = Signal()
 
     def __init__(self,signal=None, time= None, spotData = None,  **kwargs):
@@ -37,7 +38,9 @@ class SignalWidget(QWidget):
         self.lineIndex = 0
         self.linePlotList = []
         self.vLine = []
-      
+        self.maxNLine = SignalWidget.DEFAULT['maxNLine']
+
+
         #define position of mouse on the graph - use for selection
         self.mousePoint = QtCore.QPointF()
 
@@ -162,27 +165,28 @@ class SignalWidget(QWidget):
             # emit signal to eventually update data in other guis
             self.sigUpdateData.emit()
             
-        # add graph
-        self.graph = pg.plot()
+        # graph Widget
+        self.graph = pg.PlotWidget()
         self.graph.setTitle(f'Peak Position')
         styles = {'color':'r', 'font-size':'20px'}
         self.graph.setLabel('left', 'Position', units='nm')
         self.graph.setLabel('bottom', 'time', units= 's')
         self.graph.scene().sigMouseMoved.connect(self.mouse_moved)
+        self.graph.setUpdatesEnabled(False)
         # add vertical lines
-        # vLine[0] ... position signal1
-        vLine = pg.InfiniteLine(angle=90, movable=False, pen=pg.mkPen('g', width=0, style=QtCore.Qt.SolidLine), pos=0)
-        self.graph.addItem(vLine, ignoreBounds=True)
-        self.vLine.append(vLine)
-        # vLine[1] ... position signal2
-        vLine = pg.InfiniteLine(angle=90, movable=False, pen=pg.mkPen('r', width=0, style=QtCore.Qt.SolidLine),pos=0)
-        self.graph.addItem(vLine, ignoreBounds=True)
-        self.vLine.append(vLine)
-        # vLine[2] ... position alignment
-        vLine = pg.InfiniteLine(angle=90, movable=False, pen=pg.mkPen('b', width=0, style=QtCore.Qt.SolidLine), pos=0)
-        vLine.setPos(self.sD.alignTime)
-        self.graph.addItem(vLine, ignoreBounds=True)
-        self.vLine.append(vLine)
+        vLineColor = ['g','r','b']
+        for c in vLineColor:
+            vLine = pg.InfiniteLine(angle=90, movable=False, pen=pg.mkPen(c, width=0, style=QtCore.Qt.SolidLine), pos=0)
+            self.graph.addItem(vLine, ignoreBounds=True)
+            self.vLine.append(vLine)
+        # pre allocate lines for the graph
+        for ii in range(self.maxNLine):
+            self.linePlotList.append(self.graph.plot())
+            self.linePlotList[-1].hide()
+            self._speedUpLineDrawing(self.linePlotList[-1])
+        self.graph.setUpdatesEnabled(True)
+        self.graph.repaint()
+
 
         # widgets
         self.fitParameter = fitParameter
@@ -244,7 +248,7 @@ class SignalWidget(QWidget):
         _selection = [ x  != 'True' for x in self.sD.table['visible']]
         _signal[_selection] = np.inf
 
-        print(f'signal {_signal -offSet -y}')
+        #print(f'signal {_signal -offSet -y}')
 
         lineIndex = np.argmin(np.abs(_signal -offSet -y))
 
@@ -272,29 +276,27 @@ class SignalWidget(QWidget):
             self.sD.setOffset()
             offSet = self.sD.getOffset()
 
+        # define pen object
         mypen = QPen()
         mypen.setColor(QColor("White"))
         mypen.setWidth(0)
+        mypen.setStyle(1)
 
-        #print(f"table['visible']= {table['visible']}")
-
-        #print(repr(table['visible']), type(table['visible']))
-
-
-
+        self.graph.setUpdatesEnabled(False)
+        # update data for the visible lines
         for ii in np.arange(nSig):
-
-            #try:
-            #    if self.sD.table['visible'][ii] != 'True':
-            #        continue
-            #except:
-            #    print('sd table visible not defined')
-
+            # ignore not visible lines
+            try:
+                if table['visible'][ii] == "True":
+                    self.linePlotList[ii].show()
+                else:
+                    self.linePlotList[ii].hide()
+            except:
+                print('sd table visible not defined')
+            # set dash for selected line
             if ii == self.lineIndex:
                 mypen.setStyle(2)
-            else:
-                mypen.setStyle(1)
-
+            # set color of the line
             try:
                 hexColor = table['color'][ii]
                 rgbaColor = [int(hexColor[1:3],16)/255,
@@ -304,33 +306,29 @@ class SignalWidget(QWidget):
                 mypen.setColor(QColor.fromRgbF(*list(rgbaColor)))
             except:
                 print('sd table color is not defined')
-
+            # update data
             try:
-                if ii == len(self.linePlotList):
-                        self.linePlotList.append(self.graph.plot())
-                self.linePlotList[ii] = self._speedUpLineDrawing(self.linePlotList[ii])
                 self.linePlotList[ii].setData(time, signal[:,ii]-offSet[ii], pen=mypen)
-                if table['visible'][ii] == "True":
-                    self.linePlotList[ii].show()
-                else:
-                    self.linePlotList[ii].hide()
-
             except:
                 print('error occurred in drawGraph - signalWidget')                
                 traceback.print_exc()
 
+            # set the line back
+            if ii == self.lineIndex:
+                mypen.setStyle(1)
 
 
-        # remove extra lines
-        while len(self.linePlotList)>nSig:
-            self.graph.removeItem(self.linePlotList[-1])
-            self.linePlotList.pop(-1)
-            print('removing extra lines')
+        # hide extra lines
+        for ii in np.arange(self.maxNLine - nSig):
+            self.linePlotList[ii+nSig].hide()
 
         # set position of vertical lines
         self.vLine[0].setPos(self.sD.evalTime)
         self.vLine[1].setPos(self.sD.evalTime+self.sD.dTime)
         self.vLine[2].setPos(self.sD.alignTime)
+
+        self.graph.setUpdatesEnabled(True)
+        #self.graph.repaint()
 
         # display delta time
         if len(time) >1:
