@@ -21,7 +21,9 @@ import traceback
 
 class SpotSpectraViewer(XYWViewer):
     ''' class viewing spectra of plasmon spots'''
- 
+
+    DEFAULT = {'nameGUI':'SpotSpectraViewer'}
+
     def __init__(self, xywImage=None, wavelength= None, **kwargs):
         ''' initialise the class '''
 
@@ -34,6 +36,9 @@ class SpotSpectraViewer(XYWViewer):
         self.maskLayer = None # layer of the mask with spots and bcg area
         self.showRawSpectra = True
         self.spectraParameterGui = None
+
+        # spectra widget
+        self.lineplotList2 = []
 
         # set gui
         SpotSpectraViewer._setWidget(self)
@@ -120,6 +125,12 @@ class SpotSpectraViewer(XYWViewer):
             self.viewer.window._qt_window.tabifyDockWidget(self.dockWidgetParameter,dw)
         self.dockWidgetParameter = dw
 
+        # adapt the spectra widget
+        # pre allocate extra new lines for the graph
+        for _ in range(self.maxNLine):
+            self.lineplotList2.append(self.spectraGraph.plot())
+            self.lineplotList2[-1].hide()
+            self._speedUpLineDrawing(self.lineplotList2[-1])        
 
     def setImage(self, image):
         ''' set the image '''
@@ -144,39 +155,55 @@ class SpotSpectraViewer(XYWViewer):
     def drawSpectraGraph(self):
         ''' draw all new lines in the spectraGraph '''
 
-        self.lineplotList = []                
-        self.spectraGraph.clear()
+        # if there is no pointSpectra then do not continue
+        try:
+            nSig = len(self.pointSpectra)
+        except:
+            return
+    
+        # define pen object
+        mypen = QPen()
+        mypen.setWidth(0)
 
-        if self.showRawSpectra:
+
+        self.spectraGraph.setUpdatesEnabled(False)
+        for ii in np.arange(nSig):
             try:
-                for ii in np.arange(len(self.pointSpectra)):
-                    mypen = QPen(QColor.fromRgbF(*list(
-                        self.pointLayer.face_color[ii])))
-                    mypen.setWidth(0)
-                    # raw spot
-                    lineplot = self.spectraGraph.plot(pen= mypen)
-                    # speeding up drawing
-                    lineplot = self._speedUpLineDrawing(lineplot)
-                    lineplot.setData(self.wavelength, self.spotSpectra.spectraRawSpot[ii])
-                    self.lineplotList.append(lineplot)
-                    # raw bcg
-                    lineplot = self.spectraGraph.plot(pen= mypen)
-                    # speeding up drawing
-                    lineplot = self._speedUpLineDrawing(lineplot)                    
-                    lineplot.setData(self.wavelength, self.spotSpectra.spectraRawBcg[ii])
-                    self.lineplotList.append(lineplot)
-            except:
-                print('error occurred in drawSpectraGraph')
-                traceback.print_exc()
-        else:
-            for ii in np.arange(len(self.pointSpectra)):
-                mypen = QPen(QColor.fromRgbF(*list(
+                mypen.setColor(QColor.fromRgbF(*list(
                     self.pointLayer.face_color[ii])))
-                mypen.setWidth(0)
-                lineplot = self.spectraGraph.plot(pen= mypen)
-                lineplot.setData(self.wavelength, self.pointSpectra[ii])
-                self.lineplotList.append(lineplot)
-            # print('error occurred in drawSpectraGraph')            
+            except:
+                pass
+
+            if self.showRawSpectra:
+                try:
+                    self.lineplotList[ii].setData(self.wavelength,
+                                            self.spotSpectra.spectraRawSpot[ii])
+                    self.lineplotList[ii].show()
+                    self.lineplotList2[ii].setData(self.wavelength,
+                                            self.spotSpectra.spectraRawBcg[ii])
+                    self.lineplotList2[ii].show()
+                except:
+                    print('error occurred in drawSpectraGraph - pointSpectra')
+            else:
+                try:
+                    self.lineplotList[ii].setData(self.wavelength,
+                                            self.spotSpectra.spectraSpot[ii])
+                    self.lineplotList[ii].show()
+                except:
+                    print('error occurred in drawSpectraGraph - pointSpectra')
+
+        # hide extra lines
+        for ii in np.arange(self.maxNLine - nSig):
+            self.lineplotList[ii+nSig].hide()
+        if self.showRawSpectra:
+            for ii in np.arange(self.maxNLine - nSig):
+                self.lineplotList2[ii+nSig].hide()
+        else:
+            for ii in np.arange(nSig):
+                self.lineplotList2[ii].hide()
+        
+        self.spectraGraph.setUpdatesEnabled(True)
+
         # set Title
         if self.showRawSpectra:
             self.spectraGraph.setTitle(f'Spectra')
@@ -186,49 +213,8 @@ class SpotSpectraViewer(XYWViewer):
             self.spectraGraph.setLabel('left', 'percentage', units='a.u.')
 
     def updateSpectraGraph(self):
-        ''' update the lines in the spectra graph '''
-
-        self.spectraGraph.setUpdatesEnabled(False)
-
-        mypen = QPen()
-        mypen.setColor(QColor("White"))
-        mypen.setWidth(0)        
-
-        if self.showRawSpectra:
-            try:
-                indLen = np.min((len(self.spotSpectra.spectraRawSpot),len(self.spotSpectra.spectraRawBcg)))
-                for ii in np.arange(indLen):
-                    myline = self.lineplotList[2*ii]
-                    mypen.setColor(QColor.fromRgbF(*list(
-                        self.pointLayer.face_color[ii])))
-
-                    myline.setData(self.wavelength,self.spotSpectra.spectraRawSpot[ii], pen = mypen)
-                    myline = self.lineplotList[2*ii+1]
-                    myline.setData(self.wavelength,self.spotSpectra.spectraRawBcg[ii], pen = mypen)
-            except:
-                print('error occurred in updateSpectraGraph')
-                print(f'indLen {indLen}')
-                print(f'ii {ii}')
-                print(f'len(self.spotSpectra.spectraRawSpot) {len(self.spotSpectra.spectraRawSpot)}')
-                traceback.print_exc()
-        else:
-            try:
-                self.pointSpectra = self.spotSpectra.getA()
-                for ii in np.arange(len(self.pointSpectra)):
-                    myline = self.lineplotList[ii]
-                    mypen.setColor(QColor.fromRgbF(*list(
-                        self.pointLayer.face_color[ii])))
-                    
-                    myline.setData(self.wavelength,self.pointSpectra[ii], pen = mypen)
-
-            except:
-                print('error occurred in updateSpectraGraph')
-                traceback.print_exc()
-
-        self.spectraGraph.setUpdatesEnabled(True)
-        self.spectraGraph.repaint()
-
-
+        ''' obsolete -  use drawSpectraGraph'''
+        self.drawSpectraGraph()
 
 if __name__ == "__main__":
     pass

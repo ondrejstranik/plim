@@ -72,7 +72,7 @@ class FlowRateWidget(QWidget):
         # update data         
         for ii in np.arange(nSig):
             self.linePlotList[ii].setData(time, signal[:,ii], pen=mypen)
-            self.linePlotList[ii+nSig].show()
+            self.linePlotList[ii].show()
         # hide extra lines
         for ii in np.arange(self.maxNLine - nSig):
             self.linePlotList[ii+nSig].hide()

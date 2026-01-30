@@ -172,7 +172,6 @@ class SignalWidget(QWidget):
         self.graph.setLabel('left', 'Position', units='nm')
         self.graph.setLabel('bottom', 'time', units= 's')
         self.graph.scene().sigMouseMoved.connect(self.mouse_moved)
-        self.graph.setUpdatesEnabled(False)
         # add vertical lines
         vLineColor = ['g','r','b']
         for c in vLineColor:
@@ -184,8 +183,6 @@ class SignalWidget(QWidget):
             self.linePlotList.append(self.graph.plot())
             self.linePlotList[-1].hide()
             self._speedUpLineDrawing(self.linePlotList[-1])
-        self.graph.setUpdatesEnabled(True)
-        self.graph.repaint()
 
 
         # widgets
@@ -309,6 +306,7 @@ class SignalWidget(QWidget):
             # update data
             try:
                 self.linePlotList[ii].setData(time, signal[:,ii]-offSet[ii], pen=mypen)
+                self.linePlotList[ii].show()
             except:
                 print('error occurred in drawGraph - signalWidget')                
                 traceback.print_exc()
