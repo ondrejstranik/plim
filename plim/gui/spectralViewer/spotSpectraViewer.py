@@ -1,7 +1,7 @@
 '''
-class for viewing spots's plasmon resonance
+class for viewing spots spectra
 '''
-from spectralCamera.gui.spectralViewer.xywViewer import XYWViewer
+from spectralCamera.gui.spectralViewer.sViewer import SViewer
 from plim.algorithm.spotSpectra import SpotSpectra
 from plim.algorithm.spotIdentification import SpotIdentification
 
@@ -19,26 +19,31 @@ from typing import Annotated, Literal
 import numpy as np
 import traceback
 
-class SpotSpectraViewer(XYWViewer):
-    ''' class viewing spectra of plasmon spots'''
+class SpotSpectraViewer(SViewer):
+    ''' class for viewing spots spectra'''
 
     DEFAULT = {'nameGUI':'SpotSpectraViewer'}
 
-    def __init__(self, xywImage=None, wavelength= None, **kwargs):
+    def __init__(self, image=None, wavelength= None, **kwargs):
         ''' initialise the class '''
 
-        super().__init__(xywImage=xywImage, wavelength= wavelength, **kwargs)
+        super().__init__(image=image, wavelength= wavelength, **kwargs)
 
         # calculated parameters
-        self.spotSpectra = SpotSpectra(self.xywImage)
+        # upgrade spotSpectra class
+        _image = self.spotSpectra.image 
+        _wavelength = self.spotSpectra.wavelength 
+        self.spotSpectra = SpotSpectra(image= _image,wavelength=_wavelength)
 
-        #gui parameters
+        #napari widget
         self.maskLayer = None # layer of the mask with spots and bcg area
-        self.showRawSpectra = True
-        self.spectraParameterGui = None
 
-        # spectra widget
-        self.lineplotList2 = []
+        # spectra parameter widget
+        self.spectraParameterGui = None
+        self.showRawSpectra = True
+
+        # graph widget
+        self.linePlotList2 = []
 
         # set gui
         SpotSpectraViewer._setWidget(self)
@@ -94,7 +99,12 @@ class SpotSpectraViewer(XYWViewer):
             self.spotSpectra.darkCount = darkCount
             spectraParameterGui.darkCount.value = darkCount
             self.showRawSpectra = showRawSpectra
-            self.updateSpectra()
+
+            # recalculate/redraw the spectra, redraw mask with the new parameters
+            self.spotSpectra.setSpot(self.pointLayer.data)
+            self.drawSpectraGraph()
+            self.maskLayer.data = self.spotSpectra.maskImage
+
             spectraParameterGui._auto_call = True
 
 
@@ -102,13 +112,14 @@ class SpotSpectraViewer(XYWViewer):
         @magicgui
         def spotIdentGui():
             # identify the spot
-            sI = SpotIdentification(self.xywImage)
+            sI = SpotIdentification(self.spotSpectra.image)
             myPosition = sI.getPosition()
             myRadius = sI.getRadius()
             print(f'detected radius: {myRadius}')
 
             # update the spectra parameter
-            self.pointLayer.data = myPosition
+            with self.pointLayer.events.data.blocker():
+                self.pointLayer.data = myPosition
             self.spectraParameterGui(pxAve=int(myRadius))
 
         # add widget setParameterGui
@@ -117,6 +128,9 @@ class SpotSpectraViewer(XYWViewer):
         if self.dockWidgetParameter is not None:
             self.viewer.window._qt_window.tabifyDockWidget(self.dockWidgetParameter,dw)
         self.dockWidgetParameter = dw
+        # register the graph in menu
+        if self.window_menu is not None:
+            self.window_menu.addAction(dw.toggleViewAction())
 
         # add widget spotIdentGui
         self.spotIdentGui = spotIdentGui
@@ -124,83 +138,70 @@ class SpotSpectraViewer(XYWViewer):
         if self.dockWidgetParameter is not None:
             self.viewer.window._qt_window.tabifyDockWidget(self.dockWidgetParameter,dw)
         self.dockWidgetParameter = dw
+        # register the graph in menu
+        if self.window_menu is not None:
+            self.window_menu.addAction(dw.toggleViewAction())
 
         # adapt the spectra widget
         # pre allocate extra new lines for the graph
         for _ in range(self.maxNLine):
-            self.lineplotList2.append(self.spectraGraph.plot())
-            self.lineplotList2[-1].hide()
-            self._speedUpLineDrawing(self.lineplotList2[-1])        
-
-    def setImage(self, image):
-        ''' set the image '''
-        # update the spotSpectra image first
-        self.spotSpectra.wxyImage = image
-        super().setImage(image)
-
-
-    def calculateSpectra(self):
-        ''' calculate spectra at the given points'''
-
-        self.spotSpectra.setSpot(self.pointLayer.data)
-
-        self.pointSpectra = self.spotSpectra.getA()
-
-    def updateSpectra(self):
-        super().updateSpectra()
-
-        # update the mask in napari
-        self.maskLayer.data = self.spotSpectra.getMask()
+            self.linePlotList2.append(self.spectraGraph.plot())
+            self.linePlotList2[-1].hide()
+            self._speedUpLineDrawing(self.linePlotList2[-1])        
 
     def drawSpectraGraph(self):
-        ''' draw all new lines in the spectraGraph '''
-
+        ''' draw all new lines in the spectraGraph
+        rewrite the function
+        '''
         # if there is no pointSpectra then do not continue
         try:
-            nSig = len(self.pointSpectra)
+            nSig = len(self.spotSpectra.getSpectra())
         except:
             return
     
-        # define pen object
-        mypen = QPen()
-        mypen.setWidth(0)
-
-
         self.spectraGraph.setUpdatesEnabled(False)
+        
+        # loop over all points
         for ii in np.arange(nSig):
             try:
-                mypen.setColor(QColor.fromRgbF(*list(
+                self.penList[ii].setColor(QColor.fromRgbF(*list(
                     self.pointLayer.face_color[ii])))
             except:
-                pass
+                print('error occurred in drawSpectraGraph - could not set color')
+                traceback.print_exc()
 
+            # show spectra signal and background
             if self.showRawSpectra:
                 try:
-                    self.lineplotList[ii].setData(self.wavelength,
-                                            self.spotSpectra.spectraRawSpot[ii])
-                    self.lineplotList[ii].show()
-                    self.lineplotList2[ii].setData(self.wavelength,
-                                            self.spotSpectra.spectraRawBcg[ii])
-                    self.lineplotList2[ii].show()
+                    self.linePlotList[ii].setData(self.spotSpectra.wavelength,
+                                            self.spotSpectra.spectraRawSpot[ii],
+                                            pen = self.penList[ii])
+                    self.linePlotList[ii].show()
+                    self.linePlotList2[ii].setData(self.spotSpectra.wavelength,
+                                            self.spotSpectra.spectraRawBcg[ii],
+                                            pen = self.penList[ii])
+                    self.linePlotList2[ii].show()
                 except:
                     print('error occurred in drawSpectraGraph - pointSpectra')
+            # show processed spectra
             else:
                 try:
-                    self.lineplotList[ii].setData(self.wavelength,
-                                            self.spotSpectra.spectraSpot[ii])
-                    self.lineplotList[ii].show()
+                    self.linePlotList[ii].setData(self.spotSpectra.wavelength,
+                                            self.spotSpectra.spectraSpot[ii],
+                                            pen = self.penList[ii])
+                    self.linePlotList[ii].show()
                 except:
                     print('error occurred in drawSpectraGraph - pointSpectra')
 
         # hide extra lines
         for ii in np.arange(self.maxNLine - nSig):
-            self.lineplotList[ii+nSig].hide()
+            self.linePlotList[ii+nSig].hide()
         if self.showRawSpectra:
             for ii in np.arange(self.maxNLine - nSig):
-                self.lineplotList2[ii+nSig].hide()
+                self.linePlotList2[ii+nSig].hide()
         else:
             for ii in np.arange(nSig):
-                self.lineplotList2[ii].hide()
+                self.linePlotList2[ii].hide()
         
         self.spectraGraph.setUpdatesEnabled(True)
 
@@ -212,9 +213,11 @@ class SpotSpectraViewer(XYWViewer):
             self.spectraGraph.setTitle(f'1 - Transmission')
             self.spectraGraph.setLabel('left', 'percentage', units='a.u.')
 
-    def updateSpectraGraph(self):
-        ''' obsolete -  use drawSpectraGraph'''
-        self.drawSpectraGraph()
+    def updateMask(self):
+        super().updateMask()
+        if not np.array_equal(self.spotSpectra.maskImage,self.maskLayer.data):
+            self.maskLayer.data = self.spotSpectra.maskImage            
+
 
 if __name__ == "__main__":
     pass

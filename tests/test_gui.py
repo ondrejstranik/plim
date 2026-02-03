@@ -34,7 +34,7 @@ def test_TViewerGUI():
 def test_STViewerGUI():
     ''' testing the viewer with webcam'''
 
-    from viscope.main import Viscope
+    from viscope.main import viscope
     from viscope.gui.allDeviceGUI import AllDeviceGUI
     from spectralCamera.instrument.sCamera.sCameraGenerator import RGBWebCamera
 
@@ -46,7 +46,6 @@ def test_STViewerGUI():
     sCamera = scs.sCamera
 
     # add gui
-    viscope = Viscope()
     viewer  = AllDeviceGUI(viscope)
     viewer.setDevice(camera)
     newGUI  = STViewerGUI(viscope)

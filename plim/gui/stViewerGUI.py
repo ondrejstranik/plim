@@ -2,10 +2,10 @@
 class for live viewing spectral images
 '''
 #%%
-from spectralCamera.gui.xywViewerGUI import XYWViewerGui
+from viscope.gui.baseGUI import BaseGUI
 from plim.gui.spectralViewer.spotSpectraViewer import SpotSpectraViewer
 
-class STViewerGUI(XYWViewerGui):
+class STViewerGUI(BaseGUI):
     ''' main class to show  spot transmission Viewer (called spotSpectraViewer)'''
 
     DEFAULT = {'nameGUI': 'stViewer'}
@@ -24,6 +24,11 @@ class STViewerGUI(XYWViewerGui):
         self.viewer = self.STViewer.viewer
 
         self.vWindow.addMainGUI(self.viewer.window._qt_window, name=self.DEFAULT['nameGUI'])
+
+    def setDevice(self,device):
+        super().setDevice(device)
+        # connect signals
+        self.device.worker.yielded.connect(self.guiUpdateTimed)
 
     def updateGui(self):
         ''' update the data in gui '''

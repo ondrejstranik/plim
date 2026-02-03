@@ -7,9 +7,10 @@ class for calculating spot spectra from 3D spectral cube
 import numpy as np
 from skimage.transform import rotate
 import traceback
+from spectralCamera.algorithm.spotSpectraSimple import SpotSpectraSimple
 
 
-class SpotSpectra:
+class SpotSpectra(SpotSpectraSimple):
     ''' class for calculating spot spectra '''
     
     maskType = {'circle','square','offCentre'}
@@ -23,11 +24,11 @@ class SpotSpectra:
                 'darkCount': 0} # offset in the signal, which should be subtracted
 
 
-    def __init__(self,wxyImage=None,spotPosition= [],**kwarg):
+    def __init__(self,image=None,spotPosition= [], wavelength = None, **kwarg):
         ''' initialization of the parameters '''
 
-        if wxyImage is not None: self.wxyImage = wxyImage  # spectral Image
-        if spotPosition is not []: self.spotPosition = spotPosition
+        super().__init__(image=image,spotPosition= spotPosition,
+                         wavelength = wavelength, **kwarg)
 
         # parameters of the mask
         self.circle= kwarg['circle'] if 'circle' in kwarg else  self.DEFAULT['circle']
@@ -39,30 +40,22 @@ class SpotSpectra:
 
         self.darkCount= kwarg['darkCount'] if 'darkCount' in kwarg else  self.DEFAULT['darkCount']
 
-
-        self.maskSize = None # total size of the mask
-        self.maskSpot = None # weights for calculation of spots spectra
         self.maskBcg = None # weight for calculation of background spectra
-        self.maskSpotIdx = None # indexes of of the mask
         self.maskBcgIdx = None # indexes of of the mask
-
 
         self.maskImage = None # for visualisation
         self.outliers = None # bool vector with spotPosition, which are outside the image
 
-
         self.spectraRawSpot = []
         self.spectraRawBcg = []
-        self.spectraSpot = []
 
-        self.setMask()
+        SpotSpectra.setMask(self)
         
-        #self.calculateSpectra()
-
     def setMask(self,pxAve=None,pxBcg= None, pxSpace = None, 
                 circle= None, ratio = None, angle = None):
-        ''' set the geometry of spots and bcg mask  and calculate spectra'''
-
+        ''' set the geometry of spots and bcg mask  and calculate spectra
+        this function is rewritten 
+        '''
 
         if pxAve is not None:
             self.pxAve = int(pxAve)
@@ -87,10 +80,8 @@ class SpotSpectra:
             self.maskSpot = maskR<self.pxAve
             self.maskBcg = (maskR>(self.pxAve+self.pxSpace)) & (maskR<self.pxAve+self.pxSpace + self.pxBcg)
             
-
+        # mask has a squares
         else:
-            '''
-            # mask has a squares
             a = (self.pxBcg + self.pxAve + self.pxSpace)
             b = (self.pxBcg + self.pxAve*self.ratio + self.pxSpace)
             self.maskSize = 2*int(np.sqrt(a**2 + b**2)) +1
@@ -109,6 +100,7 @@ class SpotSpectra:
 
             self.maskSpot = rotate(self.maskSpot,self.angle)
             self.maskBcg = rotate(self.maskBcg,self.angle)
+
             '''
             # mask has a squares with off set
             self.maskSize = int(2*self.pxAve + self.pxSpace)
@@ -120,27 +112,25 @@ class SpotSpectra:
 
             self.maskSpot = rotate(self.maskSpot,self.angle)
             self.maskBcg = rotate(self.maskBcg,self.angle)
+            '''
 
-            #print(f'maskSpot \n  {self.maskSpot}')
-            #print(f'maskBcg \n  {self.maskSpot}')
-
-        # calculate the spectra with the new mask
-        self.calculateSpectra()
-
-
-        # get the maskimage and identify the spots with the mask in the image
-
-        if not hasattr(self,'wxyImage'):
+        # return if there is no image
+        if not hasattr(self,'image'):
             return
         else:
-            self.maskImage = 0*self.wxyImage[0,:,:]
+            self.maskImage = 0*self.image[0,:,:]
 
+        # identify the spots, whose mask is not whole in image
         # convert self.spotPosition to numpy array. it is better to operate on
         _spotPosition = np.array(self.spotPosition, dtype=int)
 
         if _spotPosition.size ==0:
+            self.spectraSpot = []
+            self.spectraRawSpot = []
+            self.spectraRawBcg = []
             return
 
+        # define the bool vector with outliers
         self.outliers = np.zeros(_spotPosition.shape[0], dtype=bool)
 
         try:
@@ -181,49 +171,44 @@ class SpotSpectra:
                         self.maskBcgIdx[1][~self.outliers,:]] = 2
             
         except:
-            print('error in setting self.maskImage')
+            print('error in setting mask')
             traceback.print_exc()
 
-    def setSpot(self, spotPosition):
-        ''' set position of the spots  and calculate spectra'''
-        self.spotPosition = np.array(spotPosition)
-
-        self.setMask()
-        #self.calculateSpectra()
-
-    def setImage(self, wxyImage):
-        ''' set the spectra image and calculate image and calculate spectra'''
-        self.wxyImage = wxyImage
-
+        # calculate the spectra with the new mask
         self.calculateSpectra()
 
+
     def calculateSpectra(self):
-        ''' calculate the spectra '''
+        ''' calculate the spectra
+         this function is rewritten
+        '''
 
         if self.spotPosition is None or len(self.spotPosition)==0:
+            self.spectraSpot = []
+            self.spectraRawSpot = []
+            self.spectraRawBcg = []
             return
         else:
             nSpot = len(self.spotPosition)
         
         if (self.maskSpotIdx is None) or (self.maskBcgIdx is None):
-            print('no self.maskSpotIdx or self.maskBcgIdx')
             return
         
-        if not hasattr(self,'wxyImage') or self.wxyImage is None:
+        if not hasattr(self,'image') or self.image is None:
             return
 
-        _spectraRawSpot = np.ones((nSpot,self.wxyImage.shape[0]))
-        _spectraRawBcg = np.ones((nSpot,self.wxyImage.shape[0]))
+        _spectraRawSpot = np.ones((nSpot,self.image.shape[0]))
+        _spectraRawBcg = np.ones((nSpot,self.image.shape[0]))
 
         try:
             _spectraRawSpot[~self.outliers,:] = np.sum(
-                self.wxyImage[:,
+                self.image[:,
                             self.maskSpotIdx[0][~self.outliers,:],
                             self.maskSpotIdx[1][~self.outliers,:]
                             ],axis=2).T
 
             _spectraRawBcg[~self.outliers,:] = np.sum(
-                self.wxyImage[:,
+                self.image[:,
                             self.maskBcgIdx[0][~self.outliers,:],
                             self.maskBcgIdx[1][~self.outliers,:]
                             ],axis=2).T
@@ -236,15 +221,6 @@ class SpotSpectra:
         self.spectraRawSpot = _spectraRawSpot.tolist()
         self.spectraRawBcg = _spectraRawBcg.tolist()
         self.spectraSpot = _spectraSpot.tolist()
-
-
-    def getMask(self):
-        ''' return the image of the mask of spots and background '''
-        return self.maskImage
-
-    def getT(self):
-        ''' return transmission spectra of the spots '''
-        return self.spectraSpot
 
     def getA(self):
         ''' return absorption spectra of the spots '''

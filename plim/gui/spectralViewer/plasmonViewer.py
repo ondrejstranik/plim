@@ -25,19 +25,20 @@ import numpy as np
 class PlasmonViewer(SpotSpectraViewer):
     ''' main viewer for the plasmon resonances of spots'''
 
-    def __init__(self, xywImage=None, wavelength= None, **kwargs):
+    def __init__(self, image=None, wavelength= None, **kwargs):
         ''' initialise the class '''
 
-        super().__init__(xywImage=xywImage, wavelength= wavelength, **kwargs)
+        super().__init__(image=image, wavelength= wavelength, **kwargs)
 
         # calculated parameters
         self.pF = PlasmonFit(wavelength = wavelength)
 
         #gui parameters
-        self.lineplotList3 = [] # fit line
-        self.lineplotList4 = [] # peak vertical line
+        #self.lineplotList3 = [] # fit line
+        #self.lineplotList4 = [] # peak vertical line
+        
+        # fit gadget
         self.fitParameterGui = None
-
 
         # set gui
         PlasmonViewer._setWidget(self)
@@ -62,6 +63,8 @@ class PlasmonViewer(SpotSpectraViewer):
             self.pF.peakWidth =  peakWidth
             self.pF.wavelengthGuess = wavelengthGuess
 
+            # recalculate fit and redraw the spectra
+            # TODO!
             self.updateSpectra()
 
 
@@ -71,6 +74,9 @@ class PlasmonViewer(SpotSpectraViewer):
         if self.dockWidgetParameter is not None:
             self.viewer.window._qt_window.tabifyDockWidget(self.dockWidgetParameter,dw)
         self.dockWidgetParameter = dw
+        # register the graph in menu
+        if self.window_menu is not None:
+            self.window_menu.addAction(dw.toggleViewAction())
 
     def calculateSpectra(self):
         ''' calculate the spectra and the fits '''
