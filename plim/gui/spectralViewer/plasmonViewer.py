@@ -34,8 +34,7 @@ class PlasmonViewer(SpotSpectraViewer):
         self.pF = PlasmonFit(wavelength = wavelength)
 
         #gui parameters
-        #self.lineplotList3 = [] # fit line
-        #self.lineplotList4 = [] # peak vertical line
+        self.linePlotList3 = [] # peak vertical line
         
         # fit gadget
         self.fitParameterGui = None
@@ -64,8 +63,8 @@ class PlasmonViewer(SpotSpectraViewer):
             self.pF.wavelengthGuess = wavelengthGuess
 
             # recalculate fit and redraw the spectra
-            # TODO!
-            self.updateSpectra()
+            self.calculateSpectra()
+            self.drawSpectraGraph()
 
 
         # add widget fitParameterGui
@@ -78,10 +77,18 @@ class PlasmonViewer(SpotSpectraViewer):
         if self.window_menu is not None:
             self.window_menu.addAction(dw.toggleViewAction())
 
+        # adapt the spectra widget
+        # pre allocate extra new lines for the graph
+        for _ in range(self.maxNLine):
+            self.linePlotList3.append(self.spectraGraph.addLine())
+            self.linePlotList3[-1].hide()
+            #self._speedUpLineDrawing(self.linePlotList3[-1])    
+
+
     def calculateSpectra(self):
         ''' calculate the spectra and the fits '''
         super().calculateSpectra()
-        self.pF.setSpectra(self.spotSpectra.getA())
+        self.pF.setSpectra(self.spotSpectra.getSpectra())
         self.pF.calculateFit()
 
     def setWavelength(self,wavelength):
@@ -93,70 +100,67 @@ class PlasmonViewer(SpotSpectraViewer):
         ''' only redraw the images, spectra. It does not recalculate it '''
         start = timer()
         
-        self.spectraLayer.data = self.xywImage
-        self.updateSpectraGraph()
-        self.updateHistogram()
+        self.spectraLayer.data = self.spotSpectra.getImage()
+        self.drawSpectraGraph()
 
         end = timer()
         print(f'plasmonViewer redraw evaluation time {end -start} s')
 
 
     def drawSpectraGraph(self):
-        ''' draw all new lines in the spectraGraph '''
+        ''' draw lines in the spectraGraph '''
         super().drawSpectraGraph()
 
-        # draw additional fit line and peak position line
-        self.lineplotList3 = []
-        self.lineplotList4 = []                
+        # if there is no points then do not continue
+        try:
+            nSig = len(self.spotSpectra.getSpectra())
+        except:
+            return
 
+        # draw additional fit line and peak position line if it is set up
         if self.showRawSpectra == False:
-            try:
-                fitSpectra = self.pF.getFit()
-                w = self.pF.getWavelength()
-                peakPosition = self.pF.getPosition()
-                # fitSpectra
-                for ii in np.arange(len(fitSpectra)):
-                    mypen = QPen(QColor.fromRgbF(*list(
-                        self.pointLayer.face_color[ii])))
-                    mypen.setWidth(0)
-                    lineplot = self.spectraGraph.plot(pen= mypen)
-                    # speeding up drawing
-                    lineplot = self._speedUpLineDrawing(lineplot)
-                    lineplot.setData(w, fitSpectra[ii])
-                    self.lineplotList3.append(lineplot)
 
+            self.spectraGraph.setUpdatesEnabled(False)
+
+            fitSpectra = self.pF.getFit()
+            w = self.pF.getWavelength()
+            peakPosition = self.pF.getPosition()
+            # loop over all points
+            for ii in np.arange(nSig):
+                try:
+                    self.penList[ii].setColor(QColor.fromRgbF(*list(
+                        self.pointLayer.face_color[ii])))
+                except:
+                    print('error occurred in drawSpectraGraph - could not set color')
+                    traceback.print_exc()
+                try:
+                    # fit line
+                    self.linePlotList2[ii].setData(w, fitSpectra[ii],
+                                            pen = self.penList[ii])
+                    self.linePlotList2[ii].show()
                     # vertical line
-                    lineplot = self.spectraGraph.addLine(x = peakPosition[ii], pen= mypen)
-                    self.lineplotList4.append(lineplot)
-            except:
-                print('error occurred in drawSpectraGraph')                
+                    self.linePlotList3[ii].setValue(peakPosition[ii])
+                    self.linePlotList3[ii].setPen(self.penList[ii])
+                    self.linePlotList3[ii].show()
+                    print(f'peak position {peakPosition[ii]}')
+                except:
+                    print('error occurred in drawSpectraGraph - could not draw')
+                    traceback.print_exc()
 
-    def updateSpectraGraph(self):
-        ''' update the lines in the spectra graph '''
-        super().updateSpectraGraph()
+            self.spectraGraph.setUpdatesEnabled(True)
 
-        mypen = QPen()
-        mypen.setColor(QColor("White"))
-        mypen.setWidth(0)  
+        # hide extra lines
+        # linePlotList2 is already hidden in super().drawSpectraGraph()
+        if self.showRawSpectra:
+            for ii in np.arange(self.maxNLine - nSig):
+                self.linePlotList3[ii+nSig].hide()
+        else:
+            for ii in np.arange(nSig):
+                self.linePlotList3[ii].hide()
 
-        if self.showRawSpectra == False:
-            try:
-                fitSpectra = self.pF.getFit()
-                w = self.pF.getWavelength()
-                peakPosition = self.pF.getPosition()
-                # pointSpectra
-                for ii in np.arange(len(fitSpectra)):
-                    myline = self.lineplotList3[ii]
-                    mypen.setColor(QColor.fromRgbF(*list(
-                        self.pointLayer.face_color[ii])))
-                    mypen.setWidth(0)
-                    myline.setData(w,fitSpectra[ii], pen = mypen)
-                    
-                    # horizontal line 
-                    self.lineplotList4[ii].setValue(peakPosition[ii])
-            except:
-                print('error occurred in update_spectraGraph - fitSpectra')
-                traceback.print_exc()
+
+
+
 
 
 

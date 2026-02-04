@@ -53,8 +53,8 @@ class SpotSpectra(SpotSpectraSimple):
         
     def setMask(self,pxAve=None,pxBcg= None, pxSpace = None, 
                 circle= None, ratio = None, angle = None):
-        ''' set the geometry of spots and bcg mask  and calculate spectra
-        this function is rewritten 
+        ''' set the geometry of spots and bcg mask 
+            this function is overwritten 
         '''
 
         if pxAve is not None:
@@ -174,13 +174,11 @@ class SpotSpectra(SpotSpectraSimple):
             print('error in setting mask')
             traceback.print_exc()
 
-        # calculate the spectra with the new mask
-        self.calculateSpectra()
 
 
     def calculateSpectra(self):
         ''' calculate the spectra
-         this function is rewritten
+         this function is overwritten
         '''
 
         if self.spotPosition is None or len(self.spotPosition)==0:
@@ -206,12 +204,19 @@ class SpotSpectra(SpotSpectraSimple):
                             self.maskSpotIdx[0][~self.outliers,:],
                             self.maskSpotIdx[1][~self.outliers,:]
                             ],axis=2).T
+            _spectraRawSpot[~self.outliers,:] = (
+                _spectraRawSpot[~self.outliers,:] / self.maskSpotIdx[0].shape[1]
+            )
 
             _spectraRawBcg[~self.outliers,:] = np.sum(
                 self.image[:,
                             self.maskBcgIdx[0][~self.outliers,:],
                             self.maskBcgIdx[1][~self.outliers,:]
                             ],axis=2).T
+            _spectraRawBcg[~self.outliers,:] = (
+                 _spectraRawBcg[~self.outliers,:] / self.maskBcgIdx[0].shape[1]
+            )
+
         except:
             print('error in calculateSpectra')
             traceback.print_exc()

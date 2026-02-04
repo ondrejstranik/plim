@@ -70,7 +70,10 @@ class SpotSpectraViewer(SViewer):
         colormap=transparentRedGreen_colormap, opacity = 0.5)
 
         # set pyqt
-        @magicgui(auto_call= 'True')
+        @magicgui(auto_call= 'True', 
+                  pxAve={'min':1},
+                  pxBcg={'min':1},
+                  ratio={'min':0.01})
         def spectraParameterGui(
             showRawSpectra: bool = self.showRawSpectra,
             circle: bool = self.spotSpectra.circle,
@@ -100,13 +103,15 @@ class SpotSpectraViewer(SViewer):
             spectraParameterGui.darkCount.value = darkCount
             self.showRawSpectra = showRawSpectra
 
-            # recalculate/redraw the spectra, redraw mask with the new parameters
-            self.spotSpectra.setSpot(self.pointLayer.data)
-            self.drawSpectraGraph()
+            # recalculate mask and redraw mask
+            self.spotSpectra.setMask()
             self.maskLayer.data = self.spotSpectra.maskImage
 
-            spectraParameterGui._auto_call = True
+            # recalculate spectra and draw them
+            self.calculateSpectra()
+            self.drawSpectraGraph()
 
+            spectraParameterGui._auto_call = True
 
         #automatic identification of spots
         @magicgui
@@ -117,10 +122,12 @@ class SpotSpectraViewer(SViewer):
             myRadius = sI.getRadius()
             print(f'detected radius: {myRadius}')
 
-            # update the spectra parameter
+            # update the points and radius of spots, recalculate/ redraw  spectra and mask
             with self.pointLayer.events.data.blocker():
                 self.pointLayer.data = myPosition
+            self.spotSpectra.setSpot(myPosition)
             self.spectraParameterGui(pxAve=int(myRadius))
+
 
         # add widget setParameterGui
         self.spectraParameterGui = spectraParameterGui
@@ -213,10 +220,9 @@ class SpotSpectraViewer(SViewer):
             self.spectraGraph.setTitle(f'1 - Transmission')
             self.spectraGraph.setLabel('left', 'percentage', units='a.u.')
 
-    def updateMask(self):
-        super().updateMask()
-        if not np.array_equal(self.spotSpectra.maskImage,self.maskLayer.data):
-            self.maskLayer.data = self.spotSpectra.maskImage            
+    def pointChanged(self):
+        super().pointChanged()
+        self.maskLayer.data = self.spotSpectra.maskImage            
 
 
 if __name__ == "__main__":
