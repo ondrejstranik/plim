@@ -80,6 +80,7 @@ class PlasmonProcessor(BaseProcessor):
         ''' process newly arrived data '''
         print(f"processing data from {self.DEFAULT['name']}")
         self.spotSpectra.setImage(self.sCamera.sImage)
+        self.spotSpectra.setWavelength(self.sCamera.wavelength)
         self.pF.setSpectra(self.spotSpectra.getA())
         self.pF.setWavelength(self.sCamera.wavelength)
         self.pF.calculateFit()

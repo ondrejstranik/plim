@@ -190,6 +190,8 @@ class SpotSpectraViewer(SViewer):
                     self.linePlotList2[ii].show()
                 except:
                     print('error occurred in drawSpectraGraph - pointSpectra')
+                    traceback.print_exc()
+
             # show processed spectra
             else:
                 try:

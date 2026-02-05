@@ -37,8 +37,9 @@ class PlasmonFit:
         self.wRange = None
 
         # calculated values
-        self.fitSpectra = []
-        self.peakPosition = []
+        self.fitSpectra = [] # fitted spectra for given range
+        self.peakPosition = [] #  fitted peak position
+        self.fitPeak = [] # fitted peak [peak_start w, peak_stop w] [value1 value2] 
 
     def setSpectra(self,spectraList):
         ''' define the plasmon spectra '''
@@ -59,7 +60,7 @@ class PlasmonFit:
         if wavelengthStartFit is not None: self.wavelengthStartFit = wavelengthStartFit
 
     def _calculateFit(self):
-        ''' calculate fits'''
+        ''' calculate fits - old function using plasmonPeakFit.py'''
 
         start = timer()
 
@@ -95,6 +96,7 @@ class PlasmonFit:
 
         self.fitSpectra = []
         self.peakPosition = []
+        self.fitPeak = []
 
         # x-coordinates for all sets
         x = self.wavelength[self.wRange]
@@ -143,11 +145,18 @@ class PlasmonFit:
                 nom = Ifp1(lstart + self.peakWidth) - Ifp1(lstart)
                 denom = If(lstart + self.peakWidth) - If(lstart)
                 peakcenter = nom/denom
-            except:
-                peakcenter = 0
 
-            self.peakPosition.append(peakcenter)
-            self.fitSpectra.append(f(self.wavelength[self.wRange]))
+                self.peakPosition.append(peakcenter)
+                self.fitSpectra.append(f(self.wavelength[self.wRange]))
+                self.fitPeak.append(((lstart, lstart + self.peakWidth),
+                                    (f(lstart), f(lstart + self.peakWidth))))
+
+            except:
+                self.peakPosition.append(self.wavelengthGuess)
+                self.fitSpectra.append(np.zeros(self.wavelength[self.wRange]))
+                self.fitPeak.append(((self.wavelengthGuess, self.wavelengthGuess),
+                                    (0, 0)))
+
 
         end = timer()
         print(f'plasmon fit evaluation time {end -start} s')
@@ -191,7 +200,10 @@ class PlasmonFit:
     def getWavelength(self):
         ''' get wavelengths of the fit '''
         return self.wavelength[self.wRange]
-
+    
+    def getFitPeak(self):
+        ''' get the fitted peak'''
+        return self.fitPeak
 
 if __name__ == "__main__":
     pass

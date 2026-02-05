@@ -10,7 +10,6 @@ from plim.algorithm.plasmonFit import PlasmonFit
 
 import napari
 import time
-from timeit import default_timer as timer
 import pyqtgraph as pg
 from PyQt5.QtGui import QColor, QPen
 
@@ -79,11 +78,10 @@ class PlasmonViewer(SpotSpectraViewer):
 
         # adapt the spectra widget
         # pre allocate extra new lines for the graph
-        for _ in range(self.maxNLine):
-            self.linePlotList3.append(self.spectraGraph.addLine())
+        for ii in range(self.maxNLine):
+            self.linePlotList3.append(self.spectraGraph.plot())
             self.linePlotList3[-1].hide()
-            #self._speedUpLineDrawing(self.linePlotList3[-1])    
-
+            self._speedUpLineDrawing(self.linePlotList3[-1])
 
     def calculateSpectra(self):
         ''' calculate the spectra and the fits '''
@@ -125,6 +123,7 @@ class PlasmonViewer(SpotSpectraViewer):
             fitSpectra = self.pF.getFit()
             w = self.pF.getWavelength()
             peakPosition = self.pF.getPosition()
+            fitPeak = self.pF.getFitPeak()
             # loop over all points
             for ii in np.arange(nSig):
                 try:
@@ -138,20 +137,21 @@ class PlasmonViewer(SpotSpectraViewer):
                     self.linePlotList2[ii].setData(w, fitSpectra[ii],
                                             pen = self.penList[ii])
                     self.linePlotList2[ii].show()
-                    # vertical line
-                    self.linePlotList3[ii].setValue(peakPosition[ii])
-                    self.linePlotList3[ii].setPen(self.penList[ii])
+                    # peak line
+                    self.linePlotList3[ii].setData(fitPeak[ii][0],fitPeak[ii][1],
+                                                   pen = self.penList[ii] )
                     self.linePlotList3[ii].show()
-                    print(f'peak position {peakPosition[ii]}')
                 except:
                     print('error occurred in drawSpectraGraph - could not draw')
                     traceback.print_exc()
 
             self.spectraGraph.setUpdatesEnabled(True)
 
+            print(f'number of line {nSig}')
+
         # hide extra lines
         # linePlotList2 is already hidden in super().drawSpectraGraph()
-        if self.showRawSpectra:
+        if self.showRawSpectra == False:
             for ii in np.arange(self.maxNLine - nSig):
                 self.linePlotList3[ii+nSig].hide()
         else:

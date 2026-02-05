@@ -39,9 +39,9 @@ class PlasmonViewerGUI(BaseGUI):
     def updateGui(self):
         ''' update the data in gui '''
         # napari
-        #self.plasmonViewer.setWavelength(self.device.wavelength)
-        self.plasmonViewer.xywImage = self.device.spotSpectra.wxyImage
-        self.plasmonViewer.wavelength = self.device.pF.wavelength
+        #self.plasmonViewer.setWavelength(self.device.pF.wavelength)
+        #self.plasmonViewer.setImage(self.device.spotSpectra.image)
+        #self.plasmonViewer.setWavelength(self.device.pF.wavelength)
         self.plasmonViewer.redraw()
 
 
