@@ -270,6 +270,8 @@ class Plim():
         scGui.setDevice(sCamera)
         cvGui = CameraViewGUI(viscope,vWindow='new')
         cvGui.setDevice(camera)
+        hiGUI  = HistogramGUI(viscope,vWindow = cvGui.vWindow)
+        hiGUI.setDevice(camera)
 
         pvGui  = PlasmonViewerGUI(viscope,vWindow='new')
         pvGui.setDevice(pP)
@@ -299,8 +301,8 @@ class Plim():
 if __name__ == "__main__":
 
     #Plim.runReal()
-    Plim.runVirtual()
-    #Plim.runRealMicroscope()
+    #Plim.runVirtual()
+    Plim.runRealMicroscope()
     
 #%%
 

@@ -111,8 +111,14 @@ class PlasmonFit:
         except:
             return
 
+        
         # polyfit returns a 2D array (Degree+1 x Datasets)
-        coeffs = P.polyfit(x, y_datasets, deg=self.orderFit)
+        try:
+            coeffs = P.polyfit(x, y_datasets, deg=self.orderFit)
+        except:
+            print('could not fit polynomials')
+            return
+
 
         # define aux functions
         p1 = Polynomial([0, 1]) # p1(x) = x
