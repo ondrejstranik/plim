@@ -16,6 +16,9 @@ from spectralCamera.gui.saveSIVideoGUI import SaveSIVideoGUI
 
 from viscope.gui.saveImageGUI import SaveImageGUI
 
+from viscope.gui.histogramGUI import HistogramGUI
+
+
 import numpy as np
 from pathlib import Path
 
@@ -96,6 +99,8 @@ class Plim():
         scGui.setDevice(sCamera)
         cvGui = CameraViewGUI(viscope,vWindow='new')
         cvGui.setDevice(camera)
+        hiGUI  = HistogramGUI(viscope,vWindow = cvGui.vWindow)
+        hiGUI.setDevice(camera)
         #deviceGUI = CameraGUI(viscope,vWindow=viscope.vWindow)
         #deviceGUI.setDevice(camera2)
         #deviceGUI = CameraViewGUI(viscope,vWindow='new')
