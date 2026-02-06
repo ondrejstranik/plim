@@ -13,7 +13,8 @@ import numpy as np
 
 class SpotIdentification:
     ''' identification of plasmon spots '''
-    DEFAULT = {'radius':5}
+    DEFAULT = {'radius':5,
+               'maxNSpot': 200}
 
     def __init__(self,spectralImage):
         ''' initialization '''
@@ -21,6 +22,7 @@ class SpotIdentification:
         self.spotPosition = None
         self.spectralImage = spectralImage
         self.spotRadius = None
+        self.maxNSpot = SpotIdentification.DEFAULT['maxNSpot']
 
     def getPosition(self):
         ''' get the position of plasmonic spots '''
@@ -54,6 +56,9 @@ class SpotIdentification:
 
         _myPosition = np.vstack((props['centroid-0'],props['centroid-1'])).T
         self.spotPosition = _myPosition[selSpots]
+
+        # reduce the number of maximal spots
+        self.spotPosition = self.spotPosition[:self.maxNSpot,:]
 
         self.spotRadius = dAve/2
 

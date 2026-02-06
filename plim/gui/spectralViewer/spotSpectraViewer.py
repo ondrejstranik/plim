@@ -18,6 +18,7 @@ from typing import Annotated, Literal
 
 import numpy as np
 import traceback
+from timeit import default_timer as timer
 
 class SpotSpectraViewer(SViewer):
     ''' class for viewing spots spectra'''
@@ -103,13 +104,12 @@ class SpotSpectraViewer(SViewer):
             spectraParameterGui.darkCount.value = darkCount
             self.showRawSpectra = showRawSpectra
 
-            # recalculate mask and redraw mask
+            # recalculate mask
             self.spotSpectra.setMask()
-            self.maskLayer.data = self.spotSpectra.maskImage
-
-            # recalculate spectra and draw them
+            # recalculate spectra
             self.calculateSpectra()
-            self.drawSpectraGraph()
+            # redraw
+            self.redraw(modified='point')
 
             spectraParameterGui._auto_call = True
 
@@ -123,11 +123,12 @@ class SpotSpectraViewer(SViewer):
             print(f'detected radius: {myRadius}')
 
             # update the points and radius of spots, recalculate/ redraw  spectra and mask
+            self.spotSpectra.setSpot(myPosition)
+            # avoid setting this signal
             with self.pointLayer.events.data.blocker():
                 self.pointLayer.data = myPosition
-            self.spotSpectra.setSpot(myPosition)
+            # emit the signal in this case
             self.spectraParameterGui(pxAve=int(myRadius))
-
 
         # add widget setParameterGui
         self.spectraParameterGui = spectraParameterGui
@@ -209,7 +210,7 @@ class SpotSpectraViewer(SViewer):
             for ii in np.arange(self.maxNLine - nSig):
                 self.linePlotList2[ii+nSig].hide()
         else:
-            for ii in np.arange(nSig):
+            for ii in np.arange(self.maxNLine):
                 self.linePlotList2[ii].hide()
         
         self.spectraGraph.setUpdatesEnabled(True)
@@ -222,10 +223,21 @@ class SpotSpectraViewer(SViewer):
             self.spectraGraph.setTitle(f'1 - Transmission')
             self.spectraGraph.setLabel('left', 'percentage', units='a.u.')
 
-    def pointChanged(self):
-        super().pointChanged()
-        self.maskLayer.data = self.spotSpectra.maskImage            
+    def redraw(self, modified='all'):
+        ''' only redraw the images, spectra. It does not recalculate it
+         it overwrite the function
+           '''
+        start = timer()
+        if (modified=='image') or (modified=='all'):
+            self.spectraLayer.data = self.spotSpectra.getImage()
+            self.drawSpectraGraph()           
+        if (modified=='point') or (modified=='all'):
+            self.maskLayer.data = self.spotSpectra.maskImage            
+            self.drawSpectraGraph()
+        end = timer()
+        print(f'viewer redraw evaluation time {end -start} s')
 
+    
 
 if __name__ == "__main__":
     pass

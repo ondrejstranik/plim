@@ -153,7 +153,7 @@ class PlasmonFit:
 
             except:
                 self.peakPosition.append(self.wavelengthGuess)
-                self.fitSpectra.append(np.zeros(self.wavelength[self.wRange]))
+                self.fitSpectra.append(np.zeros_like(self.wavelength[self.wRange]))
                 self.fitPeak.append(((self.wavelengthGuess, self.wavelengthGuess),
                                     (0, 0)))
 

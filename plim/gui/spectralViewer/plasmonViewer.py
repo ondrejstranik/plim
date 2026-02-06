@@ -63,7 +63,7 @@ class PlasmonViewer(SpotSpectraViewer):
 
             # recalculate fit and redraw the spectra
             self.calculateSpectra()
-            self.drawSpectraGraph()
+            self.redraw(modified='image')
 
 
         # add widget fitParameterGui
@@ -94,17 +94,6 @@ class PlasmonViewer(SpotSpectraViewer):
         super().setWavelength(wavelength)
         self.pF.setWavelength(wavelength)
 
-    def redraw(self):
-        ''' only redraw the images, spectra. It does not recalculate it '''
-        start = timer()
-        
-        self.spectraLayer.data = self.spotSpectra.getImage()
-        self.drawSpectraGraph()
-
-        end = timer()
-        print(f'plasmonViewer redraw evaluation time {end -start} s')
-
-
     def drawSpectraGraph(self):
         ''' draw lines in the spectraGraph '''
         super().drawSpectraGraph()
@@ -122,7 +111,6 @@ class PlasmonViewer(SpotSpectraViewer):
 
             fitSpectra = self.pF.getFit()
             w = self.pF.getWavelength()
-            peakPosition = self.pF.getPosition()
             fitPeak = self.pF.getFitPeak()
             # loop over all points
             for ii in np.arange(nSig):
@@ -147,21 +135,14 @@ class PlasmonViewer(SpotSpectraViewer):
 
             self.spectraGraph.setUpdatesEnabled(True)
 
-            print(f'number of line {nSig}')
-
         # hide extra lines
         # linePlotList2 is already hidden in super().drawSpectraGraph()
         if self.showRawSpectra == False:
             for ii in np.arange(self.maxNLine - nSig):
                 self.linePlotList3[ii+nSig].hide()
         else:
-            for ii in np.arange(nSig):
+            for ii in np.arange(self.maxNLine):
                 self.linePlotList3[ii].hide()
-
-
-
-
-
 
 
 if __name__ == "__main__":

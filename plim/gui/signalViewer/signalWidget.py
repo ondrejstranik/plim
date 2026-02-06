@@ -37,6 +37,7 @@ class SignalWidget(QWidget):
         self.align = False
         self.lineIndex = 0
         self.linePlotList = []
+        self.penList = []        
         self.vLine = []
         self.maxNLine = SignalWidget.DEFAULT['maxNLine']
 
@@ -178,11 +179,12 @@ class SignalWidget(QWidget):
             vLine = pg.InfiniteLine(angle=90, movable=False, pen=pg.mkPen(c, width=0, style=QtCore.Qt.SolidLine), pos=0)
             self.graph.addItem(vLine, ignoreBounds=True)
             self.vLine.append(vLine)
-        # pre allocate lines for the graph
+        # pre allocate lines and pens for the graph
         for ii in range(self.maxNLine):
             self.linePlotList.append(self.graph.plot())
             self.linePlotList[-1].hide()
             self._speedUpLineDrawing(self.linePlotList[-1])
+            self.penList.append(pg.mkPen(width=1))
 
 
         # widgets
@@ -238,7 +240,7 @@ class SignalWidget(QWidget):
 
         offSet = self.sD.offset
         if not self.align:
-            offSet = 0*offSet
+            offSet = 0
 
         # remove the one not visible
         _signal = self.sD.signal[nx,:]
@@ -253,7 +255,7 @@ class SignalWidget(QWidget):
         return lineIndex
 
     def drawGraph(self):
-        ''' draw all new lines in the spectraGraph '''
+        ''' draw all new lines in the signal graph '''
 
         start = timer()
 
@@ -266,18 +268,12 @@ class SignalWidget(QWidget):
             return
         nSig = signal.shape[1]
 
-        # set off set for the lines
+        # set offset for the lines
         if not self.align:
             offSet = np.zeros(nSig)
         else:
             self.sD.setOffset()
             offSet = self.sD.getOffset()
-
-        # define pen object
-        mypen = QPen()
-        mypen.setColor(QColor("White"))
-        mypen.setWidth(0)
-        mypen.setStyle(1)
 
         self.graph.setUpdatesEnabled(False)
         # update data for the visible lines
@@ -291,8 +287,7 @@ class SignalWidget(QWidget):
             except:
                 print('sd table visible not defined')
             # set dash for selected line
-            if ii == self.lineIndex:
-                mypen.setStyle(2)
+            self.penList[ii].setStyle(2) if ii == self.lineIndex else self.penList[ii].setStyle(1)
             # set color of the line
             try:
                 hexColor = table['color'][ii]
@@ -300,21 +295,16 @@ class SignalWidget(QWidget):
                                 int(hexColor[3:5],16)/255,
                                 int(hexColor[5:7],16)/255,
                                 1]
-                mypen.setColor(QColor.fromRgbF(*list(rgbaColor)))
+                self.penList[ii].setColor(QColor.fromRgbF(*list(rgbaColor)))
             except:
                 print('sd table color is not defined')
             # update data
             try:
-                self.linePlotList[ii].setData(time, signal[:,ii]-offSet[ii], pen=mypen)
+                self.linePlotList[ii].setData(time, signal[:,ii]-offSet[ii], pen=self.penList[ii])
                 self.linePlotList[ii].show()
             except:
                 print('error occurred in drawGraph - signalWidget')                
                 traceback.print_exc()
-
-            # set the line back
-            if ii == self.lineIndex:
-                mypen.setStyle(1)
-
 
         # hide extra lines
         for ii in np.arange(self.maxNLine - nSig):
@@ -326,7 +316,6 @@ class SignalWidget(QWidget):
         self.vLine[2].setPos(self.sD.alignTime)
 
         self.graph.setUpdatesEnabled(True)
-        #self.graph.repaint()
 
         # display delta time
         if len(time) >1:

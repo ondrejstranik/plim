@@ -6,7 +6,9 @@ from viscope.gui.baseGUI import BaseGUI
 from plim.gui.spectralViewer.spotSpectraViewer import SpotSpectraViewer
 
 class STViewerGUI(BaseGUI):
-    ''' main class to show  spot transmission Viewer (called spotSpectraViewer)'''
+    ''' main class to show  spot transmission Viewer (called spotSpectraViewer)
+    calculation of the spectra are done in the main thread of the SViewer
+    '''
 
     DEFAULT = {'nameGUI': 'stViewer'}
 
@@ -33,8 +35,9 @@ class STViewerGUI(BaseGUI):
     def updateGui(self):
         ''' update the data in gui '''
         # napari
-        self.STViewer.setImage(self.device.sImage)
         self.STViewer.setWavelength(self.device.wavelength)
+        self.STViewer.setImage(self.device.sImage)
+
 
 
 if __name__ == "__main__":
