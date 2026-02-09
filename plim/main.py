@@ -10,6 +10,7 @@ from plim.gui.plasmonViewerGUI import PlasmonViewerGUI
 from plim.gui.positionTrackGUI import PositionTrackGUI
 from viscope.gui.cameraGUI import CameraGUI
 from viscope.gui.cameraViewGUI import CameraViewGUI
+from viscope.gui.cameraView2GUI import CameraView2GUI
 from spectralCamera.gui.sCameraGUI import SCameraGUI
 from plim.gui.saveDataGUI import SaveDataGUI
 from spectralCamera.gui.saveSIVideoGUI import SaveSIVideoGUI
@@ -97,10 +98,10 @@ class Plim():
         cGui.setDevice(camera)
         scGui = SCameraGUI(viscope)
         scGui.setDevice(sCamera)
-        cvGui = CameraViewGUI(viscope,vWindow='new')
+        cvGui = CameraView2GUI(viscope,vWindow='new')
         cvGui.setDevice(camera)
-        hiGUI  = HistogramGUI(viscope,vWindow = cvGui.vWindow)
-        hiGUI.setDevice(camera)
+        #hiGUI  = HistogramGUI(viscope,vWindow = cvGui.vWindow)
+        #hiGUI.setDevice(camera)
         #deviceGUI = CameraGUI(viscope,vWindow=viscope.vWindow)
         #deviceGUI.setDevice(camera2)
         #deviceGUI = CameraViewGUI(viscope,vWindow='new')
@@ -301,8 +302,8 @@ class Plim():
 if __name__ == "__main__":
 
     #Plim.runReal()
-    #Plim.runVirtual()
-    Plim.runRealMicroscope()
+    Plim.runVirtual()
+    #Plim.runRealMicroscope()
     
 #%%
 

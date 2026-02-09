@@ -130,6 +130,10 @@ class SpotSpectraViewer(SViewer):
             # emit the signal in this case
             self.spectraParameterGui(pxAve=int(myRadius))
 
+            # emit signal 
+            # TODO: check if it is right
+            self.sigUpdateData.emit()
+
         # add widget setParameterGui
         self.spectraParameterGui = spectraParameterGui
         dw = self.viewer.window.add_dock_widget(self.spectraParameterGui, name ='view param', area='bottom')
