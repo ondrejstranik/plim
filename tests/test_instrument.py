@@ -8,6 +8,7 @@ def test_regloICC():
     from plim.instrument.pump.regloICC import RegloICC
     import time
 
+    RegloICC.DEFAULT['serialNo'] = 'H21002980'
     pump = RegloICC()
     pump.connect()
     pump._setFlowRate(10)    
@@ -24,6 +25,7 @@ def test_regloICC_GUI():
     from viscope.gui.pumpGUI import PumpGUI   
     from plim.instrument.pump.regloICC import RegloICC
 
+    RegloICC.DEFAULT['serialNo'] = 'H21002980'
     pump = RegloICC()
     pump.connect()
 

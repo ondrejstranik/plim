@@ -77,7 +77,7 @@ class Plim():
         # pump
         pump = VirtualPump('pump')
         pump.connect()
-        pump.setParameter('flowRate',30)
+        pump.setParameter('flowRate',-30)
         pump.setParameter('flow',True)
 
         # plasmon data processor    
@@ -156,7 +156,7 @@ class Plim():
         
         #spectral camera
         sCal = CalibrateFrom3Images()
-        sCal = sCal.loadClass(classFile = r'C:\Users\ostranik\Documents\GitHub\spectralCamera\spectralCamera\DATA\24-06-26-calibration\CalibrateFrom3Images.obj')
+        sCal = sCal.loadClass(classFile = r'C:\Users\ostranik\Documents\GitHub\spectralCamera\spectralCamera\DATA\26-02-11-calibration\CalibrateFrom3Images.obj')
         # this is necessary, because the saved sCal does not have gridLine.spBlockRowIdx and gridLine.spBlockColumnIdx 
         sCal.gridLine.spBlockRowIdx = None
         sCal.gridLine.spBlockColumnIdx = None
@@ -169,7 +169,8 @@ class Plim():
         sCamera.setParameter('threadingNow',True)
 
         # pump
-        RegloICC.DEFAULT['port'] = 'COM3'
+        RegloICC.DEFAULT['port'] = 'COM4'
+        RegloICC.DEFAULT['serialNo'] = 'H21002980'
         pump = RegloICC('pump')
         pump.connect()
         pump.setParameter('flowRate',30)
@@ -301,9 +302,9 @@ class Plim():
 
 if __name__ == "__main__":
 
-    #Plim.runReal()
+    Plim.runReal()
     #Plim.runVirtual()
-    Plim.runRealMicroscope()
+    #Plim.runRealMicroscope()
     
 #%%
 
