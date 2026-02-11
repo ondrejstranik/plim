@@ -46,7 +46,7 @@ class FileData:
         ''' save image file'''
         np.savez(str(folder) + '/' +  str(fileMainName) + self.DEFAULT['nameSet']['image'],
         spotPosition = self.spotSpectra.spotPosition,
-        image = self.spotSpectra.wxyImage,
+        image = self.spotSpectra.image,
         wavelength = self.pF.wavelength)
 
     def loadImageFile(self,folder,fileMainName):
