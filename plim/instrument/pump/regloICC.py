@@ -82,7 +82,7 @@ class RegloICC(BasePump):
 
     def _stop(self):
         self._cmd('1~0', reopen=False)
-        self._cmd('1I', reopen=False)
+        self._cmd(str(self.channel)+'I', reopen=False)
 
     def connect(self):
         self._open()
