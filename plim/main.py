@@ -189,8 +189,11 @@ class Plim():
         cGui.setDevice(camera)
         scGui = SCameraGUI(viscope)
         scGui.setDevice(sCamera)
-        cvGui = CameraViewGUI(viscope,vWindow='new')
+        cvGui = CameraView2GUI(viscope,vWindow='new')
         cvGui.setDevice(camera)
+        
+        #cvGui = CameraViewGUI(viscope,vWindow='new')
+        #cvGui.setDevice(camera)
 
         pvGui  = PlasmonViewerGUI(viscope,vWindow='new')
         pvGui.setDevice(pP)
