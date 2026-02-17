@@ -122,6 +122,13 @@ class SpotSpectraViewer(SViewer):
             myRadius = sI.getRadius()
             print(f'detected radius: {myRadius}')
 
+
+            # restrict to the spots, whose whole mask is in the image
+            self.spotSpectra.pxAve = int(myRadius)
+            self.spotSpectra.setSpot(myPosition)
+            self.spotSpectra.setMask()
+            myPosition = myPosition[~self.spotSpectra.outliers]
+
             # update the points and radius of spots, recalculate/ redraw  spectra and mask
             self.spotSpectra.setSpot(myPosition)
             # avoid setting this signal
@@ -129,6 +136,8 @@ class SpotSpectraViewer(SViewer):
                 self.pointLayer.data = myPosition
             # emit the signal in this case
             self.spectraParameterGui(pxAve=int(myRadius))
+
+
 
             # emit signal 
             # TODO: check if it is right
