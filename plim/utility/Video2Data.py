@@ -150,7 +150,7 @@ class Window(QMainWindow):
 
             _fileData = FileData(spotSpectra=self.pV.spotSpectra,
                                  plasmonFit= self.pV.pF)
-            _fileData.spotSpectra.setImage(self.pV.spotSpectra.wxyImage)
+            _fileData.spotSpectra.setImage(self.pV.spotSpectra.image)
 
             _fileData.saveImageFile(folder=folder,fileMainName=fileMainName)
             _fileData.saveFitFile(folder=folder,fileMainName=fileMainName)
