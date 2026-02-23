@@ -83,7 +83,8 @@ class SpotSpectraViewer(SViewer):
             pxSpace: int = self.spotSpectra.pxSpace,
             ratio: float = self.spotSpectra.ratio,
             angle: int = self.spotSpectra.angle,
-            darkCount: float = self.spotSpectra.darkCount
+            darkCount: float = self.spotSpectra.darkCount,
+            spectraSigma: float = self.spotSpectra.spectraSigma
             ):
 
             spectraParameterGui._auto_call = False
@@ -102,6 +103,9 @@ class SpotSpectraViewer(SViewer):
             spectraParameterGui.angle.value = angle
             self.spotSpectra.darkCount = darkCount
             spectraParameterGui.darkCount.value = darkCount
+            self.spotSpectra.spectraSigma = spectraSigma
+            spectraParameterGui.darkCount.value = darkCount
+
             self.showRawSpectra = showRawSpectra
 
             # recalculate mask

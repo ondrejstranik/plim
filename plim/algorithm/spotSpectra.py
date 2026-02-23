@@ -8,7 +8,7 @@ import numpy as np
 from skimage.transform import rotate
 import traceback
 from spectralCamera.algorithm.spotSpectraSimple import SpotSpectraSimple
-
+from scipy.ndimage import gaussian_filter
 
 class SpotSpectra(SpotSpectraSimple):
     ''' class for calculating spot spectra '''
@@ -21,7 +21,8 @@ class SpotSpectra(SpotSpectraSimple):
                 'ratio': 1, # radio between the major and minor axis of the spot
                 'angle': 0, # [deg] angle of the major axis from horizontal line
                 'pxSpace': 1,  # space between spot and background
-                'darkCount': 0} # offset in the signal, which should be subtracted
+                'darkCount': 0, # offset in the signal, which should be subtracted
+                'spectraSigma': 0} # sigma for gaussian filter in spectral axis
 
 
     def __init__(self,image=None,spotPosition= [], wavelength = None, **kwarg):
@@ -39,6 +40,7 @@ class SpotSpectra(SpotSpectraSimple):
         self.pxSpace= int(kwarg['pxSpace']) if 'pxSpace' in kwarg else  self.DEFAULT['pxSpace']
 
         self.darkCount= kwarg['darkCount'] if 'darkCount' in kwarg else  self.DEFAULT['darkCount']
+        self.spectraSigma= kwarg['spectraSigma'] if 'spectraSigma' in kwarg else  self.DEFAULT['spectraSigma']
 
         self.maskBcg = None # weight for calculation of background spectra
         self.maskBcgIdx = None # indexes of of the mask
@@ -222,7 +224,15 @@ class SpotSpectra(SpotSpectraSimple):
             traceback.print_exc()
 
 
+        # apply spectral smoothing and background substration
+        _spectraRawBcg = gaussian_filter(_spectraRawBcg, sigma=self.spectraSigma, axes=1)
+        _spectraRawSpot = gaussian_filter(_spectraRawSpot, sigma=self.spectraSigma, axes=1)
+        _spectraRawBcg -= self.darkCount
+        _spectraRawSpot -= self.darkCount
+
+
         _spectraSpot = _spectraRawSpot/_spectraRawBcg
+
         self.spectraRawSpot = _spectraRawSpot.tolist()
         self.spectraRawBcg = _spectraRawBcg.tolist()
         self.spectraSpot = _spectraSpot.tolist()
