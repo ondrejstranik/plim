@@ -146,7 +146,8 @@ class PlasmonFit:
                     # Get real part of root
                     extrema = np.real(extrema)
                     # Apply bounds check
-                    extrema = extrema[(x[0] <= extrema) & (extrema <= x[-1])]
+                    extrema = extrema[(np.min(x) <= extrema) & (extrema <= np.max(x))]
+                    if np.size(extrema) < 1: extrema = x  
                 # evaluate at all points
                 else:
                     extrema = x

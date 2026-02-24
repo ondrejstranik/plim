@@ -40,11 +40,11 @@ class RegloICC(BasePump):
             try:  
                 self._device = serial.Serial(self._port, timeout=1)
                 serialnb = self._cmd('1xS', 9, False)
-                self._cmd('1~0', '*')
+                #self._cmd('1~0', '*')
                 self._cmd('1xE0', '*')
                 self._cmd('1D'+  'viscope', '*')
                 self._cmd('1M', '*')
-                self._cmd('1~1', '*')
+                #self._cmd('1~1', '*')
                 if serialnb == self.serialNo:
                     print(self.name + 'pump with serialNo --' + str(self.serialNo) + '-- opened')
                     return
