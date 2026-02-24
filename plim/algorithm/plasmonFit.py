@@ -130,22 +130,47 @@ class PlasmonFit:
             # define aux function
             fpeak = f - f(shift)
             fpeakDeriv = fpeak.deriv()
-            fpeakDeriv2 = fpeakDeriv.deriv()
             If = f.integ()
             fp1 = f*p1
             Ifp1 = fp1.integ()
 
+            if True:
+                # get minimum of fit (f-function)in order to 
+                # get better estimate than self.wavelengthGuess
+                # use root function
+                if True:
+                    fDeriv = f.deriv()
+                    extrema = fDeriv.roots()
+                    # Filter out complex roots
+                    extrema = extrema[np.isreal(extrema)]
+                    # Get real part of root
+                    extrema = np.real(extrema)
+                    # Apply bounds check
+                    extrema = extrema[(x[0] <= extrema) & (extrema <= x[-1])]
+                # evaluate at all points
+                else:
+                    extrema = x
+                # evaluate the extrema
+                value_at_extrema = f(extrema)
+                minimum_index = np.argmin(value_at_extrema)
+                _wavelengthGuess = extrema[minimum_index]
+            else:
+                _wavelengthGuess = self.wavelengthGuess
+
             try:            
                 # calculate the beginning of the peak - newton method
                 if False:
-                    lstart = newton(fpeak,self.wavelengthGuess-self.peakWidth/2, 
+                    # define aux function
+                    fpeakDeriv = fpeak.deriv()
+                    fpeakDeriv2 = fpeakDeriv.deriv()
+                    lstart = newton(fpeak,_wavelengthGuess-self.peakWidth/2, 
                                     fprime=fpeakDeriv,
                                     fprime2=fpeakDeriv2, tol=1e-4)
 
                 # calculate the beginning of the peak - brentq
                 else:
-                    lstart = brentq(fpeak,self.wavelengthGuess-self.peakWidth,
-                                    self.wavelengthGuess, xtol= 1e-4)
+                    lstart = brentq(fpeak,_wavelengthGuess-self.peakWidth,
+                                    _wavelengthGuess, xtol= 1e-4)
 
                 # get weighted centre of the peak 
                 nom = Ifp1(lstart + self.peakWidth) - Ifp1(lstart)
@@ -160,9 +185,9 @@ class PlasmonFit:
             except:
                 # could not find the fit
                 # set the fit to ones
-                self.peakPosition.append(self.wavelengthGuess)
+                self.peakPosition.append(_wavelengthGuess)
                 self.fitSpectra.append(np.ones_like(self.wavelength[self.wRange]))
-                self.fitPeak.append(((self.wavelengthGuess, self.wavelengthGuess),
+                self.fitPeak.append(((_wavelengthGuess,_wavelengthGuess),
                                     (1, 1)))
 
 
