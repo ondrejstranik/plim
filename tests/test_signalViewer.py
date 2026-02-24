@@ -64,5 +64,17 @@ def test_FitWidget():
     fW.show()
     app.exec()
 
+@pytest.mark.GUI
+def test_InjectionWidget():
+    ''' check if gui works'''
+    from plim.gui.signalViewer.injectionWidget import InjectionWidget
 
+    from qtpy.QtWidgets import QApplication
+    import numpy as np
+
+    app = QApplication([])
+
+    iV = InjectionWidget()
+    iV.show()
+    app.exec()
 
