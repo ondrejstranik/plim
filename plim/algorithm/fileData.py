@@ -77,6 +77,7 @@ class FileData:
         pxBcg = self.spotSpectra.pxBcg,
         pxAve = self.spotSpectra.pxAve,
         pxSpace = self.spotSpectra.pxSpace,
+        concentric = self.spotSpectra.concentric,
         darkCount = self.spotSpectra.darkCount,
         wavelengthStartFit = self.pF.wavelengthStartFit,
         wavelengthStopFit = self.pF.wavelengthStopFit,
@@ -100,6 +101,8 @@ class FileData:
             self.spotSpectra.pxAve = container1['pxAve'] 
         if 'pxSpace' in container1.keys():
             self.spotSpectra.pxSpace = container1['pxSpace']
+        if 'concentric' in container1.keys():
+            self.spotSpectra.concentric = container1['concentric']
         if 'darkCount' in container1.keys():
             self.spotSpectra.darkCount = container1['darkCount'] 
         if 'wavelengthStartFit' in container1.keys():      

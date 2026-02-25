@@ -286,6 +286,7 @@ class SignalWidget(QWidget):
                     self.linePlotList[ii].hide()
             except:
                 print('sd table visible not defined')
+                self.linePlotList[ii].show()
             # set dash for selected line
             self.penList[ii].setStyle(2) if ii == self.lineIndex else self.penList[ii].setStyle(1)
             # set color of the line
@@ -301,7 +302,6 @@ class SignalWidget(QWidget):
             # update data
             try:
                 self.linePlotList[ii].setData(time, signal[:,ii]-offSet[ii], pen=self.penList[ii])
-                self.linePlotList[ii].show()
             except:
                 print('error occurred in drawGraph - signalWidget')                
                 traceback.print_exc()

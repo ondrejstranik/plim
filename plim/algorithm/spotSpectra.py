@@ -22,7 +22,10 @@ class SpotSpectra(SpotSpectraSimple):
                 'angle': 0, # [deg] angle of the major axis from horizontal line
                 'pxSpace': 1,  # space between spot and background
                 'darkCount': 0, # offset in the signal, which should be subtracted
-                'spectraSigma': 0} # sigma for gaussian filter in spectral axis
+                'spectraSigma': 0, # sigma for gaussian filter in spectral axis
+                'concentric': True # if true, signal and background are concentric, 
+                                   # otherwise next to each other
+                } 
 
 
     def __init__(self,image=None,spotPosition= [], wavelength = None, **kwarg):
@@ -41,6 +44,7 @@ class SpotSpectra(SpotSpectraSimple):
 
         self.darkCount= kwarg['darkCount'] if 'darkCount' in kwarg else  self.DEFAULT['darkCount']
         self.spectraSigma= kwarg['spectraSigma'] if 'spectraSigma' in kwarg else  self.DEFAULT['spectraSigma']
+        self.concentric= kwarg['concentric'] if 'concentric' in kwarg else  self.DEFAULT['concentric']
 
         self.maskBcg = None # weight for calculation of background spectra
         self.maskBcgIdx = None # indexes of of the mask
@@ -54,7 +58,7 @@ class SpotSpectra(SpotSpectraSimple):
         SpotSpectra.setMask(self)
         
     def setMask(self,pxAve=None,pxBcg= None, pxSpace = None, 
-                circle= None, ratio = None, angle = None):
+                circle= None, ratio = None, angle = None, concentric = None):
         ''' set the geometry of spots and bcg mask 
             this function is overwritten 
         '''
@@ -71,39 +75,43 @@ class SpotSpectra(SpotSpectraSimple):
             self.ratio = ratio
         if angle is not None:
             self.angle = angle
+        if concentric is not None:
+            self.concentric = concentric
 
-        # mask has a spherical shape        
-        if self.circle:
-            self.maskSize = int(2*(self.pxBcg + self.pxAve + self.pxSpace) + 1 )
+        # concentric mask
+        if self.concentric:
+            # mask has a spherical shape        
+            if self.circle:
+                self.maskSize = int(2*(self.pxBcg + self.pxAve + self.pxSpace) + 1 )
 
-            xx, yy = np.meshgrid(np.arange(self.maskSize) - self.maskSize//2, (np.arange(self.maskSize) - self.maskSize//2))
-            maskR = np.sqrt(xx**2 + yy**2)
+                xx, yy = np.meshgrid(np.arange(self.maskSize) - self.maskSize//2, (np.arange(self.maskSize) - self.maskSize//2))
+                maskR = np.sqrt(xx**2 + yy**2)
 
-            self.maskSpot = maskR<self.pxAve
-            self.maskBcg = (maskR>(self.pxAve+self.pxSpace)) & (maskR<self.pxAve+self.pxSpace + self.pxBcg)
-            
-        # mask has a squares
+                self.maskSpot = maskR<self.pxAve
+                self.maskBcg = (maskR>(self.pxAve+self.pxSpace)) & (maskR<self.pxAve+self.pxSpace + self.pxBcg)
+                
+            # mask has a squares
+            else:
+                a = (self.pxBcg + self.pxAve + self.pxSpace)
+                b = (self.pxBcg + self.pxAve*self.ratio + self.pxSpace)
+                self.maskSize = 2*int(np.sqrt(a**2 + b**2)) +1
+
+                xx, yy = np.meshgrid(np.arange(self.maskSize) - self.maskSize//2, (np.arange(self.maskSize) - self.maskSize//2))
+
+                self.maskSpot = (np.abs(xx)<self.pxAve) & (np.abs(yy)<self.pxAve*self.ratio)
+                self.maskBcg = ((~(
+                                    (np.abs(xx)<(self.pxAve+self.pxSpace)) & 
+                                    (np.abs(yy)<(self.pxAve*self.ratio+self.pxSpace))
+                                )) &
+                                (
+                                    (np.abs(xx)<(self.pxAve+self.pxSpace + self.pxBcg)) &
+                                    (np.abs(yy)<(self.pxAve*self.ratio+self.pxSpace + self.pxBcg))
+                                ))
+
+                self.maskSpot = rotate(self.maskSpot,self.angle)
+                self.maskBcg = rotate(self.maskBcg,self.angle)
         else:
-            a = (self.pxBcg + self.pxAve + self.pxSpace)
-            b = (self.pxBcg + self.pxAve*self.ratio + self.pxSpace)
-            self.maskSize = 2*int(np.sqrt(a**2 + b**2)) +1
-
-            xx, yy = np.meshgrid(np.arange(self.maskSize) - self.maskSize//2, (np.arange(self.maskSize) - self.maskSize//2))
-
-            self.maskSpot = (np.abs(xx)<self.pxAve) & (np.abs(yy)<self.pxAve*self.ratio)
-            self.maskBcg = ((~(
-                                (np.abs(xx)<(self.pxAve+self.pxSpace)) & 
-                                (np.abs(yy)<(self.pxAve*self.ratio+self.pxSpace))
-                            )) &
-                            (
-                                (np.abs(xx)<(self.pxAve+self.pxSpace + self.pxBcg)) &
-                                (np.abs(yy)<(self.pxAve*self.ratio+self.pxSpace + self.pxBcg))
-                            ))
-
-            self.maskSpot = rotate(self.maskSpot,self.angle)
-            self.maskBcg = rotate(self.maskBcg,self.angle)
-
-            '''
+            # it is now only a square mask TODO: make spherical as well
             # mask has a squares with off set
             self.maskSize = int(2*self.pxAve + self.pxSpace)
             xx, yy = np.meshgrid(np.arange(self.maskSize) - self.maskSize//2,
@@ -114,7 +122,6 @@ class SpotSpectra(SpotSpectraSimple):
 
             self.maskSpot = rotate(self.maskSpot,self.angle)
             self.maskBcg = rotate(self.maskBcg,self.angle)
-            '''
 
         # return if there is no image
         if not hasattr(self,'image'):

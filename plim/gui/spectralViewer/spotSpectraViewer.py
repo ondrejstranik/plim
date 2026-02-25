@@ -78,6 +78,7 @@ class SpotSpectraViewer(SViewer):
         def spectraParameterGui(
             showRawSpectra: bool = self.showRawSpectra,
             circle: bool = self.spotSpectra.circle,
+            concentric: bool = self.spotSpectra.concentric,
             pxAve: int = self.spotSpectra.pxAve,
             pxBcg: int = self.spotSpectra.pxBcg,
             pxSpace: int = self.spotSpectra.pxSpace,
@@ -91,6 +92,8 @@ class SpotSpectraViewer(SViewer):
 
             self.spotSpectra.circle = circle
             spectraParameterGui.circle.value = circle
+            self.spotSpectra.concentric = concentric
+            spectraParameterGui.concentric.value = concentric
             self.spotSpectra.pxAve = pxAve
             spectraParameterGui.pxAve.value = pxAve
             self.spotSpectra.pxBcg = pxBcg
