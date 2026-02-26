@@ -133,3 +133,42 @@ def test_positionTrackGUI():
     camera.disconnect()
     sCamera.disconnect()
     pump.disconnect()
+
+
+    pytest.mark.GUI
+def test_sCameraFromFile():
+    ''' testing sCameraFromFile'''
+
+    from plim.instrument.sCameraFromFile import SCameraFromFile
+    from plim.instrument.plasmonProcessor import PlasmonProcessor
+
+    from viscope.main import viscope
+    from viscope.gui.allDeviceGUI import AllDeviceGUI
+    from plim.gui.plasmonViewerGUI import PlasmonViewerGUI
+
+    
+    #spectral camera system
+    fFolder = r'G:\office\work\git\plim\plim\DATA\test_video'
+    sCamera = SCameraFromFile()
+    sCamera.connect()
+    sCamera.setParameter('threading',True)  
+    sCamera.setFolder(fFolder)
+
+    # plasmon processor 
+    pP = PlasmonProcessor()
+    pP.connect(sCamera=sCamera)
+    pP.setParameter('threadingNow',True)
+    sCamera.setParameter('processor',pP)
+    sCamera.startReadingImages()
+  
+
+
+    # add gui
+    newGUI  = PlasmonViewerGUI(viscope)
+    newGUI.setDevice(pP)
+
+    # main event loop
+    viscope.run()
+
+    sCamera.disconnect()
+    pP.disconnect()
