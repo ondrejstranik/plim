@@ -111,17 +111,15 @@ class SpotSpectra(SpotSpectraSimple):
                 self.maskSpot = rotate(self.maskSpot,self.angle)
                 self.maskBcg = rotate(self.maskBcg,self.angle)
         else:
-            # it is now only a square mask TODO: make spherical as well
-            # mask has a squares with off set
-            self.maskSize = int(2*self.pxAve + self.pxSpace)
-            xx, yy = np.meshgrid(np.arange(self.maskSize) - self.maskSize//2,
-                                 np.arange(self.maskSize) - self.maskSize//2)
+            # define spherical mask,
+            # the background for all spots will be taken from the first spot
+            self.maskSize = int(2*np.max((self.pxBcg,self.pxAve)) + 1 )
 
-            self.maskSpot = (xx<-self.pxSpace/2) & (np.abs(yy)<self.pxAve/2)
-            self.maskBcg = (xx> self.pxSpace/2) & (np.abs(yy)<self.pxAve/2)
+            xx, yy = np.meshgrid(np.arange(self.maskSize) - self.maskSize//2, (np.arange(self.maskSize) - self.maskSize//2))
+            maskR = np.sqrt(xx**2 + yy**2)
 
-            self.maskSpot = rotate(self.maskSpot,self.angle)
-            self.maskBcg = rotate(self.maskBcg,self.angle)
+            self.maskSpot = maskR<self.pxAve
+            self.maskBcg = maskR<self.pxBcg
 
         # return if there is no image
         if not hasattr(self,'image'):
@@ -155,6 +153,11 @@ class SpotSpectra(SpotSpectraSimple):
             _maskBcgIdx[0]+ _spotPosition[:,0][:,None]-self.maskSize//2,
             _maskBcgIdx[1]+ _spotPosition[:,1][:,None]-self.maskSize//2
             )
+            
+            # set backgrounds mask for all spots to the first one 
+            if self.concentric== False:
+                self.maskBcgIdx[0][:,:] = self.maskBcgIdx[0][0,:]
+                self.maskBcgIdx[1][:,:] = self.maskBcgIdx[1][0,:]
 
             _olm = np.any((
                 self.maskSpotIdx[0]<0, 

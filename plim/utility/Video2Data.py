@@ -128,7 +128,7 @@ class Window(QMainWindow):
                 _fileData.loadImageFile(folder=folder, fileMainName= fileMainName)                
                 self.pV.pointLayer.data = _fileData.spotSpectra.spotPosition
                 print(f'spot position {_fileData.spotSpectra.spotPosition}')
-                self.pV.updateSpectra()
+                self.pV.drawSpectraGraph()
 
             # load flow data from file
             if fileType == _fileData.DEFAULT['nameSet']['flow']:
