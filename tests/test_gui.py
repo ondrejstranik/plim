@@ -136,22 +136,22 @@ def test_positionTrackGUI():
 
 
     pytest.mark.GUI
-def test_sCameraFromFile():
+def test_sCameraFromFileWithPlasmonProcessor():
     ''' testing sCameraFromFile'''
 
-    from plim.instrument.sCameraFromFile import SCameraFromFile
+    from spectralCamera.instrument.sCamera.sCameraFromFile import SCameraFromFile
     from plim.instrument.plasmonProcessor import PlasmonProcessor
 
     from viscope.main import viscope
-    from viscope.gui.allDeviceGUI import AllDeviceGUI
     from plim.gui.plasmonViewerGUI import PlasmonViewerGUI
-
+    from spectralCamera.gui.sCameraFromFileGUI import SCameraFromFileGUI
     
+   
     #spectral camera system
     fFolder = r'G:\office\work\git\plim\plim\DATA\test_video'
     sCamera = SCameraFromFile()
     sCamera.connect()
-    sCamera.setParameter('threading',True)  
+    sCamera.setParameter('threadingNow',True)  
     sCamera.setFolder(fFolder)
 
     # plasmon processor 
@@ -159,13 +159,14 @@ def test_sCameraFromFile():
     pP.connect(sCamera=sCamera)
     pP.setParameter('threadingNow',True)
     sCamera.setParameter('processor',pP)
-    sCamera.startReadingImages()
   
-
-
     # add gui
     newGUI  = PlasmonViewerGUI(viscope)
     newGUI.setDevice(pP)
+
+    newGUI  = SCameraFromFileGUI(viscope)
+    newGUI.setDevice(sCamera)
+
 
     # main event loop
     viscope.run()

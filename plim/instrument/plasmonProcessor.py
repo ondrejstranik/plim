@@ -20,15 +20,8 @@ from plim.algorithm.flowData import FlowData
 class PlasmonProcessor(BaseProcessor):
     ''' class to control processing of spectral images to get plasmon signals
     and collect flow rates from a pump'''
-    DEFAULT = {'name': 'PlasmonProcessor',
-               'nameSet'  : {
-                            'flow':'_flowData.npz',
-                            'image': '_image.npz',
-                            'spot': '_spotData.npz',
-                            'fit': '_fit.npz',
-                            'info': '_info.dat'
-                            }
-                            }
+    DEFAULT = {'name': 'PlasmonProcessor'
+                }
 
     def __init__(self, name=None, **kwargs):
         ''' initialisation '''
