@@ -27,11 +27,12 @@ pP.setParameter('threadingNow',True)
 sCamera.setParameter('processor',pP)
 
 # add gui
-pvGui  = PlasmonViewerGUI(viscope)
-pvGui.setDevice(pP)
 
 scGUI  = SCameraFromFileGUI(viscope)
 scGUI.setDevice(sCamera)
+
+pvGui  = PlasmonViewerGUI(viscope,vWindow='new')
+pvGui.setDevice(pP)
 
 ptGui  = PositionTrackGUI(viscope,vWindow='new')
 ptGui.setDevice(pP)
