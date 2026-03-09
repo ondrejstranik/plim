@@ -190,7 +190,8 @@ class Window(QMainWindow):
 
         # image data
         self.spotPosition = _fileData.spotSpectra.spotPosition
-        self.image = _fileData.spotSpectra.wxyImage
+        #self.image = _fileData.spotSpectra.wxyImage
+        self.image = _fileData.spotSpectra.image
         self.w = _fileData.pF.wavelength
 
         # spot Data 

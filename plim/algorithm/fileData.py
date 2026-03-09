@@ -63,9 +63,11 @@ class FileData:
         if 'arr_0' in container1.keys():
             self.spotSpectra.spotPosition = container1['arr_0'] # back compatibility
         if 'image' in container1.keys():
-            self.spotSpectra.wxyImage = container1['image']
+            #self.spotSpectra.wxyImage = container1['image']
+            self.spotSpectra.image = container1['image']
         if 'arr_1' in container1.keys():
-            self.spotSpectra.wxyImage = container1['arr_1'] # b-c
+            #self.spotSpectra.wxyImage = container1['arr_1'] # b-c
+            self.spotSpectra.image = container1['arr_1'] # b-c
         if 'wavelength' in container1.keys():      
             self.pF.wavelength = container1['wavelength']
         if 'arr_2' in container1.keys():      
