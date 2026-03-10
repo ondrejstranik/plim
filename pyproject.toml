@@ -7,7 +7,8 @@ name="plim"
 version="0.0.1"
 dependencies = [
         #'spectralCamera@git+https://github.com/ondrejstranik/spectralCamera',
-       'pyserial'
+       'pyserial',
+       'lmfit,
         ]
 requires-python='>=3.9'
 authors = [
