@@ -160,7 +160,7 @@ class BindingModelFitter:
         print(f"  RMSE   = {self.result_['RMSE']:.6e}")
         print("=" * 45)
 
-    def plot(self, n_points=500):
+    def plot(self, n_points=500,ax=None):
         """Plot experimental data and fitted model."""
         if self.result_ is None:
             raise RuntimeError("Call fit() first.")
@@ -168,18 +168,29 @@ class BindingModelFitter:
         y_fit  = self.predict(t_fine)
         t0     = self.result_["params"]["t0"]
 
-        plt.figure(figsize=(7, 4))
-        plt.scatter(self.t_exp, self.y_exp, label="Experimental data",
-                    color="steelblue", zorder=5)
-        plt.plot(t_fine, y_fit, label="Fitted model", color="tomato", lw=2)
-        plt.axvline(t0, color="gray", linestyle="--", label=f"t0 = {t0:.2f}")
-        plt.xlabel("Time")
-        plt.ylabel("R")
-        plt.title("Analytical Model Fitting")
-        plt.legend()
-        plt.tight_layout()
-        plt.savefig("fit_result.png", dpi=150)
-        plt.show()
+        if ax is None:
+            fig, ax = plt.subplots()
+            #plt.figure(figsize=(7, 4))
+            ax.scatter(self.t_exp, self.y_exp, label="Experimental data",
+                        color="steelblue", zorder=5)
+            ax.plot(t_fine, y_fit, label="Fitted model", color="tomato", lw=2)
+            ax.axvline(t0, color="gray", linestyle="--", label=f"t0 = {t0:.2f}")
+            ax.set_xlabel("Time")
+            ax.set_ylabel("R")
+            ax.set_title("Analytical Model Fitting")
+            ax.legend()
+            fig.tight_layout()
+
+            return fig, ax
+
+            #plt.savefig("fit_result.png", dpi=150)
+            #plt.show()
+        else:
+            ax.scatter(self.t_exp, self.y_exp, label="Experimental data",
+                        color="steelblue", zorder=5)
+            ax.plot(t_fine, y_fit, label="Fitted model", color="tomato", lw=2)
+            ax.axvline(t0, color="gray", linestyle="--", label=f"t0 = {t0:.2f}")
+
 
 
 # ── Usage ─────────────────────────────────────────────────────────────────────
