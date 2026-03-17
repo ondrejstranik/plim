@@ -1,10 +1,13 @@
 '''
-script to test fitting of kinetics binding with mass transport limitation
+script to test fitting of kinetics binding (two exponential fit)
+assumes two state model with  with mass transport limitation
 '''
+
+
 #%%
 
-from plim.utility.preprocessSignal import PreprocessSignal
-from plim.utility.bindingModelFitter import BindingModelFitter
+from plim.algorithm.preprocessSignal import PreprocessSignal
+from plim.algorithm.bindingModelFitter import BindingModelFitter
 import pyqtgraph as pg
 import numpy as np
 import matplotlib.pyplot as plt
@@ -15,11 +18,11 @@ fileMainName = 'Experiment1'
 pS = PreprocessSignal(folder=folder, fileMainName=fileMainName)
 pS.alignData((150,550))
 pS.showGrid()
-pS.showSignal(axis=1,idx=[1,3])
+pS.showSignal(axis=0,idx=[0,4])
 
 
 # %% show signal data difference with cut along time 
-
+'''
 # normalise the sensitivity/coverage
 signalN = pS.signalGrid/pS.signalGrid[-1,:,:]
 
@@ -39,7 +42,7 @@ for jj in range(nRow):
         normSig = (signalN[ii,jj,:]-signalN[ii,jj,0])
         if normSig[-1] > sigMin:
                 graph.plot(normSig+jj*0.1, pen=(jj,nRow))
-
+'''
 #%% fitting
 
 fitterSet = []
@@ -57,7 +60,7 @@ GUESS = {
         "C1":  0.6,
         "ka2": 0.5,
         "kap": 0.1,
-        "t0":  220, 
+        "t0":  250, 
     }
 
 
@@ -67,7 +70,7 @@ for jj in range(pS.nRow):
         y_exp = pS.signalGrid[:,jj,ii]
         fitter = BindingModelFitter(
                 t_exp, y_exp,
-                fixed={},          # fix t0 at 2.0
+                fixed={},          
                 guess=GUESS,
                 bounds= BOUNDS,
                 n_starts= 15,                
@@ -80,7 +83,7 @@ for jj in range(pS.nRow):
         fitterSet.append(fitter)
         print(f'fit position {jj}, {ii}')
 
-# %% assign properly the parameters
+# %% assign proper the parameters (slow and quick rate)
 
 
 t0 = np.zeros((pS.nRow,pS.nColumn))
@@ -103,25 +106,29 @@ for jj in range(pS.nRow):
 
         ff += 1
 
-# %%
+# %% false color plot
+
+Z = 1*t0
+# remove the bad fits
+Z[5,0:3] = np.nan
 
 fig, ax = plt.subplots()
-im = ax.imshow(dt0, cmap="viridis", origin="lower")
+im = ax.imshow(Z, cmap="viridis", origin="lower")
 ax.invert_yaxis()
 fig.colorbar(im, ax=ax)
-plt.xlabel("x")
-plt.ylabel("y")
-plt.title("t0 ")
+plt.xlabel("column")
+plt.ylabel("row")
+plt.title(r"$t_0 /s$")
 plt.tight_layout()
 #plt.show()
 
 
-# %%
+# %% 3D surface plot
 X, Y = np.meshgrid(np.arange(pS.nColumn), np.arange(pS.nRow))
 
 fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
 
-surf = ax.plot_surface(X, Y, t0,
+surf = ax.plot_surface(X, Y, Z,
     cmap="viridis",
     alpha=0.8,          # transparency
     rstride=1,          # row sampling (1 = every row)
@@ -129,41 +136,91 @@ surf = ax.plot_surface(X, Y, t0,
 )
 fig.colorbar(surf, ax=ax, shrink=0.5)   # add colorbar
 
-plt.show()
-# %%
 
-dt0 = t0[:,0:-1]- t0[:,1:]
+# %% 3D bar graph
 
-vel = 1/dt0
-# %%
+Z = 1*t0
+Z[5,0:3] = np.min(Z)
 
-velM = np.median(vel,axis=1)
+# x/y axis values (replace with your actual values)
+x_vals = np.arange(pS.nColumn)   # or e.g. np.array([0.1, 0.5, 1.0])
+y_vals = np.arange(pS.nRow)   # or e.g. np.array([10, 20, 30])
 
-# %%
+# ── Build bar positions ───────────────────────────────────────────────────────
+x_idx, y_idx = np.meshgrid(x_vals, y_vals)
+xpos = x_idx.flatten()
+ypos = y_idx.flatten()
+zpos = np.zeros_like(xpos) + np.min(Z)   # bars start at z=0
+dz   = Z.flatten()- np.nanmin(Z)           # bar heights
 
-vel = [] 
+# bar width/depth — set to ~80% of spacing to leave a gap
+dx = 0.8 * (x_vals[1] - x_vals[0]) if len(x_vals) > 1 else 0.8
+dy = 0.8 * (y_vals[1] - y_vals[0]) if len(y_vals) > 1 else 0.8
+
+# ── Color by height ───────────────────────────────────────────────────────────
+norm   = plt.Normalize(np.nanmin(dz), np.nanmax(dz))
+colors = plt.cm.viridis(norm(dz))
+
+# ── Plot ──────────────────────────────────────────────────────────────────────
+fig, ax = plt.subplots(subplot_kw={"projection": "3d"}, figsize=(8, 6))
+
+ax.bar3d(xpos, ypos, zpos, dx, dy, dz, color=colors, shade=True)
+
+# colorbar
+sm = plt.cm.ScalarMappable(cmap="viridis", norm=norm)
+fig.colorbar(sm, ax=ax, shrink=0.5, label="Value")
+
+ax.set_xlabel("X")
+ax.set_ylabel("Y")
+ax.set_zlabel("Value")
+ax.set_title("3D Bar Graph")
+ax.set_zlim(bottom=np.nanmin(Z))
+
+# set tick labels to actual axis values
+ax.set_xticks(x_vals)
+ax.set_yticks(y_vals)
+
+ax.view_init(elev=25, azim=-60)
+plt.tight_layout()
+
+
+# %% fit the average time to cross the array
+
+slope = [] 
 x = np.arange(pS.nColumn)
+
+y = 1*t0
+y[5,0:3] = np.nan
 
 fig, ax = plt.subplots()
 
 for jj in range(pS.nRow):
-    coeffs = np.polyfit(x, t0[jj,:], deg=1)   # returns [slope, intercept]
-    slope, intercept = coeffs
-    vel.append(slope)
-    ax.plot(x, t0[jj,:], label = f'{slope}')
+    # remove nan
+    _number = ~np.isnan(y[jj,:])
+    _x = x[_number]
+    _y = y[jj,_number]
+    coeffs = np.polyfit(_x, _y, deg=1)   # returns [slope, intercept]
+    _slope, intercept = coeffs
+    slope.append(_slope)
+    ax.plot(x, y[jj,:], label = f'{jj} row')
+    ax.plot(x, _slope*x + intercept)
+
+ax.set_xlabel("column")
+ax.set_ylabel("t0 [s]")
+ax.set_title(" linear fit for each row")
+
+
 
 fig.legend()
-vel = np.array(vel)    
-# %%
+#slope = np.array(slope)    
+# %% graph of the passing time 
 
 x = np.arange(pS.nRow)
 
 fig, ax = plt.subplots()
-ax.plot(x, -vel)
-# %%
+ax.plot(x, -np.array(slope)*(pS.nColumn-1),'*-')
 
-kapM = np.median(kap, axis=1)
-fig, ax = plt.subplots()
-ax.plot(x, kapM)
+ax.set_xlabel("row")
+ax.set_ylabel("time [s]")
+ax.set_title(" flow time over chip")
 
-# %%

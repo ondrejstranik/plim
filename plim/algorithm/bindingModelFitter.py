@@ -174,10 +174,11 @@ class BindingModelFitter:
             ax.scatter(self.t_exp, self.y_exp, label="Experimental data",
                         color="steelblue", zorder=5)
             ax.plot(t_fine, y_fit, label="Fitted model", color="tomato", lw=2)
-            ax.axvline(t0, color="gray", linestyle="--", label=f"t0 = {t0:.2f}")
-            ax.set_xlabel("Time")
-            ax.set_ylabel("R")
-            ax.set_title("Analytical Model Fitting")
+            ax.axvline(t0, color="gray", linestyle="--")
+            #ax.axvline(t0, color="gray", linestyle="--", label=f"t0 = {t0:.2f}")
+            ax.set_xlabel("Time [s]")
+            ax.set_ylabel("Signal [nm]")
+            ax.set_title("Data Fit")
             ax.legend()
             fig.tight_layout()
 

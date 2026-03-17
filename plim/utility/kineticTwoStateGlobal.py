@@ -3,7 +3,7 @@ script to test fitting of kinetics binding with mass transport limitation
 '''
 #%%
 
-from plim.utility.preprocessSignal import PreprocessSignal
+from plim.algorithm.preprocessSignal import PreprocessSignal
 from plim.utility.bindingModelSetFitter import GlobalLocalFitter
 import pyqtgraph as pg
 import numpy as np
