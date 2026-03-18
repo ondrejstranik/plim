@@ -1,5 +1,5 @@
 '''
-class for calculating spot spectra from 3D spectral cube
+class for processing signal from spots
 '''
 #%%
 import numpy as np
