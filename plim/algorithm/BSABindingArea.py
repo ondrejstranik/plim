@@ -14,6 +14,7 @@ from plim.algorithm.fileData import FileData
 import time
 import pyqtgraph as pg
 from pyqtgraph.Qt import QtWidgets, QtCore
+import napari
 
 
 #spectral camera system
@@ -38,9 +39,9 @@ image = np.sum(sImage, axis=0)
 thresh = threshold_otsu(image[~np.isnan(image)])
 binary = image < thresh
 
-eroded = erosion(binary.astype(np.uint8), disk(2))
+eroded = erosion(binary.astype(np.uint8), disk(10))
 
-_per = 20
+_per = 1
 grid = np.zeros_like(image)
 grid[::_per,::_per] = 1
 
@@ -84,8 +85,8 @@ pP.pF.wavelengthGuess = 620
 
 #%% calculate spectra
 
-#_idx = list(range(0, sCamera.nFile-1))
-_idx = list(range(10, sCamera.nFile-1))
+#_idx = list(range(10, 50))
+_idx = list(range(80, sCamera.nFile-1))
 sCamera.startReadingImages(idx=_idx)
 
 #%% wait till it is processed
@@ -96,21 +97,47 @@ win.show()
 line = win.plot(np.array([0,0]),np.array([0,0])) 
 line2 = win.plot(np.array([0,0]),np.array([0,0])) 
 
+
+viewer = pg.ImageView()
+viewer.show()
+imData = np.zeros_like(image)
+
 def update():
+    # graph
     _sig =np.mean(pP.spotData.signal[:,1:],axis=1)
     _time = pP.spotData.time - pP.spotData.time0
-    print(f'signal {_sig}')
-    print(f'time {_time}')
-    line.setData(_time,_sig)
-    line2.setData(_time,pP.spotData.signal[:,1])
+    #print(f'signal {_sig}')
+    #print(f'time {_time}')
+    try:
+        line.setData(_time,_sig)
+        line2.setData(_time,pP.spotData.signal[:,1])
+    except:
+        pass
+    
+    #image
+
+    pP.spotData.setOffset()
+    try:
+        imData[pP.spotSpectra.spotPosition[1:,1],
+                pP.spotSpectra.spotPosition[1:,0]
+        ] = pP.spotData.signal[-1,1:] - pP.spotData.getOffset()[1:]
+        viewer.setImage(imData)
+    except:
+        pass
+
     if not sCamera.isReading:
         timer.stop()
+
+
+
+
 timer = QtCore.QTimer()
 timer.timeout.connect(update)
 timer.start(50) 
 
 app.exec()
 
+pP.disconnect()
 
 # %% save the data
 
@@ -121,4 +148,22 @@ _fileData = FileData(spotData=pP.spotData,
 
 _fileData.saveAllFile(folder=sFolder,fileMainName='Exp1')
 
-# %% show the data
+# %% show the whole data cube
+
+pP.spotData.setOffset()
+
+imCube = np.zeros((pP.spotData.signal.shape[0],imData.shape[0], imData.shape[1]))
+imCube[:,
+       pP.spotSpectra.spotPosition[1:,0],
+       pP.spotSpectra.spotPosition[1:,1]
+       ] = pP.spotData.signal[:,1:] - pP.spotData.getOffset()[1:]
+
+myViewer = napari.Viewer()
+myViewer.add_image(imCube)
+myViewer.add_image(image)
+
+
+napari.run()
+# %%
+
+np.save(sFolder + '/imCube',imCube)
