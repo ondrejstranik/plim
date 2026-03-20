@@ -18,8 +18,8 @@ import napari
 
 
 #spectral camera system
-fFolder = r'F:\ondra\LPI\plim\DATA\ifcBased\26-03-16 highMag_BSA\rawNorm'
-sFolder = r'F:\ondra\LPI\plim\DATA\ifcBased\26-03-16 highMag_BSA'
+fFolder = r'D:\ondra\LPI\plim\DATA\ifcBased\26-03-16 highMag_BSA\rawNorm'
+sFolder = r'D:\ondra\LPI\plim\DATA\ifcBased\26-03-16 highMag_BSA'
 
 # %%
 # load first image
@@ -59,7 +59,7 @@ pV = PlasmonViewer(image=sImage, wavelength=w)
 
 # set spots to the processor
 pV.spotSpectra.setSpot(_idx)
-pV.spotSpectra.setMask(pxAve=1,pxBcg=1, pxSpace= 1, concentric= False)
+pV.spotSpectra.setMask(pxAve=1,pxBcg=5, pxSpace= 1, concentric= False)
 pV.redraw()
 
 
@@ -86,7 +86,7 @@ pP.pF.wavelengthGuess = 620
 #%% calculate spectra
 
 #_idx = list(range(10, 50))
-_idx = list(range(80, sCamera.nFile-1))
+_idx = list(range(10, sCamera.nFile-1))
 sCamera.startReadingImages(idx=_idx)
 
 #%% wait till it is processed

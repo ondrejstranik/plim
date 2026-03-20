@@ -240,7 +240,11 @@ class SpotSpectra(SpotSpectraSimple):
         _spectraRawBcg -= self.darkCount
         _spectraRawSpot -= self.darkCount
 
+        # if not concentric then set background-point spectrum equal to one
+        if not self.concentric:
+            _spectraRawSpot[0] = _spectraRawBcg[0]
 
+        # calculate the spectra
         _spectraSpot = _spectraRawSpot/_spectraRawBcg
 
         self.spectraRawSpot = _spectraRawSpot.tolist()
