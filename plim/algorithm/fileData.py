@@ -155,14 +155,17 @@ class FileData:
             return
 
         container1 = np.load(_file)
-        if 'signal' in container1.keys():
-            self.flowData.signal = container1['signal']
-        if 'arr_0' in container1.keys():
-            self.flowData.signal = container1['arr_0'] # b-c
-        if 'time' in container1.keys():
-            self.flowData.time = container1['time']
-        if 'arr_1' in container1.keys():
-            self.flowData.time = container1['arr_1'] # b-c
+        try:
+            if 'signal' in container1.keys():
+                self.flowData.signal = container1['signal']
+            if 'arr_0' in container1.keys():
+                self.flowData.signal = container1['arr_0'] # b-c
+            if 'time' in container1.keys():
+                self.flowData.time = container1['time']
+            if 'arr_1' in container1.keys():
+                self.flowData.time = container1['arr_1'] # b-c
+        except:
+            print(f'can not read file {_file}')
 
     def saveInfoFile(self,folder,fileMainName):
         ''' save Info Data file'''

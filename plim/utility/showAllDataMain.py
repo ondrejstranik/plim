@@ -16,7 +16,7 @@ from pathlib import Path
 from plim.algorithm.spotData import SpotData
 from plim.algorithm.flowData import FlowData
 from plim.algorithm.fileData import FileData
-
+from plim.algorithm.spotSpectra import SpotSpectra
 from plim.gui.signalViewer.signalWidget import SignalWidget
 from plim.gui.signalViewer.flowRateWidget import FlowRateWidget
 from plim.gui.signalViewer.infoWidget import InfoWidget
@@ -48,7 +48,9 @@ class Window(QMainWindow):
         #self.signal = None
         self.sD: SpotData = None
         self.fD: FlowData = None
+        self.sS: SpotSpectra = None
         #self.fileData = FileData()
+        self.pxAve = None
 
         # widget / widgets parameters
         self.infoLabel = None
@@ -194,6 +196,7 @@ class Window(QMainWindow):
         self.image = _fileData.spotSpectra.image
         self.w = _fileData.pF.wavelength
 
+
         # spot Data 
         # done in this way, so that that all parameters in sD are properly updated
         #self.sD = SpotData()
@@ -222,6 +225,9 @@ class Window(QMainWindow):
         self.sD.getNoise()
         self.sD.setTable(table=self.sD.table)
 
+       # copy spotspectra data parameters as well
+        self.sS = _fileData.spotSpectra
+        self.sS.setMask()
 
     def closeAll(self):
         self.sW.close()
@@ -320,14 +326,8 @@ class Window(QMainWindow):
     def addDeltaSignalLayer(self):
         ''' add delta signal layer into napari '''
         _image = np.zeros(self.image.shape[1:])
-        spotR = int(np.mean(self.spotLayer.size[0])/2)
-
-        for ii,_spotPosition in enumerate(self.spotPosition):
-            if self.sD.table['visible'][ii]=='True':
-                _y = int(_spotPosition[0])
-                _x = int(_spotPosition[1])
-                _image[_y-spotR+1:_y+spotR+1,
-                      _x-spotR+1:_x+spotR+1] = self.sD.dSignal[ii]
+        _image[self.sS.maskSpotIdx[0][~self.sS.outliers,:],
+                        self.sS.maskSpotIdx[1][~self.sS.outliers,:]] = self.sD.dSignal[:,None]
 
         _name = f'delta Signal @ {self.sD.evalTime+self.sD.dTime} s '
         self.signalLayer = self.viewer.add_image(_image, name= _name)

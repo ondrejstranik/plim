@@ -268,6 +268,11 @@ class SignalWidget(QWidget):
             return
         nSig = signal.shape[1]
 
+        if nSig > self.DEFAULT['maxNLine']:
+            nSig = self.DEFAULT['maxNLine']
+            print(f'Signal Widget: displaying only {self.DEFAULT["maxNLine"]} lines')
+
+
         # set offset for the lines
         if not self.align:
             offSet = np.zeros(nSig)
