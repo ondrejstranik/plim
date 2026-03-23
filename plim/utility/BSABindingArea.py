@@ -8,6 +8,8 @@ from skimage.filters import threshold_otsu
 from plim.algorithm.spotSpectra import SpotSpectra
 import matplotlib.pyplot as plt
 
+from scipy.ndimage import binary_erosion
+
 from skimage.morphology import erosion, disk, square
 from plim.instrument.plasmonProcessor import PlasmonProcessor
 from plim.algorithm.fileData import FileData
@@ -18,8 +20,8 @@ import napari
 
 
 #spectral camera system
-fFolder = r'D:\ondra\LPI\plim\DATA\ifcBased\26-03-16 highMag_BSA\rawNorm'
-sFolder = r'D:\ondra\LPI\plim\DATA\ifcBased\26-03-16 highMag_BSA'
+fFolder = r'F:\ondra\LPI\plim\DATA\ifcBased\26-03-16 highMag_BSA\rawShift'
+sFolder = r'F:\ondra\LPI\plim\DATA\ifcBased\26-03-16 highMag_BSA\singlePixel2'
 
 # %%
 # load first image
@@ -27,7 +29,7 @@ sCamera = SCameraFromFile()
 sCamera.connect()
 sCamera.setFolder(fFolder)
 
-ii=10
+ii=1
 print(f'loading file # {ii} for spot setting')
 sImage = sCamera.fileSIVideo.loadImage(sCamera.fileName[ii])
 t0 = sCamera.fileTime[ii]/1e9
@@ -36,10 +38,17 @@ w = sCamera.getWavelength()
 
 # %% identify spots
 image = np.sum(sImage, axis=0)
+image[image<1] = np.nan
 thresh = threshold_otsu(image[~np.isnan(image)])
+#thresh = threshold_otsu(image[image>1])
+
 binary = image < thresh
 
-eroded = erosion(binary.astype(np.uint8), disk(10))
+#eroded = erosion(binary.astype(np.uint8), disk(10))
+
+eroded = binary_erosion(binary.astype(np.uint8), structure=disk(10), border_value=0)
+
+
 
 _per = 1
 grid = np.zeros_like(image)
@@ -57,7 +66,7 @@ _im[_indices[:,0],_indices[:,1]] = 1
 pV = PlasmonViewer(image=sImage, wavelength=w)
 
 
-# set spots to the processor
+# set spots in the viewer
 pV.spotSpectra.setSpot(_idx)
 pV.spotSpectra.setMask(pxAve=1,pxBcg=5, pxSpace= 1, concentric= False)
 pV.redraw()
@@ -86,7 +95,7 @@ pP.pF.wavelengthGuess = 620
 #%% calculate spectra
 
 #_idx = list(range(10, 50))
-_idx = list(range(10, sCamera.nFile-1))
+_idx = list(range(sCamera.nFile-1))
 sCamera.startReadingImages(idx=_idx)
 
 #%% wait till it is processed
