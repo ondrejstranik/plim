@@ -198,6 +198,9 @@ xx = np.array(shifts)
 ax.plot(xx[:,1],xx[:,0])
 # %% shift it back and save if for further processing
 
+np.save(savFolder + '/shifts', shifts)
+
+
 sVideo = FileSIVideo()
 sVideo.setFolder(savFolder)
 
