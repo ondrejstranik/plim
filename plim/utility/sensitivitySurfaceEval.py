@@ -1,4 +1,4 @@
-''' code to evaluate the sensitivity'''
+''' code to evaluate the surface sensitivity with BSA'''
 #%% import
 from plim.algorithm.spotSpectra import SpotSpectra
 import napari
@@ -9,13 +9,10 @@ import matplotlib.pyplot as plt
 
 
 #spectral camera system
-rFolder = r'F:\ondra\LPI\plim\DATA\filterBased\26-03-13 sensitivity\raw2'
-dFolder = r'F:\ondra\LPI\plim\DATA\filterBased\26-03-13 sensitivity'
+rFolder = r'F:\ondra\LPI\plim\DATA\filterBased\26-02-03 G4_BSA_spotted\raw'
+dFolder = r'F:\ondra\LPI\plim\DATA\filterBased\26-02-03 G4_BSA_spotted'
 dMName = 'Experiment2'
 
-rFolder = r'F:\ondra\LPI\plim\DATA\ifcBased\26-03-13 sensitivity_ebeam\raw2'
-dFolder = r'F:\ondra\LPI\plim\DATA\ifcBased\26-03-13 sensitivity_ebeam'
-dMName = 'Experiment2'
 
 
 #%% load data
@@ -61,39 +58,12 @@ mask[mask==2]=0
 viewer = napari.Viewer()
 viewer.add_image(im)
 viewer.add_image(mask, opacity=0.08)
+viewer.add_image(np.sum(sImage, axis=0))
 
-# %% show noise
-nPoint = 20
-nPoint = 40
+# %% show bsa adsorption
 
-sigMean = np.mean(sD.signal[:nPoint,:], axis=0)
-sigStd = np.std(sD.signal[:nPoint,:], axis=0)
-sigStdAve = np.mean(sigStd)
-
-data = (sD.signal[:nPoint,:]-sigMean)
-n_traj, n_steps = data.shape
-t = np.arange(n_steps)
-
-# Build 2D histogram: time on x-axis, value on y-axis
-hist, xedges, yedges = np.histogram2d(
-    np.repeat(t, n_traj),          # time indices repeated for each trajectory
-    data.T.ravel(),                 # all values flattened
-    bins=[n_steps, 100]
-)
-
-plt.imshow(hist, origin='lower', aspect='auto',
-           extent=[yedges[0], yedges[-1], 0, n_steps],
-           cmap='inferno')
-plt.colorbar(label='Count')
-plt.ylabel('Spot #')
-plt.xlabel('signal /nm')
-plt.title('2D histogram of signal')
-plt.show()
-
-print(f"Instrument noise: {sigStdAve:.1e}")
-# %%
-
-sD.setOffset()
+sD.time0 = sD.time[0]
+sD.setOffset(950)
 
 y = sD.signal -sD.getOffset()
 x = sD.time -sD.time[0]
@@ -102,35 +72,21 @@ fig, ax = plt.subplots()
 ax.plot(x,y)
 plt.xlabel('time / s')
 plt.ylabel('signal /nm')
-plt.title('Sensitivity calibration')
+plt.xlim([920,1500])
+plt.ylim([-1,9])
+
+plt.title('Surface Sensitivity calibration')
 plt.show()
 
-# %%
+# %% calculate sensitivity
 
-t = np.array([50,240, 400, 550])
+t = np.array([1000,1400])
+s = np.array(sD.getDSignal(evalTime=t[0],dTime=t[1]-t[0]))
+y = np.mean(s)
+ystd = np.std(s)
 
-t = np.array([50,180,310, 470])
+print(f"shift for BSA monolayer: {y:.1f} +- {ystd:.1f} nm")
 
-
-t = t + sD.time[0] 
-
-
-n = 4.5e-3
-nn = np.array([0, n/4, n/2, n])
-s = np.array([sD.getDSignal(evalTime=t[0],dTime=_t-t[0]) for _t in t])
-
-y = np.mean(s,axis=1)
-slope, intercept = np.polyfit(nn, y, 1)  # 1 = linear
-print(f"Slope: {slope:.4f}")
-
-fig, ax = plt.subplots()
-ax.plot(nn,s)
-plt.xlabel(' $\Delta$ n / RIU')
-plt.ylabel('signal /nm')
-plt.title(f'Sensitivity {slope:.0f} nm/RIU')
-plt.show()
-
-print(f"Instrument limit: {sigStdAve/slope:.1e}")
 
 # %%
 
