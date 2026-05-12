@@ -123,7 +123,9 @@ class SpotSpectraViewer(SViewer):
 
         #automatic identification of spots
         @magicgui
-        def spotIdentGui():
+        def spotIdentGui(
+            onGrid: bool = True,
+        ):
             # identify the spot
             sI = SpotIdentification(self.spotSpectra.image)
             myPosition = sI.getPosition()
@@ -131,40 +133,28 @@ class SpotSpectraViewer(SViewer):
             print(f'detected radius: {myRadius}')
 
             # restrict the spot on grid
-            gridSP = GridSuperPixel()
-            gridSP.setGridPosition(myPosition)
-            gridSP.getGridInfo()
-            gridSP.getPixelIndex()            
-            # move the origin to the top left
-            _x0 = np.min(gridSP.imIdx[:,0])
-            _y0 = np.min(gridSP.imIdx[:,1])
-            gridSP.shiftIdx00([_x0,_y0])
-            nRow = np.max(gridSP.imIdx[:,0])+1
-            nColumn = np.max(gridSP.imIdx[:,1])+1
-            # add the non-identified position in the grid 
-            # set position according the basis vector
-            I, J = np.meshgrid(np.arange(nRow),np.arange(nColumn), indexing='ij')  # shape (m, n)
-            positionGrid = (I[:, :, None] * gridSP.xVec.T + 
-                            J[:, :, None] * gridSP.yVec.T) + gridSP.xy00
-            # set the properly defined 
-            #positionGrid[gridSP.imIdx[:,0],
-            #                gridSP.imIdx[:,1],:] = myPosition
-            myPosition = np.reshape(positionGrid,(-1,2))
-
-            #myPosition = gridSP.position
-
-            #print(f'xVec is {gridSP.xVec}')
-            #print(f'yVec is {gridSP.yVec}')
-            #print(f'positionGrid is {positionGrid}')
-            #print(f'shape of I {I.shape}')
-            #print(f'shape of positionGrid {positionGrid.shape}')
-
+            if onGrid:
+                gridSP = GridSuperPixel()
+                gridSP.setGridPosition(myPosition)
+                gridSP.getGridInfo()
+                gridSP.getPixelIndex()            
+                # add the non-identified position in the grid 
+                # set position according the basis vector
+                I, J = np.meshgrid(np.arange(np.min(gridSP.imIdx[:,0]),np.max(gridSP.imIdx[:,0])+1),
+                                np.arange(np.min(gridSP.imIdx[:,1]),np.max(gridSP.imIdx[:,1])+1),
+                                indexing='ij')  # shape (nRow, nColumn)
+                positionGrid = (I[:, :, None] * gridSP.xVec + 
+                                J[:, :, None] * gridSP.yVec) + gridSP.xy00
+                # set the properly defined 
+                positionGrid[gridSP.imIdx[:,0]-min(gridSP.imIdx[:,0]),
+                                gridSP.imIdx[:,1]-min(gridSP.imIdx[:,1]),:] = gridSP.position
+                myPosition = np.reshape(positionGrid,(-1,2))
 
             # restrict to the spots, whose whole mask is in the image
-            #self.spotSpectra.pxAve = int(myRadius)
-            #self.spotSpectra.setSpot(myPosition)
-            #self.spotSpectra.setMask()
-            #myPosition = myPosition[~self.spotSpectra.outliers]
+            self.spotSpectra.pxAve = int(myRadius)
+            self.spotSpectra.setSpot(myPosition)
+            self.spotSpectra.setMask()
+            myPosition = myPosition[~self.spotSpectra.outliers]
 
             # update the points and radius of spots, recalculate/ redraw  spectra and mask
             self.spotSpectra.setSpot(myPosition)

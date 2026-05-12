@@ -24,12 +24,15 @@ class SpotIdentification:
         self.spotRadius = None
         self.maxNSpot = SpotIdentification.DEFAULT['maxNSpot']
 
-    def getPosition(self):
+    def getPosition(self, contrastChannel=None):
         ''' get the position of plasmonic spots '''
         
         # make contrast image by sum projection
         # TODO: (optional) improve contrast by selecting only part of the spectral
-        _sumIm = np.sum(self.spectralImage, axis=0)
+        if contrastChannel is None:
+            _sumIm = np.sum(self.spectralImage, axis=0)
+        else:
+            _sumIm = self.spectralImage[contrastChannel,...]
         _sumIm = _sumIm/_sumIm.max()
         sumIm = ski.util.img_as_uint(gaussian(_sumIm))
 
