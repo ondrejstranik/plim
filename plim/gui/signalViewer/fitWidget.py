@@ -42,43 +42,57 @@ class FitWidget(QWidget):
         @magicgui(layout='horizontal', call_button='fit',
                   time0 = {'max':1e6},
                   tau= {'max':1e6},
-                  p1 = {'step': 1e-6},
-                  varyTime0 = {'label':' '},
-                  varyTau = {'label':' '},
-
+                  p0 = {'step': 1e-2,'min':-10,'max':10},
+                  p1 = {'step': 1e-6,'min':-1,'max':1},
+                  varyTime0 = {'label':'fixed'},
+                  fixTau = {'label':'fixed'},
+                  fixAmp = {'label':'fixed'},
+                  fixP0 = {'label':'fixed'},
+                  fixP1 = {'label':'fixed'}
                    )
         def fitParameter(
-                time0: float = 0.0, varyTime0 = True,
-                tau: float = 1.0, varyTau = True,
-                amp: float = 1.0, varyAmp = True,
-                p0: float = 0.0, varyP0 = True,
-                p1: float = 0.0, varyP1 = True):
+                time0: float = 0.0, varyTime0 = False,
+                tau: float = 1.0, fixTau = False,
+                amp: float = 1.0, fixAmp = False,
+                p0: float = 0.0, fixP0 = False,
+                p1: float = 0.0, fixP1 = False):
 
-            self.kF.setFitParameter(name='time0',value=time0,fixed=~varyTime0)
-            self.kF.setFitParameter(name='tau',value=tau,fixed=~varyTau)
-            self.kF.setFitParameter(name='amp',value=amp,fixed=~varyAmp)
-            self.kF.setFitParameter(name='p0',value=p0,fixed=~varyP0)
-            self.kF.setFitParameter(name='p1',value=p1,fixed=~varyP1)
+            self.kF.setFitParameter(name='time0',value=time0,fixed=varyTime0)
+            self.kF.setFitParameter(name='tau',value=tau,fixed=fixTau, min=0)
+            self.kF.setFitParameter(name='amp',value=amp,fixed=fixAmp,min=0)
+            self.kF.setFitParameter(name='p0',value=p0,fixed=fixP0)
+            self.kF.setFitParameter(name='p1',value=p1,fixed=fixP1)
 
             self.kF.calculateFit()
 
             self.drawGraph()
-            #self.infoBox((1/self.kF.fitParam[:,2]).mean(), (1/self.kF.fitParam[:,2]).std())
-            self.infoBox(self.kF.fittedParam[:,2].mean(), self.kF.fittedParam[:,2].std(),
-                         self.kF.fittedParam[:,-1].mean(), self.kF.fittedParam[:,-1].std())
 
-            print('fitting the data')
+            # TODO: it assumes the adsorption kinetic fit
+
+            self.infoBox(tau= self.kF.fittedParam[:,1].mean(),
+                         stdTau= self.kF.fittedParam[:,1].std(),
+                         amp= self.kF.fittedParam[:,2].mean(),
+                         stdAmp= self.kF.fittedParam[:,2].std(),
+                         drift= self.kF.fittedParam[:,4].mean(),
+                         stdDrift= self.kF.fittedParam[:,4].std(),
+            )
+            print('fitted the data')
+
+            print(f'fitted parameters {self.kF.fittedParam}')
+
 
         @magicgui(layout='horizontal', call_button=False,
                   tau = {'label':'tau','widget_type': 'Label'},
-                  stdTau = {'label':'std','widget_type': 'Label'},
+                  amp = {'label':'amp','widget_type': 'Label'},
                   drift = {'label':'drift','widget_type': 'Label'},
-                  stdDrift = {'label':'std','widget_type': 'Label'}  )
-        def infoBox(tau = 0, stdTau= 0, drift=0, stdDrift=0):
-            self.infoBox.tau.value = tau
-            self.infoBox.stdTau.value = stdTau
-            self.infoBox.drift.value = drift
-            self.infoBox.stdDrift.value = stdDrift
+                  stdTau = {'label':' ','widget_type': 'Label'},
+                  stdAmp = {'label':' ','widget_type': 'Label'},
+                  stdDrift = {'label':' ','widget_type': 'Label'},
+        )
+        def infoBox(tau = 0, stdTau= '', amp=0, stdAmp='', drift=0, stdDrift=''):
+            self.infoBox.tau.value = f'{tau:.1f} ± {stdTau:.1f} s' 
+            self.infoBox.amp.value = f'{amp*1000:.1f} ± {stdAmp*1000:.1f} pm' 
+            self.infoBox.drift.value = f'{drift*1000*60:.1f} ± {stdDrift*1000*60:.1f} pm/min' 
 
 
 
@@ -117,7 +131,7 @@ class FitWidget(QWidget):
 
             if file is not None:
                 myPath = Path(file[0])
-                self.kF.saveFitInfo(str(myPath.parent), str(myPath.name))
+                self.kF.saveFitInfo(str(myPath.parent), str(myPath.name)+r"_data.txt")
                 print('fit info exported')
 
                 # save signal graph

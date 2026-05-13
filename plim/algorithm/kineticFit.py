@@ -44,7 +44,7 @@ def functionP1(x,c0,c1):
     return res
 
 def functionBinding(x,time0,tau,amp,p0,p1):
-    return functionPFO(x,time0,amp,tau) + functionP1(x,p0,p1)
+    return functionPFO(x,time0,amp,tau) + functionP1(x-time0,p0,p1)
 
 
 class KineticFit:
@@ -84,16 +84,16 @@ class KineticFit:
         ''' set additional info about the fitting data '''
         self.table = table         
 
-    def setFitParameter(self,name = None,value = None, fixed= None, fitType=None):
-        ''' set fitting parameters '''
-
+    def setFitParameter(self, name=None, value=None, fixed=None, fitType=None, min=None, max=None):
+        ''' set fitting parameters'''
         if fitType is not None: self.setFitFunction(fitType)
-
         if name is not None:
-            if value is not None:
-                self.modelParams[name].value = value
-            if fixed is not None:
-                self.modelParams[name].vary = ~fixed
+            self.modelParams[name].set(
+                **({} if value is None else {'value': value}),
+                **({} if fixed is None else {'vary': not fixed}),
+                **({} if min   is None else {'min':   min}),
+                **({} if max   is None else {'max':   max}),
+            )
 
     def setFitFunction(self, fitType=None):
         ''' define fit function '''
@@ -115,6 +115,7 @@ class KineticFit:
                                                 for _name in result.best_values.keys()])
             except:
                 print(f'could not fit signal{ii}')
+        print(f'model paramters {self.modelParams}')
 
 
     def getFittedSignal(self,idx):
@@ -122,7 +123,7 @@ class KineticFit:
     
     def getFittedBackground(self,idx):
         _param = self.fittedParam[idx,:]*1.0
-        _param[2]= 0 # set aplitude of binding to zero
+        _param[2]= 0 # set amplitude of binding to zero
         return self.model.func(self.time,*_param)
 
     def saveFitInfo(self,folder,fileName):
@@ -130,8 +131,8 @@ class KineticFit:
         # save info table
         _dataDict = {'name': self.table['name'],
                  'time0': self.fittedParam[:,0],
-                 'amp': self.fittedParam[:,1],
-                 'tau': self.fittedParam[:,2],
+                 'tau': self.fittedParam[:,1],
+                 'amp': self.fittedParam[:,2],
                  'p0': self.fittedParam[:,3],
                  'p1': self.fittedParam[:,4]}
 
@@ -165,12 +166,12 @@ class KineticFit:
                 if row == []: continue
                 name.append(row[0])
                 time0.append(float(row[1]))
-                amp.append(float(row[2]))
-                tau.append(float(row[3]))
+                tau.append(float(row[2]))
+                amp.append(float(row[3]))
                 p0.append(float(row[4]))
                 p1.append(float(row[5]))
 
-        fitParam = np.array([time0,amp,tau,p0,p1])
+        fitParam = np.array([time0,tau,amp,p0,p1])
 
         return name, fitParam
 

@@ -166,7 +166,7 @@ def test_kineticFit():
     kF.setFitParameter(name= 'time0',value=trueParam[0],fixed = False)
     kF.setFitParameter(name= 'tau',value=trueParam[1],fixed = False)
     kF.setFitParameter(name= 'amp',value=trueParam[2],fixed = False)
-    kF.setFitParameter(name= 'p0',value=trueParam[3],fixed = False)
+    kF.setFitParameter(name= 'p0',value=trueParam[3],fixed = True)
     kF.setFitParameter(name= 'p1',value=trueParam[4],fixed = True)
 
     kF.calculateFit()
