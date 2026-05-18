@@ -8,7 +8,7 @@ version="0.0.1"
 dependencies = [
         #'spectralCamera@git+https://github.com/ondrejstranik/spectralCamera',
        'pyserial',
-       'lmfit,
+       'lmfit',
         ]
 requires-python='>=3.9'
 authors = [

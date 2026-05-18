@@ -75,10 +75,10 @@ class Sample3(Sample2):
             _disk = np.array([diameter + 4*positionIdx[ii,0]*diameter, diameter+ 4*positionIdx[ii,1]*diameter, diameter])
 
             # add small variation
-            _disk[0] += np.random.rand(1)*2 - 1
-            _disk[1] += np.random.rand(1)*2 - 1
-            _disk[2] += (np.random.rand(1)*2 - 1 )*0.1*_disk[2]
-            _peak = self.peak + (np.random.rand(1)*2-1)*10
+            _disk[0] += np.random.rand()*2 - 1
+            _disk[1] += np.random.rand()*2 - 1
+            _disk[2] += (np.random.rand()*2 - 1 )*0.1*_disk[2]
+            _peak = self.peak + (np.random.rand()*2-1)*10
 
             rr, cc = disk((_disk[0],_disk[1]), _disk[2], shape=_sample.shape[1:])
             # gauss peak
