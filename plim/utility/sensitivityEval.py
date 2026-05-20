@@ -17,6 +17,9 @@ rFolder = r'F:\ondra\LPI\plim\DATA\ifcBased\26-03-13 sensitivity_ebeam\raw2'
 dFolder = r'F:\ondra\LPI\plim\DATA\ifcBased\26-03-13 sensitivity_ebeam'
 dMName = 'Experiment2'
 
+dFolder = r'F:\ondra\LPI\plim\DATA\ifcBased\26-03-13 Au80 sensitivity\processed'
+dFolder = r'F:\ondra\LPI\plim\DATA\ifcBased\26-03-13 sensitivity_ebeam\raw2'
+
 
 #%% load data
 # load first image
