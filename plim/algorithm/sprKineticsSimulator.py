@@ -3,8 +3,9 @@ SPR adsorption/desorption kinetics simulator.
 
 Supported models
 ----------------
-langmuir   : 1:1 Langmuir binding  A + B <-> AB
-two_state  : conformational change  A + B <-> AB <-> AB*
+langmuir   : 1:1 Langmuir binding        A + B <-> AB
+two_state  : conformational change        A + B <-> AB <-> AB*
+transport  : two-film mass transport      Langmuir + diffusion layer, parameter km (nm M⁻¹ s⁻¹)
 
 Output units match the rest of the plim codebase: time in seconds, signal in nm.
 """
@@ -23,14 +24,16 @@ class SPRKineticsSimulator:
     Rmax  : float  Maximum SPR response       (nm)
     ka2   : float  Forward conformational rate (s⁻¹)  [two_state only]
     kd2   : float  Reverse conformational rate (s⁻¹)  [two_state only]
-    model : str    'langmuir' or 'two_state'
+    km    : float  Mass transfer coefficient  (nm M⁻¹ s⁻¹)  [transport only];
+                   same dimension as ka*Rmax — transport-limited when km << ka*Rmax
+    model : str    'langmuir', 'two_state', or 'transport'
     dt    : float  Time resolution             (s)
     """
 
-    MODELS = ('langmuir', 'two_state')
+    MODELS = ('langmuir', 'two_state', 'transport')
 
     def __init__(self, ka=1e4, kd=1e-3, Rmax=1.0,
-                 ka2=0.0, kd2=0.0, model='langmuir', dt=1.0):
+                 ka2=0.0, kd2=0.0, km=1e3, model='langmuir', dt=1.0):
         if model not in self.MODELS:
             raise ValueError(f"model must be one of {self.MODELS}")
         self.ka    = float(ka)
@@ -38,6 +41,7 @@ class SPRKineticsSimulator:
         self.Rmax  = float(Rmax)
         self.ka2   = float(ka2)
         self.kd2   = float(kd2)
+        self.km    = float(km)
         self.model = model
         self.dt    = float(dt)
 
@@ -99,6 +103,9 @@ class SPRKineticsSimulator:
             if self.model == 'langmuir':
                 t_sec, s_surf, R0_val = self._langmuir_phase(C, dur, R0[0], t_offset)
                 R0 = np.array([R0_val])
+            elif self.model == 'transport':
+                t_sec, s_surf, R0_val = self._transport_phase(C, dur, R0[0], t_offset)
+                R0 = np.array([R0_val])
             else:
                 t_sec, s_surf, R0 = self._two_state_phase(C, dur, R0, t_offset)
 
@@ -130,6 +137,31 @@ class SPRKineticsSimulator:
         R_end = float(signal[-1])
         return t + t_offset, signal, R_end
 
+    # ── Two-film transport-limited model ────────────────────────────────────
+
+    def _transport_phase(self, C, duration, R0, t_offset):
+        """Numerical integration for the two-film transport-limited model.
+
+        Surface ODE (quasi-steady-state transport layer):
+            dR/dt = km * [ka * (Rmax - R) * C - kd * R] / (km + ka * (Rmax - R))
+
+        Limits:
+            km >> ka*(Rmax-R)  ->  pure Langmuir
+            km << ka*(Rmax-R)  ->  dR/dt = km * C  (transport-limited, tau independent of C)
+        """
+        def odes(t, y):
+            R     = y[0]
+            Rfree = self.Rmax - R
+            denom = self.km + self.ka * Rfree
+            dR    = self.km * (self.ka * Rfree * C - self.kd * R) / denom
+            return [dR]
+
+        t_eval = np.arange(0.0, duration + self.dt * 0.5, self.dt)
+        sol    = solve_ivp(odes, [0.0, duration], [R0], t_eval=t_eval,
+                           method='RK45', rtol=1e-8, atol=1e-10)
+        signal = sol.y[0]
+        return sol.t + t_offset, signal, float(signal[-1])
+
     # ── Two-state conformational change model ────────────────────────────────
 
     def _two_state_phase(self, C, duration, R0, t_offset):
@@ -153,32 +185,41 @@ class SPRKineticsSimulator:
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
 
-    # 40 bp ssDNA hybridisation parameters
-    # ka ~ 5e4 M⁻¹s⁻¹  (surface hybridisation, slower than solution)
-    # kd ~ 1e-3 s⁻¹    (stable 40bp duplex, tau ≈ 1000 s)
-    # KD = kd/ka = 20 nM
+    # 40 bp ssDNA — strongly transport-limited model demonstrating that
+    # 1 mM and 2 mM look indistinguishable (both saturate in ~3 s of a 300 s window)
+    # ka = 2e5 M⁻¹s⁻¹, kd = 1e-4 s⁻¹  →  KD = 0.5 nM
+    # km = 1e3 nm M⁻¹ s⁻¹  (km / (ka*Rmax) ≈ 0.002 → strongly transport-limited)
     sim = SPRKineticsSimulator(
-        ka=5e4, kd=1e-3, Rmax=0.3,   # Rmax = 0.3 nm
-        model='langmuir', dt=1.0,
+        ka=2e5, kd=1e-4, Rmax=3,
+        km=1e3, model='transport', dt=1.0,
     )
-    print(f"KD = {sim.KD * 1e9:.1f} nM")
+    print(f"KD              = {sim.KD * 1e9:.1f} nM")
+    print(f"tau_dissoc      = {1/sim.kd:.0f} s")
+    print(f"km/(ka*Rmax)    = {sim.km/(sim.ka*sim.Rmax):.4f}  (<<1 → strongly transport-limited)")
 
-    noise          = 0.02                                          # nm
+    noise          = 0.02
     n0             = 1.333
-    durations      = [300, 300, 300]                               # baseline / assoc / dissoc
+    durations      = [300, 300, 300]
     bulk_n         = [n0, n0, n0]
-    concentrations = [2e-9, 5e-9, 1e-8, 2e-8, 5e-8, 1e-7,1e-6,2e-6]        # 2 … 100 nM
+    concentrations = [1e-5, 1e-4, 5e-4, 1e-3, 2e-3, 5e-3]   # 10 µM → 5 mM
 
+    def _clabel(C):
+        return f'{C*1e6:.0f} µM' if C < 1e-3 else f'{C*1e3:.0f} mM'
+
+    # tau_assoc approximation: tau ≈ 1/(ka*C) + Rmax/(km*C)
+    print(f"\n{'C':>10}  {'tau_assoc (s)':>14}  {'tau_dissoc (s)':>14}")
     fig, ax = plt.subplots()
     for C in concentrations:
+        tau_assoc = 1.0 / (sim.ka * C) + sim.Rmax / (sim.km * C)
+        print(f"{_clabel(C):>10}  {tau_assoc:>14.1f}  {1/sim.kd:>14.1f}")
         t, s = sim.simulate(durations, [0, C, 0], bulk_n, noise_std=noise)
-        ax.plot(t, s, label=f'{C * 1e9:.0f} nM')
+        ax.plot(t, s, label=_clabel(C))
 
     ax.axvline(300, color='gray', linestyle='--', linewidth=0.8)
     ax.axvline(600, color='gray', linestyle='--', linewidth=0.8)
     ax.set_xlabel('Time (s)')
     ax.set_ylabel('Signal (nm)')
-    ax.set_title('40 bp ssDNA hybridisation  —  KD = 20 nM,  Rmax = 0.3 nm')
+    ax.set_title(f'40 bp ssDNA — transport-limited  (km = {sim.km:.0e} nm·M⁻¹·s⁻¹,  KD = {sim.KD*1e9:.0f} nM)')
     ax.legend(title='Concentration')
     fig.tight_layout()
     plt.show()
