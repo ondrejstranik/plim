@@ -13,7 +13,8 @@ def test_SignalWidget():
 
     app = QApplication([])
 
-    sV = SignalWidget(np.random.rand(50,4),np.arange(50))
+    sV = SignalWidget(
+        np.random.rand(50,4)+ np.linspace(2,3,50)[:,None],np.arange(50))
     sV.show()
     app.exec()
 

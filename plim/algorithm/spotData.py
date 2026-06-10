@@ -28,7 +28,9 @@ class SpotData:
         self.dTime = 1
         self.dSignal = None
         self.noise = None
-
+        self.reference = np.array([0])
+        self.referenceColor = ''
+   
         # info about the data
         self.table = {
             'name': None,
@@ -67,7 +69,7 @@ class SpotData:
         self.time = np.array(time) if time is not None else np.arange(self.signal.shape[0])  # corresponding time
         self.time0 = self.time[0]
         self.setOffset()
-
+        self.setReference()
         self.getDSignal()
         self.getNoise()
 
@@ -103,6 +105,41 @@ class SpotData:
         else:
             return (None, None)
 
+    def setReference(self, color= None, applyOffset = False):
+        ''' get average values from subgroup of signals. return also time
+        if referenceColor is '' than reference is zero
+           if applyOffset then reference is set to zero according offset setting'''
+        
+        if color is not None:
+            self.referenceColor = color
+
+        if self.referenceColor == '': 
+            self.reference = np.array([0])
+            return
+
+        #if index == 'all' : index = np.s_[:]
+        
+        signal, _ = self.getData()
+
+        referenceOffset = 0
+        
+        _index = self._getIndexFromColor(color=self.referenceColor)
+        
+        if applyOffset: referenceOffset = np.mean(self.offset[_index])
+
+        self.reference = np.mean(signal[:,_index], axis=1) - referenceOffset
+
+
+    def getReference(self):
+        ''' return reference and time'''
+        return (self.reference, self.time)
+
+    def _getIndexFromColor(self,color='#ffffff'):
+        ''' get vector of bool of signals with given color'''
+        return [i for i, s in enumerate(self.table['color']) if s == color]
+
+
+
     def getRange(self,time):
         ''' get the boolvector with the selected timespan according the self.range'''
 
@@ -137,10 +174,12 @@ class SpotData:
         if dTime is not None: self.dTime = dTime
         if range is not None: self.range = range
 
+        _signal = self.signal - self.reference[:,None]
+
         range = self.getRange(self.evalTime)
-        _signal1 = np.mean(self.signal[range,:],axis=0)
+        _signal1 = np.mean(_signal[range,:],axis=0)
         range = self.getRange(self.evalTime+self.dTime)
-        _signal2 = np.mean(self.signal[range,:],axis=0)
+        _signal2 = np.mean(_signal[range,:],axis=0)
 
         self.dSignal = _signal2 - _signal1
 
@@ -154,7 +193,10 @@ class SpotData:
         if range is not None: self.range = range
 
         range = self.getRange(self.evalTime+self.dTime)
-        self.noise =  np.std(self.signal[range,:],axis=0)
+
+        _signal = self.signal - self.reference[:,None]
+
+        self.noise =  np.std(_signal[range,:],axis=0)
 
         return self.noise
 

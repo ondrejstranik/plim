@@ -35,6 +35,8 @@ class SignalWidget(QWidget):
 
         # parameters of the graph
         self.align = False
+        self.useReference = False
+        self.referenceColor = None
         self.lineIndex = 0
         self.linePlotList = []
         self.penList = []        
@@ -56,14 +58,25 @@ class SignalWidget(QWidget):
 
         @magicgui(auto_call=True, layout='horizontal',
                   alignTime ={'min':0,'max':1e6, 'tooltip': " to select \n press 'a' on graph"},
-                  range = {'min':0,'max':1e6})
+                  range = {'min':0,'max':1e6},
+                  referenceColor = {'tooltip':"use format #000000 - #FFFFFF",
+                                 'label':'color:'},
+        )
         def fitParameter(
+                useReference: bool = self.useReference,
+                referenceColor: str = '#00ffff',
                 align: bool = self.align,
                 alignTime: float = self.sD.alignTime,
                 range: int = self.sD.range):
 
             self.align= align
+            self.useReference = useReference
+            self.referenceColor = referenceColor
+
             self.sD.setOffset(alignTime,range)
+            
+            self.updateReference()
+
             self.sD.getDSignal() # recalculate in the case the range changed
             self.sD.getNoise()
             self.lineParameter.noise.value =  f"{self.sD.noise[self.lineIndex]:.2E}"
@@ -280,6 +293,11 @@ class SignalWidget(QWidget):
             self.sD.setOffset()
             offSet = self.sD.getOffset()
 
+        # apply reference 
+        referenceSignal,_ = self.sD.getReference()
+
+        print(f'reference signal {referenceSignal}')
+
         self.graph.setUpdatesEnabled(False)
         # update data for the visible lines
         for ii in np.arange(nSig):
@@ -306,7 +324,7 @@ class SignalWidget(QWidget):
                 print('sd table color is not defined')
             # update data
             try:
-                self.linePlotList[ii].setData(time, signal[:,ii]-offSet[ii], pen=self.penList[ii])
+                self.linePlotList[ii].setData(time, signal[:,ii]-offSet[ii]-referenceSignal, pen=self.penList[ii])
             except:
                 print('error occurred in drawGraph - signalWidget')                
                 traceback.print_exc()
@@ -369,6 +387,10 @@ class SignalWidget(QWidget):
         line.setSkipFiniteCheck(True)
         return line
 
+    def updateReference(self):
+        ''' update reference in self.sD according settings (color, use of reference) '''
+        color=self.referenceColor if self.useReference else ''
+        self.sD.setReference(color=color, applyOffset=self.align)
 
 if __name__ == "__main__":
     pass
