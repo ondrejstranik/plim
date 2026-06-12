@@ -34,15 +34,11 @@ class SignalWidget(QWidget):
                 self.sD = SpotData(np.arange(10*3).reshape(10,3))
 
         # parameters of the graph
-        self.align = False
-        self.useReference = False
-        self.referenceColor = None
         self.lineIndex = 0
         self.linePlotList = []
         self.penList = []        
         self.vLine = []
         self.maxNLine = SignalWidget.DEFAULT['maxNLine']
-
 
         #define position of mouse on the graph - use for selection
         self.mousePoint = QtCore.QPointF()
@@ -63,23 +59,19 @@ class SignalWidget(QWidget):
                                  'label':'color:'},
         )
         def fitParameter(
-                useReference: bool = self.useReference,
-                referenceColor: str = '#00ffff',
-                align: bool = self.align,
+                useReference: bool = self.sD.useReference,
+                referenceColor: str = self.sD.referenceColor,
+                align: bool = self.sD.useOffset,
                 alignTime: float = self.sD.alignTime,
                 range: int = self.sD.range):
 
-            self.align= align
-            self.useReference = useReference
-            self.referenceColor = referenceColor
-
-            self.sD.setOffset(alignTime,range)
-            
-            self.updateReference()
+            self.sD.setOffset(alignTime,range, align)
+            self.sD.setReference(color=referenceColor,
+                                 useReference=useReference)
 
             self.sD.getDSignal() # recalculate in the case the range changed
-            self.sD.getNoise()
-            self.lineParameter.noise.value =  f"{self.sD.noise[self.lineIndex]:.2E}"
+            _noise = self.sD.getNoise()
+            self.lineParameter.noise.value =  f"{_noise[self.lineIndex]:.2E}"
 
             self.drawGraph()
 
@@ -156,6 +148,7 @@ class SignalWidget(QWidget):
             # color is changed            
             elif self.sD.table['color'][lineIndex] != lineColor:
                 self.sD.table['color'][lineIndex] = lineColor
+                self.sD.setReference()
                 self.drawGraph()
                 print('change of color')
 
@@ -251,18 +244,13 @@ class SignalWidget(QWidget):
         nx = np.argmin(np.abs(self.sD.time -self.sD.time0 - x))
         print(f'selection at time {self.sD.time[nx]-self.sD.time0}')
 
-        offSet = self.sD.offset
-        if not self.align:
-            offSet = 0
-
         # remove the one not visible
-        _signal = self.sD.signal[nx,:]
+        _signalMat, _ = self.sD.getProcessedData()
+        _signal = _signalMat[nx,:]
         _selection = [ x  != 'True' for x in self.sD.table['visible']]
         _signal[_selection] = np.inf
 
-        #print(f'signal {_signal -offSet -y}')
-
-        lineIndex = np.argmin(np.abs(_signal -offSet -y))
+        lineIndex = np.argmin(np.abs(_signal-y))
 
 
         return lineIndex
@@ -273,7 +261,7 @@ class SignalWidget(QWidget):
         start = timer()
 
         # copy the data
-        (signal, time) = self.sD.getData()
+        (signal, time) = self.sD.getProcessedData()
         table = self.sD.getTable()
 
         # if there is no signal then do not continue
@@ -285,18 +273,6 @@ class SignalWidget(QWidget):
             nSig = self.DEFAULT['maxNLine']
             print(f'Signal Widget: displaying only {self.DEFAULT["maxNLine"]} lines')
 
-
-        # set offset for the lines
-        if not self.align:
-            offSet = np.zeros(nSig)
-        else:
-            self.sD.setOffset()
-            offSet = self.sD.getOffset()
-
-        # apply reference 
-        referenceSignal,_ = self.sD.getReference()
-
-        print(f'reference signal {referenceSignal}')
 
         self.graph.setUpdatesEnabled(False)
         # update data for the visible lines
@@ -324,7 +300,7 @@ class SignalWidget(QWidget):
                 print('sd table color is not defined')
             # update data
             try:
-                self.linePlotList[ii].setData(time, signal[:,ii]-offSet[ii]-referenceSignal, pen=self.penList[ii])
+                self.linePlotList[ii].setData(time, signal[:,ii], pen=self.penList[ii])
             except:
                 print('error occurred in drawGraph - signalWidget')                
                 traceback.print_exc()
@@ -372,7 +348,9 @@ class SignalWidget(QWidget):
 
         # fit parameter widget
         self.fitParameter._auto_call = False
-        self.fitParameter.align.value = self.align
+        self.fitParameter.align.value = self.sD.useOffset
+        self.fitParameter.useReference.value = self.sD.useReference
+        self.fitParameter.referenceColor.value = self.sD.referenceColor
         self.fitParameter.alignTime.value = self.sD.alignTime
         self.fitParameter.range.value = self.sD.range
         self.fitParameter._auto_call = True
@@ -386,11 +364,6 @@ class SignalWidget(QWidget):
         line.setClipToView(True)
         line.setSkipFiniteCheck(True)
         return line
-
-    def updateReference(self):
-        ''' update reference in self.sD according settings (color, use of reference) '''
-        color=self.referenceColor if self.useReference else ''
-        self.sD.setReference(color=color, applyOffset=self.align)
 
 if __name__ == "__main__":
     pass

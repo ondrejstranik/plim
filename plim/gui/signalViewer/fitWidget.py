@@ -97,25 +97,28 @@ class FitWidget(QWidget):
 
 
         @magicgui(call_button='transfer data')
-        def dataBox():
+        def dataBox(average:bool = False):
+            # if data are transferred from signal widget
             if isinstance(self.dataObject, SignalWidget):
 
-                (signal, time) = self.dataObject.sD.getData()
-                self.kF
-                if not self.dataObject.align:
-                    offSet = np.zeros(signal.shape[1])
-                else:
-                    offSet = self.dataObject.sD.offset
-                signal = signal - offSet
+                # get the data from signal widget (aligned and referenced if applied)
+                (signal, time) = self.dataObject.sD.getProcessedData()
+                #self.kF
 
+                # select only visible
                 _vis = np.array([True if ii=='True' else False for ii in self.dataObject.sD.table['visible']])
                 signal = signal[:,_vis]
 
+                # select only visible range 
                 timeMask = ((time>self.dataObject.sD.evalTime) & 
                             (time<(self.dataObject.sD.evalTime + self.dataObject.sD.dTime)))
 
+                # copy the name only 
                 table = {'name': [self.dataObject.sD.table["name"][ii] for ii in range(len(_vis)) if _vis[ii]==True]}
 
+                if average:
+                    signal = np.mean(signal,axis=1)[:,None]
+                    table = {'name': table['name'][0]}
 
                 self.setData(signal[timeMask,:],time[timeMask],table=table)
 

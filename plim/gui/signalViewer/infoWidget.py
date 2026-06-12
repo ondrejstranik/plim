@@ -74,7 +74,13 @@ class InfoWidget(QWidget):
 
 
             self.sD.checkTableValues()
-            self.infoBox.infoTable.value = self.sD.table | {'dSignal': self.sD.dSignal, 'noise': self.sD.noise}
+
+            # update values in the case color is changed
+            self.sD.setReference()
+            _dSignal = self.sD.getDSignal()
+            _noise = self.sD.getNoise()
+
+            self.infoBox.infoTable.value = self.sD.table | {'dSignal': _dSignal, 'noise': _noise}
 
             for ii,_color in enumerate(self.sD.table['color']):
                 self.infoBox.infoTable.native.item(ii,1).setBackground(QColor(_color))

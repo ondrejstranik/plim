@@ -22,6 +22,7 @@ class SpotData:
 
         # values from the data
         self.offset = None
+        self.useOffset = False
         self.alignTime = 0
         self.range = 2
         self.evalTime = 0
@@ -29,7 +30,8 @@ class SpotData:
         self.dSignal = None
         self.noise = None
         self.reference = np.array([0])
-        self.referenceColor = ''
+        self.useReference = False
+        self.referenceColor = "#ff0000"
    
         # info about the data
         self.table = {
@@ -84,6 +86,8 @@ class SpotData:
         if self.signal is not None and valueVector.shape[0] == self.signal.shape[1]:
             self.signal = np.vstack((self.signal,valueVector))
             if time is not None: self.time = np.append(self.time,time)
+            self.setOffset()
+            self.setReference()
             return None
         else:
             self.signal = np.array(valueVector)[None,:]
@@ -93,8 +97,11 @@ class SpotData:
             else:
                 self.time0 = 0
             self.setTable()
+            self.setOffset()
+            self.setReference()
             return self.time0
-                
+
+
     def getData(self):
         ''' return the signal and time '''
         if self.signal is not None:
@@ -105,27 +112,49 @@ class SpotData:
         else:
             return (None, None)
 
-    def setReference(self, color= None, applyOffset = False):
+    def getProcessedData(self, update=False):
+        ''' return the signal with applied offset and reference
+        and time
+        if update then the offset and reference are recalculated'''
+
+        signal, time = self.getData()
+
+        if update:
+            self.setOffset()
+            self.setReference()
+
+        if self.useOffset:
+            signal = signal - self.offset[None,:]
+            
+        if self.useReference:
+            signal = signal - self.reference[:,None]
+
+        return (signal, time)
+
+
+
+    def setReference(self, color:str = None, useReference:bool = None):
         ''' get average values from subgroup of signals. return also time
         if referenceColor is '' than reference is zero
            if applyOffset then reference is set to zero according offset setting'''
-        
-        if color is not None:
-            self.referenceColor = color
+
+        if useReference is not None: self.useReference = useReference
+        if color is not None: self.referenceColor = color
+
+        self.reference = np.array([0])
 
         if self.referenceColor == '': 
-            self.reference = np.array([0])
             return
 
-        #if index == 'all' : index = np.s_[:]
-        
-        signal, _ = self.getData()
-
-        referenceOffset = 0
-        
         _index = self._getIndexFromColor(color=self.referenceColor)
+
+        if _index == []:
+            return
+
+        signal, _ = self.getData()
         
-        if applyOffset: referenceOffset = np.mean(self.offset[_index])
+        referenceOffset = 0
+        if self.useOffset: referenceOffset = np.mean(self.offset[_index])
 
         self.reference = np.mean(signal[:,_index], axis=1) - referenceOffset
 
@@ -136,8 +165,12 @@ class SpotData:
 
     def _getIndexFromColor(self,color='#ffffff'):
         ''' get vector of bool of signals with given color'''
-        return [i for i, s in enumerate(self.table['color']) if s == color]
-
+        try:
+            index = [i for i, s in enumerate(self.table['color']) if s.upper() == color.upper()]
+        except:
+            index = []
+        
+        return index
 
 
     def getRange(self,time):
@@ -153,14 +186,19 @@ class SpotData:
         return range
 
 
-    def setOffset(self, alignTime=None, range= None):
+    def setOffset(self, alignTime=None, range= None, useOffset = None):
         ''' set offset value for the signal at the time offsetTime'''
 
         if alignTime is not None: self.alignTime = alignTime
         if range is not None: self.range = range
+        if useOffset is not None: self.useOffset = useOffset
+
+        # no offset applied
+        if not self.useOffset:
+            self.offset = 0
+            return
 
         range = self.getRange(self.alignTime)
-        #print(f'range is {range}')
         self.offset = np.mean(self.signal[range,:],axis=0)
 
     def getOffset(self):
@@ -174,7 +212,10 @@ class SpotData:
         if dTime is not None: self.dTime = dTime
         if range is not None: self.range = range
 
-        _signal = self.signal - self.reference[:,None]
+        if self.useReference:
+            _signal = self.signal - self.reference[:,None]
+        else:
+            _signal = self.signal
 
         range = self.getRange(self.evalTime)
         _signal1 = np.mean(_signal[range,:],axis=0)
@@ -194,7 +235,10 @@ class SpotData:
 
         range = self.getRange(self.evalTime+self.dTime)
 
-        _signal = self.signal - self.reference[:,None]
+        if self.useReference:
+            _signal = self.signal - self.reference[:,None]
+        else:
+            _signal = self.signal
 
         self.noise =  np.std(_signal[range,:],axis=0)
 

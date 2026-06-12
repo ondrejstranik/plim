@@ -221,6 +221,7 @@ class Window(QMainWindow):
 
         # update spotData
         self.sD.setOffset()
+        self.sD.setReference()
         self.sD.getDSignal()
         self.sD.getNoise()
         self.sD.setTable(table=self.sD.table)
@@ -276,6 +277,9 @@ class Window(QMainWindow):
         _color = [rgb[ii] + 'ff' if vis[ii]=='True' else rgb[ii] + '00' for ii in list(self.spotLayer.selected_data)]
         print(f'current_color {_color}')
         self.spotLayer._face.current_color = _color
+
+        # update reference
+        self.sD.setReference()
 
         self.iW.redrawWidget()
         self.sW.redrawWidget()
