@@ -8,18 +8,8 @@ from scipy.special import erf
 import inspect
 import csv
 from lmfit import Model
-
-#def functionPFO(x,x0,a,b):
-#    ''' pseudo first order binding curve'''
-#    res = x*0
-#    xb = x>=x0
-#    xa = x< x0
-#    res[xa] = 0
-#    if b!=0:
-#        res[xb] = a*(1-np.exp(-(x[xb]-x0)/b))
-#    else:
-#        res[xb] = a + x[xb]*0
-#    return res
+from enum import Enum
+import inspect
 
 def functionPFO(x,x0,a,b):
     ''' pseudo first order binding curve'''
@@ -32,6 +22,28 @@ def functionPFO(x,x0,a,b):
 
     res[xb] = a*(1-np.exp(-(x[xb]-x0)/b))
     return res
+
+def functionEDecay(x,x0,a,b):
+    ''' exponential decay function '''
+    res = x*0.0
+    xb = x>=x0
+    xa = x< x0
+    res[xa] = a
+    #b = np.abs(b) + 1e-6
+    b += 1e-6
+
+    res[xb] = a*np.exp(-(x[xb]-x0)/b)
+    return res
+
+def functionZO(x,x0,a):
+    ''' Zero Order binding (linear) function - approximation of PFO'''
+    res = x*0.0
+    xb = x>=x0
+    xa = x< x0
+    res[xa] = 0
+    res[xb] = a*x[xb]
+    return res
+
 
 #def functionPFO(x,x0,a,b):
 #    xMod = (erf((x-x0)/10)+1)/2*(x-x0)
@@ -46,11 +58,35 @@ def functionP1(x,c0,c1):
 def functionBinding(x,time0,tau,amp,p0,p1):
     return functionPFO(x,time0,amp,tau) + functionP1(x-time0,p0,p1)
 
+def functionLinearBinding(x,time0,slope,p0,p1):
+    return functionZO(x,time0,slope) + functionP1(x-time0,p0,p1)
+
+def functionDesorption(x,time0,tau,amp,p0,p1):
+    return functionEDecay(x,time0,amp,tau) + functionP1(x-time0,p0,p1)
+
+class FitType(Enum):
+    ADSORPTION = ("adsorption", functionBinding)
+    DESORPTION = ("desorption", functionDesorption)
+    LINEAR = ("linear", functionLinearBinding)
+
+    def __init__(self, label, fitFunction):
+        self.label = label
+        self.function = fitFunction
+        sig = inspect.signature(fitFunction)
+        self.parameters = [p for p in sig.parameters.keys() if p != 'self']
+
+    @classmethod
+    def from_label(cls, label_string):
+        for member in cls:
+            if member.label == label_string:
+                return member
+        raise ValueError(f"'{label_string}' it is not defined FitType.label")
+
 
 class KineticFit:
     ''' class for fitting binding kinetics curves'''
 
-    DEFAULT = {'fitType': 'adsorption' # type of kinetic fit
+    DEFAULT = {'fitType': FitType.ADSORPTION # type of kinetic fit 
                }
 
 
@@ -95,12 +131,11 @@ class KineticFit:
                 **({} if max   is None else {'max':   max}),
             )
 
-    def setFitFunction(self, fitType=None):
+    def setFitFunction(self, fitType:FitType =None):
         ''' define fit function '''
         if fitType is not None:
             self.fitType = fitType
-        if self.fitType == 'adsorption':
-            self.model = Model(functionBinding)
+            self.model = Model(fitType.function)
             self.modelParams = self.model.make_params()
 
     def calculateFit(self):
@@ -120,27 +155,38 @@ class KineticFit:
 
     def getFittedSignal(self,idx):
         return self.model.func(self.time,*self.fittedParam[idx,:])
-    
+
+
     def getFittedBackground(self,idx):
         _param = self.fittedParam[idx,:]*1.0
         _param[2]= 0 # set amplitude of binding to zero
         return self.model.func(self.time,*_param)
 
+
     def saveFitInfo(self,folder,fileName):
         ''' save fits info into .txt file'''
         # save info table
-        _dataDict = {'name': self.table['name'],
-                 'time0': self.fittedParam[:,0],
-                 'tau': self.fittedParam[:,1],
-                 'amp': self.fittedParam[:,2],
-                 'p0': self.fittedParam[:,3],
-                 'p1': self.fittedParam[:,4]}
+        # structure is following
+        # fitType.label
+        # header - name param1 param2 ....
+        # value - name param1 param2 ... (curve1)
+        # value - name param1 param2 ... (curve2)
+        # value - name param1 param2 ... (curveN)
+        
+        # 2. Build the dictionary dynamically
+        _dataDict = {'name': self.table['name']}
+
+        # 3. Loop through the parameters and map them to the column index
+        for index, param in enumerate(self.fitType.parameters):
+            _dataDict[param] = self.fittedParam[:, index]
 
         with open(folder +"/" + fileName, "w") as outfile:
         
             # pass the csv file to csv.writer function.
             #writer = csv.writer(outfile, delimiter ='\t')
             writer = csv.writer(outfile, delimiter =',')
+            # write label of the fitting type
+            writer.writerow(self.fitType.label)            
             # pass the dictionary keys to writerow
             # function to frame the columns of the csv file
             writer.writerow(_dataDict.keys())
@@ -151,29 +197,37 @@ class KineticFit:
         print('fit info exported')
 
     def loadFitInfo(self,folder,fileName):
-        ''' load fit info '''
+        ''' load fit info
+         return
+          fitType.label (string)
+           list of name of each curve
+            2D numpy array with parameters of the fit for each curve '''
         name= []
         time0 = []
         amp = []
         tau = []
         p0 = []
         p1 = []
-        with open(folder +"/" + fileName) as csvfile:
-            spamreader = csv.reader(csvfile, delimiter=',')
-            # skip header
-            next(spamreader)
-            for row in spamreader:
-                if row == []: continue
-                name.append(row[0])
-                time0.append(float(row[1]))
-                tau.append(float(row[2]))
-                amp.append(float(row[3]))
-                p0.append(float(row[4]))
-                p1.append(float(row[5]))
+        with open(folder +"/" + fileName) as infile:
+            # 1. Read the very first row to get the fitType label
+            # .strip() removes any hidden newline characters (\n)
+            raw_label = infile.readline().strip()
+            # Clean up commas if it was saved as a CSV row (e.g., "my_label,")
+            fitTypeLabel = raw_label.split(',')[0]
+            
+            reader = csv.DictReader(infile, delimiter=',')
 
-        fitParam = np.array([time0,tau,amp,p0,p1])
+            # get the names of the parameters (without the name parameter)
+            param_columns_dict = {key: [] for key in reader.fieldnames if key != 'name'}
 
-        return name, fitParam
+            for row in reader:
+                for param_key in param_columns_dict.keys():
+                    param_columns_dict[param_key].append(float(row[param_key]))
+
+            fittedParam = np.array(list(param_columns_dict.values()), dtype=float).T
+
+
+        return (fitTypeLabel, name, fittedParam)
 
 if __name__ == "__main__":
     pass

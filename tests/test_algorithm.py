@@ -141,12 +141,12 @@ def test_flowData():
 def test_kineticFit():
     ''' check if spectra are fitted'''
     import numpy as np
-    from plim.algorithm.kineticFit import KineticFit
+    from plim.algorithm.kineticFit import KineticFit, FitType
     import matplotlib.pyplot as plt
-    from plim.algorithm.kineticFit import functionBinding
 
     
     kF = KineticFit()
+    kF.setFitFunction(fitType=FitType.ADSORPTION)
 
     # generate data set    
     time = np.arange(1000)
@@ -166,8 +166,8 @@ def test_kineticFit():
     kF.setFitParameter(name= 'time0',value=trueParam[0],fixed = False)
     kF.setFitParameter(name= 'tau',value=trueParam[1],fixed = False)
     kF.setFitParameter(name= 'amp',value=trueParam[2],fixed = False)
-    kF.setFitParameter(name= 'p0',value=trueParam[3],fixed = True)
-    kF.setFitParameter(name= 'p1',value=trueParam[4],fixed = True)
+    kF.setFitParameter(name= 'p0',value=trueParam[3],fixed = False)
+    kF.setFitParameter(name= 'p1',value=trueParam[4],fixed = False)
 
     kF.calculateFit()
 
