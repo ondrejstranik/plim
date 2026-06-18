@@ -164,6 +164,23 @@ class KineticFit:
     def getFittedSignal(self,idx):
         return self.model.func(self.time,*self.fittedParam[idx,:])
 
+    def getCleanDataFit(self):
+        '''Return signal and fit with background subtracted for all curves.
+
+        Returns
+        -------
+        clean_signal : ndarray (n_time, n_curves)  Raw signal minus background.
+        clean_fit    : ndarray (n_time, n_curves)  Fitted curve minus background.
+        '''
+        nFit = self.signal.shape[1]
+        clean_signal = np.empty_like(self.signal)
+        clean_fit    = np.empty((len(self.time), nFit))
+        for ii in range(nFit):
+            bg = self.getFittedBackground(ii)
+            clean_signal[:, ii] = self.signal[:, ii] - bg
+            clean_fit[:, ii]    = self.getFittedSignal(ii) - bg
+        return clean_signal, clean_fit
+
 
     def getFittedBackground(self,idx):
         _param = self.fittedParam[idx,:]*1.0

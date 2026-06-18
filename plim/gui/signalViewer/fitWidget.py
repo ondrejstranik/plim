@@ -5,7 +5,7 @@ class for viewing signals and their Fits
 import pyqtgraph as pg
 import pyqtgraph.exporters
 from PyQt5.QtGui import QColor, QPen
-from qtpy.QtWidgets import QWidget, QVBoxLayout, QFileDialog, QTabWidget, QTableWidget, QTableWidgetItem, QShortcut, QApplication, QPushButton
+from qtpy.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QFileDialog, QTabWidget, QTableWidget, QTableWidgetItem, QShortcut, QApplication, QPushButton
 from qtpy.QtGui import QKeySequence
 from qtpy import QtCore
 from magicgui import magicgui
@@ -40,37 +40,30 @@ class FitWidget(QWidget):
     def _setWidget(self):
         ''' prepare the gui '''
 
-        _C = ['free', 'fixed', 'fit']
-
         @magicgui(layout='horizontal', call_button='fit',
                   time0 = {'max':1e6},
                   tau= {'max':1e6,'min': -1e6},
                   p0 = {'step': 1e-2,'min':-10,'max':10},
                   p1 = {'step': 1e-6,'min':-1,'max':1},
-                  varyTime0 = {'label':'', 'widget_type': 'ComboBox', 'choices': _C},
-                  fixTau    = {'label':'', 'widget_type': 'ComboBox', 'choices': _C},
-                  fixAmp    = {'label':'', 'widget_type': 'ComboBox', 'choices': _C},
-                  fixP0     = {'label':'', 'widget_type': 'ComboBox', 'choices': _C},
-                  fixP1     = {'label':'', 'widget_type': 'ComboBox', 'choices': _C}
+                  varyTime0 = {'label':'fixed'},
+                  fixTau = {'label':'fixed'},
+                  fixAmp = {'label':'fixed'},
+                  fixP0 = {'label':'fixed'},
+                  fixP1 = {'label':'fixed'}
                    )
         def fitParameter(
-                time0: float = 0.0, varyTime0 = 'free',
-                tau: float = 1.0,   fixTau    = 'free',
-                amp: float = 1.0,   fixAmp    = 'free',
-                p0: float = 0.0,    fixP0     = 'free',
-                p1: float = 0.0,    fixP1     = 'free'):
-
-            def _val(choice, entered, idx):
-                if choice == 'fit' and self.kF.fittedParam is not None:
-                    return float(self.kF.fittedParam[:, idx].mean())
-                return entered
+                time0: float = 0.0, varyTime0 = False,
+                tau: float = 1.0, fixTau = False,
+                amp: float = 1.0, fixAmp = False,
+                p0: float = 0.0, fixP0 = False,
+                p1: float = 0.0, fixP1 = False):
 
             self.kF.setFitParameter(fitType=FitType.ADSORPTION)
-            self.kF.setFitParameter(name='time0', value=_val(varyTime0, time0, 0), fixed=varyTime0 != 'free')
-            self.kF.setFitParameter(name='tau',   value=_val(fixTau,    tau,   1), fixed=fixTau    != 'free', min=0)
-            self.kF.setFitParameter(name='amp',   value=_val(fixAmp,    amp,   2), fixed=fixAmp    != 'free', min=0)
-            self.kF.setFitParameter(name='p0',    value=_val(fixP0,     p0,    3), fixed=fixP0     != 'free')
-            self.kF.setFitParameter(name='p1',    value=_val(fixP1,     p1,    4), fixed=fixP1     != 'free')
+            self.kF.setFitParameter(name='time0',value=time0,fixed=varyTime0)
+            self.kF.setFitParameter(name='tau',value=tau,fixed=fixTau, min=0)
+            self.kF.setFitParameter(name='amp',value=amp,fixed=fixAmp,min=0)
+            self.kF.setFitParameter(name='p0',value=p0,fixed=fixP0)
+            self.kF.setFitParameter(name='p1',value=p1,fixed=fixP1)
 
             self.kF.calculateFit()
 
@@ -106,30 +99,25 @@ class FitWidget(QWidget):
                   tau= {'max':1e6,'min': -1e6},
                   p0 = {'step': 1e-2,'min':-10,'max':10},
                   p1 = {'step': 1e-6,'min':-1,'max':1},
-                  varyTime0 = {'label':'', 'widget_type': 'ComboBox', 'choices': _C},
-                  fixTau    = {'label':'', 'widget_type': 'ComboBox', 'choices': _C},
-                  fixAmp    = {'label':'', 'widget_type': 'ComboBox', 'choices': _C},
-                  fixP0     = {'label':'', 'widget_type': 'ComboBox', 'choices': _C},
-                  fixP1     = {'label':'', 'widget_type': 'ComboBox', 'choices': _C}
+                  varyTime0 = {'label':'fixed'},
+                  fixTau = {'label':'fixed'},
+                  fixAmp = {'label':'fixed'},
+                  fixP0 = {'label':'fixed'},
+                  fixP1 = {'label':'fixed'}
                    )
         def fitParameter2(
-                time0: float = 0.0, varyTime0 = 'free',
-                tau: float = 1.0,   fixTau    = 'free',
-                amp: float = 1.0,   fixAmp    = 'free',
-                p0: float = 0.0,    fixP0     = 'free',
-                p1: float = 0.0,    fixP1     = 'free'):
-
-            def _val(choice, entered, idx):
-                if choice == 'fit' and self.kF.fittedParam is not None:
-                    return float(self.kF.fittedParam[:, idx].mean())
-                return entered
+                time0: float = 0.0, varyTime0 = False,
+                tau: float = 1.0, fixTau = False,
+                amp: float = 1.0, fixAmp = False,
+                p0: float = 0.0, fixP0 = False,
+                p1: float = 0.0, fixP1 = False):
 
             self.kF.setFitParameter(fitType=FitType.DESORPTION)
-            self.kF.setFitParameter(name='time0', value=_val(varyTime0, time0, 0), fixed=varyTime0 != 'free')
-            self.kF.setFitParameter(name='tau',   value=_val(fixTau,    tau,   1), fixed=fixTau    != 'free', min=0)
-            self.kF.setFitParameter(name='amp',   value=_val(fixAmp,    amp,   2), fixed=fixAmp    != 'free', min=0)
-            self.kF.setFitParameter(name='p0',    value=_val(fixP0,     p0,    3), fixed=fixP0     != 'free')
-            self.kF.setFitParameter(name='p1',    value=_val(fixP1,     p1,    4), fixed=fixP1     != 'free')
+            self.kF.setFitParameter(name='time0',value=time0,fixed=varyTime0)
+            self.kF.setFitParameter(name='tau',value=tau,fixed=fixTau, min=0)
+            self.kF.setFitParameter(name='amp',value=amp,fixed=fixAmp,min=0)
+            self.kF.setFitParameter(name='p0',value=p0,fixed=fixP0)
+            self.kF.setFitParameter(name='p1',value=p1,fixed=fixP1)
 
             self.kF.calculateFit()
 
@@ -165,27 +153,22 @@ class FitWidget(QWidget):
                   slope= {'max':10,'min': -10},
                   p0 = {'step': 1e-2,'min':-10,'max':10},
                   p1 = {'step': 1e-6,'min':-1,'max':1},
-                  varyTime0 = {'label':'', 'widget_type': 'ComboBox', 'choices': _C},
-                  fixSlope  = {'label':'', 'widget_type': 'ComboBox', 'choices': _C},
-                  fixP0     = {'label':'', 'widget_type': 'ComboBox', 'choices': _C},
-                  fixP1     = {'label':'', 'widget_type': 'ComboBox', 'choices': _C}
+                  varyTime0 = {'label':'fixed'},
+                  fixSlope = {'label':'fixed'},
+                  fixP0 = {'label':'fixed'},
+                  fixP1 = {'label':'fixed'}
                    )
         def fitParameter3(
-                time0: float = 0.0, varyTime0 = 'free',
-                slope: float = 1.0, fixSlope  = 'free',
-                p0: float = 0.0,    fixP0     = 'free',
-                p1: float = 0.0,    fixP1     = 'free'):
-
-            def _val(choice, entered, idx):
-                if choice == 'fit' and self.kF.fittedParam is not None:
-                    return float(self.kF.fittedParam[:, idx].mean())
-                return entered
+                time0: float = 0.0, varyTime0 = False,
+                slope: float = 1.0, fixSlope = False,
+                p0: float = 0.0, fixP0 = False,
+                p1: float = 0.0, fixP1 = False):
 
             self.kF.setFitParameter(fitType=FitType.LINEAR)
-            self.kF.setFitParameter(name='time0', value=_val(varyTime0, time0, 0), fixed=varyTime0 != 'free')
-            self.kF.setFitParameter(name='slope', value=_val(fixSlope,  slope, 1), fixed=fixSlope  != 'free')
-            self.kF.setFitParameter(name='p0',    value=_val(fixP0,     p0,    2), fixed=fixP0     != 'free')
-            self.kF.setFitParameter(name='p1',    value=_val(fixP1,     p1,    3), fixed=fixP1     != 'free')
+            self.kF.setFitParameter(name='time0',value=time0,fixed=varyTime0)
+            self.kF.setFitParameter(name='slope',value=slope,fixed=fixSlope)
+            self.kF.setFitParameter(name='p0',value=p0,fixed=fixP0)
+            self.kF.setFitParameter(name='p1',value=p1,fixed=fixP1)
 
             self.kF.calculateFit()
 
@@ -217,36 +200,31 @@ class FitWidget(QWidget):
                   tau2= {'max':1e6,'min': -1e6},
                   p0 = {'step': 1e-2,'min':-10,'max':10},
                   p1 = {'step': 1e-6,'min':-1,'max':1},
-                  varyTime0 = {'label':'', 'widget_type': 'ComboBox', 'choices': _C},
-                  fixTau1   = {'label':'', 'widget_type': 'ComboBox', 'choices': _C},
-                  fixAmp1   = {'label':'', 'widget_type': 'ComboBox', 'choices': _C},
-                  fixTau2   = {'label':'', 'widget_type': 'ComboBox', 'choices': _C},
-                  fixAmp2   = {'label':'', 'widget_type': 'ComboBox', 'choices': _C},
-                  fixP0     = {'label':'', 'widget_type': 'ComboBox', 'choices': _C},
-                  fixP1     = {'label':'', 'widget_type': 'ComboBox', 'choices': _C}
+                  varyTime0 = {'label':'fixed'},
+                  fixTau1 = {'label':'fixed'},
+                  fixAmp1 = {'label':'fixed'},
+                  fixTau2 = {'label':'fixed'},
+                  fixAmp2 = {'label':'fixed'},
+                  fixP0 = {'label':'fixed'},
+                  fixP1 = {'label':'fixed'}
                    )
         def fitParameter4(
-                time0: float = 0.0,  varyTime0 = 'free',
-                tau1: float = 10.0,  fixTau1   = 'free',
-                amp1: float = 1.0,   fixAmp1   = 'free',
-                tau2: float = 100.0, fixTau2   = 'free',
-                amp2: float = 0.5,   fixAmp2   = 'free',
-                p0: float = 0.0,     fixP0     = 'free',
-                p1: float = 0.0,     fixP1     = 'free'):
-
-            def _val(choice, entered, idx):
-                if choice == 'fit' and self.kF.fittedParam is not None:
-                    return float(self.kF.fittedParam[:, idx].mean())
-                return entered
+                time0: float = 0.0, varyTime0 = False,
+                tau1: float = 10.0, fixTau1 = False,
+                amp1: float = 1.0,  fixAmp1 = False,
+                tau2: float = 100.0, fixTau2 = False,
+                amp2: float = 0.5,  fixAmp2 = False,
+                p0: float = 0.0, fixP0 = False,
+                p1: float = 0.0, fixP1 = False):
 
             self.kF.setFitParameter(fitType=FitType.ADSORPTION_DOUBLE)
-            self.kF.setFitParameter(name='time0', value=_val(varyTime0, time0, 0), fixed=varyTime0 != 'free')
-            self.kF.setFitParameter(name='tau1',  value=_val(fixTau1,   tau1,  1), fixed=fixTau1   != 'free', min=0)
-            self.kF.setFitParameter(name='amp1',  value=_val(fixAmp1,   amp1,  2), fixed=fixAmp1   != 'free', min=0)
-            self.kF.setFitParameter(name='tau2',  value=_val(fixTau2,   tau2,  3), fixed=fixTau2   != 'free', min=0)
-            self.kF.setFitParameter(name='amp2',  value=_val(fixAmp2,   amp2,  4), fixed=fixAmp2   != 'free', min=0)
-            self.kF.setFitParameter(name='p0',    value=_val(fixP0,     p0,    5), fixed=fixP0     != 'free')
-            self.kF.setFitParameter(name='p1',    value=_val(fixP1,     p1,    6), fixed=fixP1     != 'free')
+            self.kF.setFitParameter(name='time0', value=time0, fixed=varyTime0)
+            self.kF.setFitParameter(name='tau1',  value=tau1,  fixed=fixTau1, min=0)
+            self.kF.setFitParameter(name='amp1',  value=amp1,  fixed=fixAmp1, min=0)
+            self.kF.setFitParameter(name='tau2',  value=tau2,  fixed=fixTau2, min=0)
+            self.kF.setFitParameter(name='amp2',  value=amp2,  fixed=fixAmp2, min=0)
+            self.kF.setFitParameter(name='p0',    value=p0,    fixed=fixP0)
+            self.kF.setFitParameter(name='p1',    value=p1,    fixed=fixP1)
 
             self.kF.calculateFit()
             self.drawGraph()
@@ -347,6 +325,12 @@ class FitWidget(QWidget):
         self.paramTable.setEditTriggers(QTableWidget.NoEditTriggers)
         copy_shortcut = QShortcut(QKeySequence.Copy, self.paramTable)
         copy_shortcut.activated.connect(self._copyTableToClipboard)
+        self.paramTable.itemSelectionChanged.connect(self.updateStatGraph)
+
+        # stat graph (shown next to the table)
+        self.statGraph = pg.PlotWidget()
+        self.statGraph.setLabel('bottom', 'curve index')
+        self.statGraph.setMaximumWidth(300)
 
         # widgets
         self.fitParameter = fitParameter
@@ -370,16 +354,26 @@ class FitWidget(QWidget):
         loadBtn = QPushButton("← Use fitted as initial values")
         loadBtn.clicked.connect(self.loadFittedToInitial)
 
+        tableRow = QHBoxLayout()
+        tableRow.addWidget(self.paramTable, stretch=3)
+        tableRow.addWidget(self.statGraph,  stretch=1)
+
         paramPage = QWidget()
         paramPage_layout = QVBoxLayout()
-        paramPage_layout.addWidget(self.paramTable)
+        paramPage_layout.addLayout(tableRow)
         paramPage_layout.addWidget(loadBtn)
         paramPage_layout.addWidget(self.saveBox.native)
         paramPage.setLayout(paramPage_layout)
 
+        self.cleanGraph = pg.PlotWidget()
+        self.cleanGraph.setTitle('Background subtracted')
+        self.cleanGraph.setLabel('left', 'Signal', units='nm')
+        self.cleanGraph.setLabel('bottom', 'time', units='s')
+
         self.viewTab = QTabWidget()
-        self.viewTab.addTab(graphPage,  "Graph")
-        self.viewTab.addTab(paramPage, "Parameters")
+        self.viewTab.addTab(graphPage,          "Graph")
+        self.viewTab.addTab(paramPage,          "Parameters")
+        self.viewTab.addTab(self.cleanGraph,    "Clean")
 
         layout = QVBoxLayout()
         layout.addWidget(self.viewTab)
@@ -475,6 +469,84 @@ class FitWidget(QWidget):
             ))
         QApplication.clipboard().setText('\n'.join(lines))
 
+    def updateStatGraph(self):
+        '''Boxplot of the currently selected table column with all individual points.'''
+        self.statGraph.clear()
+        cols = sorted(set(item.column() for item in self.paramTable.selectedItems()))
+        if not cols:
+            return
+        col = cols[0]
+        header = self.paramTable.horizontalHeaderItem(col)
+        param_name = header.text() if header else f'col {col}'
+
+        values = []
+        for row in range(self.paramTable.rowCount()):
+            item = self.paramTable.item(row, col)
+            if item:
+                try:
+                    values.append(float(item.text()))
+                except ValueError:
+                    pass
+        if not values:
+            return
+
+        values = np.array(values)
+        n      = len(values)
+        q1     = np.percentile(values, 25)
+        median = np.percentile(values, 50)
+        q3     = np.percentile(values, 75)
+        mean   = values.mean()
+        std    = values.std()
+        iqr    = q3 - q1
+        lo     = max(values.min(), q1 - 1.5 * iqr)
+        hi     = min(values.max(), q3 + 1.5 * iqr)
+
+        w = 0.25   # half-width of the box
+
+        # IQR box (filled)
+        box = pg.BarGraphItem(x=[0], height=[q3 - q1], width=2 * w, y0=q1,
+                              brush=pg.mkBrush(100, 150, 255, 80),
+                              pen=pg.mkPen((70, 130, 180), width=2))
+        self.statGraph.addItem(box)
+
+        # median line (red)
+        self.statGraph.plot([-w, w], [median, median],
+                            pen=pg.mkPen('r', width=2))
+
+        # mean marker (red diamond)
+        self.statGraph.plot([0], [mean], pen=None,
+                            symbol='d', symbolSize=10,
+                            symbolBrush='r', symbolPen=None)
+
+        # whiskers
+        self.statGraph.plot([0, 0], [lo, q1], pen=pg.mkPen('w', width=1))
+        self.statGraph.plot([0, 0], [q3, hi], pen=pg.mkPen('w', width=1))
+
+        # whisker caps
+        cw = w * 0.5
+        self.statGraph.plot([-cw, cw], [lo, lo], pen=pg.mkPen('w', width=1))
+        self.statGraph.plot([-cw, cw], [hi, hi], pen=pg.mkPen('w', width=1))
+
+        # outliers beyond whiskers (open circles)
+        outliers = values[(values < lo) | (values > hi)]
+        if len(outliers):
+            self.statGraph.plot(np.zeros(len(outliers)), outliers, pen=None,
+                                symbol='o', symbolSize=7,
+                                symbolBrush=None, symbolPen=pg.mkPen('w'))
+
+        # all individual data points jittered on x (semi-transparent white)
+        rng     = np.random.default_rng(42)
+        jitter  = rng.uniform(-w * 0.4, w * 0.4, n)
+        scatter = pg.ScatterPlotItem(x=jitter, y=values,
+                                     pen=None, brush=pg.mkBrush(255, 255, 255, 160),
+                                     size=7)
+        self.statGraph.addItem(scatter)
+
+        self.statGraph.setTitle(f'{param_name}:  {mean:.4g} ± {std:.4g}')
+        self.statGraph.setLabel('left', param_name)
+        self.statGraph.getAxis('bottom').setTicks([[]])
+        self.statGraph.setXRange(-0.5, 0.5)
+
     def updateTable(self):
         '''Populate the Parameters tab with the current fitted values.'''
         if self.kF.fittedParam is None:
@@ -486,10 +558,31 @@ class FitWidget(QWidget):
         self.paramTable.setHorizontalHeaderLabels(param_names)
         names = (self.kF.table or {}).get('name') or [str(i) for i in range(nFit)]
         self.paramTable.setVerticalHeaderLabels([str(n) for n in names])
+        def _fmt(v):
+            s = f'{v:.6g}'
+            return s if ('.' in s or 'e' in s) else s + '.0'
+
         for i in range(nFit):
             for j in range(nParam):
-                self.paramTable.setItem(i, j, QTableWidgetItem(f'{self.kF.fittedParam[i, j]:.4g}'))
+                self.paramTable.setItem(i, j, QTableWidgetItem(_fmt(self.kF.fittedParam[i, j])))
         self.paramTable.resizeColumnsToContents()
+
+    def drawCleanGraph(self):
+        '''Plot background-subtracted signal and fit in the Clean tab.'''
+        self.cleanGraph.clear()
+        if self.kF.fittedParam is None:
+            return
+        clean_signal, clean_fit = self.kF.getCleanDataFit()
+        for ii in range(clean_signal.shape[1]):
+            pen_data = QPen()
+            pen_data.setWidth(0)
+            pen_data.setColor(QColor('White'))
+            self.cleanGraph.plot(self.kF.time, clean_signal[:, ii], pen=pen_data)
+
+            pen_fit = QPen()
+            pen_fit.setWidth(0)
+            pen_fit.setColor(QColor('Red'))
+            self.cleanGraph.plot(self.kF.time, clean_fit[:, ii], pen=pen_fit)
 
     def drawGraph(self, onlyData=False):
         ''' draw all new lines in the spectraGraph '''
@@ -497,6 +590,7 @@ class FitWidget(QWidget):
         # remove all lines
         self.graph.clear()
         self.updateTable()
+        self.drawCleanGraph()
 
 
         mypen2 = QPen()
