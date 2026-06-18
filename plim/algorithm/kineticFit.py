@@ -41,7 +41,7 @@ def functionZO(x,x0,a):
     xb = x>=x0
     xa = x< x0
     res[xa] = 0
-    res[xb] = a*x[xb]
+    res[xb] = a*(x[xb]-x0)
     return res
 
 
@@ -64,10 +64,18 @@ def functionLinearBinding(x,time0,slope,p0,p1):
 def functionDesorption(x,time0,tau,amp,p0,p1):
     return functionEDecay(x,time0,amp,tau) + functionP1(x-time0,p0,p1)
 
+def functionDoubleBinding(x,time0,tau1,amp1,tau2,amp2,p0,p1):
+    ''' double exponential association + linear background '''
+    return (functionPFO(x,time0,amp1,tau1)
+            + functionPFO(x,time0,amp2,tau2)
+            + functionP1(x-time0,p0,p1))
+
+
 class FitType(Enum):
     ADSORPTION = ("adsorption", functionBinding)
     DESORPTION = ("desorption", functionDesorption)
     LINEAR = ("linear", functionLinearBinding)
+    ADSORPTION_DOUBLE = ("adsorption_double", functionDoubleBinding)
 
     def __init__(self, label, fitFunction):
         self.label = label
@@ -150,7 +158,7 @@ class KineticFit:
                                                 for _name in result.best_values.keys()])
             except:
                 print(f'could not fit signal{ii}')
-        print(f'model paramters {self.modelParams}')
+        print(f'model parameters {self.modelParams}')
 
 
     def getFittedSignal(self,idx):
@@ -159,9 +167,17 @@ class KineticFit:
 
     def getFittedBackground(self,idx):
         _param = self.fittedParam[idx,:]*1.0
-        _param[2]= 0 # set amplitude of binding to zero
+        if self.fitType == FitType.LINEAR:
+            _param[1]= 0 # set slope of binding to zero
+        if self.fitType == FitType.ADSORPTION:
+            _param[2]= 0 # set amplitude of binding to zero
+        if self.fitType == FitType.DESORPTION:
+            _param[2]= 0 # set amplitude of desorption to zero
+        if self.fitType == FitType.ADSORPTION_DOUBLE:
+            _param[2]= 0 # amp1
+            _param[4]= 0 # amp2
         return self.model.func(self.time,*_param)
-
+        
 
     def saveFitInfo(self,folder,fileName):
         ''' save fits info into .txt file'''
@@ -203,11 +219,7 @@ class KineticFit:
            list of name of each curve
             2D numpy array with parameters of the fit for each curve '''
         name= []
-        time0 = []
-        amp = []
-        tau = []
-        p0 = []
-        p1 = []
+
         with open(folder +"/" + fileName) as infile:
             # 1. Read the very first row to get the fitType label
             # .strip() removes any hidden newline characters (\n)
