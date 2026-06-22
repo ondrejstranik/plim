@@ -68,6 +68,7 @@ class FitWidget(QWidget):
             self.kF.calculateFit()
 
             self.drawGraph()
+            self.drawCleanGraph()
 
             self.infoBox(tau= self.kF.fittedParam[:,1].mean(),
                          stdTau= self.kF.fittedParam[:,1].std(),
@@ -122,6 +123,7 @@ class FitWidget(QWidget):
             self.kF.calculateFit()
 
             self.drawGraph()
+            self.drawCleanGraph()
 
             self.infoBox2(tau= self.kF.fittedParam[:,1].mean(),
                          stdTau= self.kF.fittedParam[:,1].std(),
@@ -173,6 +175,7 @@ class FitWidget(QWidget):
             self.kF.calculateFit()
 
             self.drawGraph()
+            self.drawCleanGraph()
 
             self.infoBox3(slope= self.kF.fittedParam[:,1].mean(),
                          stdSlope= self.kF.fittedParam[:,1].std(),
@@ -228,6 +231,7 @@ class FitWidget(QWidget):
 
             self.kF.calculateFit()
             self.drawGraph()
+            self.drawCleanGraph()
 
             self.infoBox4(
                 tau1    = self.kF.fittedParam[:,1].mean(),
@@ -317,7 +321,7 @@ class FitWidget(QWidget):
         # add graph
         self.graph = pg.PlotWidget()
         self.graph.setTitle(f'Fits')
-        self.graph.setLabel('left', 'Signal', units='nm')
+        self.graph.setLabel('left', 'R signal', units='nm')
         self.graph.setLabel('bottom', 'time', units= 's')
 
         # parameter table
@@ -367,7 +371,7 @@ class FitWidget(QWidget):
 
         self.cleanGraph = pg.PlotWidget()
         self.cleanGraph.setTitle('Background subtracted')
-        self.cleanGraph.setLabel('left', 'Signal', units='nm')
+        self.cleanGraph.setLabel('left', 'R signal', units='nm')
         self.cleanGraph.setLabel('bottom', 'time', units='s')
 
         self.viewTab = QTabWidget()
@@ -527,13 +531,6 @@ class FitWidget(QWidget):
         self.statGraph.plot([-cw, cw], [lo, lo], pen=pg.mkPen('w', width=1))
         self.statGraph.plot([-cw, cw], [hi, hi], pen=pg.mkPen('w', width=1))
 
-        # outliers beyond whiskers (open circles)
-        outliers = values[(values < lo) | (values > hi)]
-        if len(outliers):
-            self.statGraph.plot(np.zeros(len(outliers)), outliers, pen=None,
-                                symbol='o', symbolSize=7,
-                                symbolBrush=None, symbolPen=pg.mkPen('w'))
-
         # all individual data points jittered on x (semi-transparent white)
         rng     = np.random.default_rng(42)
         jitter  = rng.uniform(-w * 0.4, w * 0.4, n)
@@ -552,7 +549,7 @@ class FitWidget(QWidget):
         if self.kF.fittedParam is None:
             return
         nFit, nParam = self.kF.fittedParam.shape
-        param_names = self.kF.fitType.parameters[1:]  # skip 'x'
+        param_names = self.kF.fitType.parameters
         self.paramTable.setRowCount(nFit)
         self.paramTable.setColumnCount(nParam)
         self.paramTable.setHorizontalHeaderLabels(param_names)
@@ -590,7 +587,6 @@ class FitWidget(QWidget):
         # remove all lines
         self.graph.clear()
         self.updateTable()
-        self.drawCleanGraph()
 
 
         mypen2 = QPen()

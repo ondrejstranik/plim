@@ -81,7 +81,7 @@ class FitType(Enum):
         self.label = label
         self.function = fitFunction
         sig = inspect.signature(fitFunction)
-        self.parameters = [p for p in sig.parameters.keys() if p != 'self']
+        self.parameters = [p for p in sig.parameters.keys() if p not in ('self', 'x')]
 
     @classmethod
     def from_label(cls, label_string):
@@ -154,8 +154,13 @@ class KineticFit:
         for ii in range(nFit):
             try:
                 result = self.model.fit(self.signal[:,ii],self.modelParams, x= self.time)
-                self.fittedParam[ii,:] = np.array([result.best_values[_name] 
+                self.fittedParam[ii,:] = np.array([result.best_values[_name]
                                                 for _name in result.best_values.keys()])
+                # for double exponential ensure tau1 <= tau2
+                if self.fitType == FitType.ADSORPTION_DOUBLE:
+                    if self.fittedParam[ii, 1] > self.fittedParam[ii, 3]:
+                        (self.fittedParam[ii, 1], self.fittedParam[ii, 3]) = (self.fittedParam[ii, 3], self.fittedParam[ii, 1])
+                        (self.fittedParam[ii, 2], self.fittedParam[ii, 4]) = (self.fittedParam[ii, 4], self.fittedParam[ii, 2])
             except:
                 print(f'could not fit signal{ii}')
         print(f'model parameters {self.modelParams}')
