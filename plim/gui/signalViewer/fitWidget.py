@@ -287,11 +287,13 @@ class FitWidget(QWidget):
                             (time<(self.dataObject.sD.evalTime + self.dataObject.sD.dTime)))
 
                 # copy the name only 
-                table = {'name': [self.dataObject.sD.table["name"][ii] for ii in range(len(_vis)) if _vis[ii]==True]}
+                table = {'name': [self.dataObject.sD.table["name"][ii] for ii in range(len(_vis)) if _vis[ii]==True],
+                         'position': [self.dataObject.sD.table["position"][ii] for ii in range(len(_vis)) if _vis[ii]==True]}
 
                 if average:
                     signal = np.mean(signal,axis=1)[:,None]
-                    table = {'name': table['name'][0]}
+                    table = {'name': table['name'][0],
+                             'position': table['position'][0]}
 
                 self.setData(signal[timeMask,:],time[timeMask],table=table)
 
@@ -331,10 +333,27 @@ class FitWidget(QWidget):
         copy_shortcut.activated.connect(self._copyTableToClipboard)
         self.paramTable.itemSelectionChanged.connect(self.updateStatGraph)
 
-        # stat graph (shown next to the table)
+        # stat graph (boxplot, shown next to the table)
         self.statGraph = pg.PlotWidget()
         self.statGraph.setLabel('bottom', 'curve index')
         self.statGraph.setMaximumWidth(300)
+
+        # spatial map graph (colour-coded by selected parameter)
+        self.mapWidget = pg.GraphicsLayoutWidget()
+        self.mapPlot = self.mapWidget.addPlot(row=0, col=0)
+        self.mapPlot.setAspectLocked(True)
+        self.mapPlot.invertY(True)
+        self.mapPlot.setLabel('bottom', 'y (µm)')
+        self.mapPlot.setLabel('left',   'x (µm)')
+        self.mapColorBar = pg.ColorBarItem(values=(0, 1), colorMap='viridis',
+                                           orientation='horizontal', interactive=False)
+        self.mapWidget.addItem(self.mapColorBar, row=1, col=0)
+        self.mapWidget.ci.layout.setRowMaximumHeight(1, 35)
+        self._mapValues    = None
+        self._mapPositions = None
+        self.statGraph.getViewBox().sigYRangeChanged.connect(
+            lambda _, r: self._redrawMap(r[0], r[1])
+        )
 
         # widgets
         self.fitParameter = fitParameter
@@ -359,8 +378,9 @@ class FitWidget(QWidget):
         loadBtn.clicked.connect(self.loadFittedToInitial)
 
         tableRow = QHBoxLayout()
-        tableRow.addWidget(self.paramTable, stretch=3)
+        tableRow.addWidget(self.paramTable, stretch=2)
         tableRow.addWidget(self.statGraph,  stretch=1)
+        tableRow.addWidget(self.mapWidget,  stretch=2)
 
         paramPage = QWidget()
         paramPage_layout = QVBoxLayout()
@@ -543,6 +563,41 @@ class FitWidget(QWidget):
         self.statGraph.setLabel('left', param_name)
         self.statGraph.getAxis('bottom').setTicks([[]])
         self.statGraph.setXRange(-0.5, 0.5)
+
+        # spatial map coloured by parameter value
+        self.mapPlot.clear()
+        self._mapValues    = None
+        self._mapPositions = None
+        positions = (self.kF.table or {}).get('position')
+        if positions is not None and len(positions) == len(values):
+            self._mapValues    = values
+            self._mapPositions = np.array(positions, dtype=float)
+            self._mapParamName = param_name
+            val_min, val_max = values.min(), values.max()
+            self.mapColorBar.setLevels((val_min, val_max))
+            self._redrawMap(val_min, val_max)
+
+    def _redrawMap(self, val_min, val_max):
+        '''Redraw scatter map spots using stored values/positions and the given colour range.'''
+        self.mapPlot.clear()
+        if self._mapValues is None or self._mapPositions is None:
+            return
+        values = self._mapValues
+        pos    = self._mapPositions
+        span   = val_max - val_min
+        norm   = np.zeros(len(values)) if span == 0 else (values - val_min) / span
+        norm   = np.clip(norm, 0.0, 1.0)
+        cmap   = pg.colormap.get('viridis')
+        rgba   = cmap.map(norm, mode='byte')
+        spots  = [{'pos': (pos[i, 1], pos[i, 0]),
+                   'brush': pg.mkBrush(int(rgba[i, 0]), int(rgba[i, 1]),
+                                       int(rgba[i, 2]), 220),
+                   'pen': None, 'size': 12}
+                  for i in range(len(values))]
+        self.mapPlot.addItem(pg.ScatterPlotItem(spots=spots))
+        param_name = getattr(self, '_mapParamName', '')
+        self.mapPlot.setTitle(f'{param_name}  [{val_min:.4g} … {val_max:.4g}]')
+        self.mapColorBar.setLevels((val_min, val_max))
 
     def updateTable(self):
         '''Populate the Parameters tab with the current fitted values.'''

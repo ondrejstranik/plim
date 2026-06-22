@@ -226,6 +226,9 @@ class Window(QMainWindow):
         self.sD.getNoise()
         self.sD.setTable(table=self.sD.table)
 
+        # add position the sD so that it can be transfered to the fitWidget
+        self.sD.table['position'] = self.spotPosition
+
        # copy spotspectra data parameters as well
         self.sS = _fileData.spotSpectra
         self.sS.setMask()
