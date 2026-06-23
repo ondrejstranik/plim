@@ -5,7 +5,7 @@ class for viewing signals and their Fits
 import pyqtgraph as pg
 import pyqtgraph.exporters
 from PyQt5.QtGui import QColor, QPen
-from qtpy.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QFileDialog, QTabWidget, QTableWidget, QTableWidgetItem, QShortcut, QApplication, QPushButton
+from qtpy.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QFileDialog, QTabWidget, QTableWidget, QTableWidgetItem, QShortcut, QApplication, QPushButton, QComboBox, QLabel
 from qtpy.QtGui import QKeySequence
 from qtpy import QtCore
 from magicgui import magicgui
@@ -70,30 +70,10 @@ class FitWidget(QWidget):
             self.drawGraph()
             self.drawCleanGraph()
 
-            self.infoBox(tau= self.kF.fittedParam[:,1].mean(),
-                         stdTau= self.kF.fittedParam[:,1].std(),
-                         amp= self.kF.fittedParam[:,2].mean(),
-                         stdAmp= self.kF.fittedParam[:,2].std(),
-                         drift= self.kF.fittedParam[:,4].mean(),
-                         stdDrift= self.kF.fittedParam[:,4].std(),
-            )
             print('fitted the data')
 
             print(f'fitted parameters {self.kF.fittedParam}')
 
-
-        @magicgui(layout='horizontal', call_button=False,
-                  tau = {'label':'tau','widget_type': 'Label'},
-                  amp = {'label':'amp','widget_type': 'Label'},
-                  drift = {'label':'drift','widget_type': 'Label'},
-                  stdTau = {'label':' ','widget_type': 'Label'},
-                  stdAmp = {'label':' ','widget_type': 'Label'},
-                  stdDrift = {'label':' ','widget_type': 'Label'},
-        )
-        def infoBox(tau = 0, stdTau= '', amp=0, stdAmp='', drift=0, stdDrift=''):
-            self.infoBox.tau.value = f'{tau:.1f} ± {stdTau:.1f} s' 
-            self.infoBox.amp.value = f'{amp*1000:.1f} ± {stdAmp*1000:.1f} pm' 
-            self.infoBox.drift.value = f'{drift*1000*60:.1f} ± {stdDrift*1000*60:.1f} pm/min' 
 
         @magicgui(layout='horizontal', call_button='fit',
                   time0 = {'max':1e6},
@@ -125,30 +105,10 @@ class FitWidget(QWidget):
             self.drawGraph()
             self.drawCleanGraph()
 
-            self.infoBox2(tau= self.kF.fittedParam[:,1].mean(),
-                         stdTau= self.kF.fittedParam[:,1].std(),
-                         amp= self.kF.fittedParam[:,2].mean(),
-                         stdAmp= self.kF.fittedParam[:,2].std(),
-                         drift= self.kF.fittedParam[:,4].mean(),
-                         stdDrift= self.kF.fittedParam[:,4].std(),
-            )
             print('fitted the data')
 
             print(f'fitted parameters {self.kF.fittedParam}')
 
-
-        @magicgui(layout='horizontal', call_button=False,
-                  tau = {'label':'tau','widget_type': 'Label'},
-                  amp = {'label':'amp','widget_type': 'Label'},
-                  drift = {'label':'drift','widget_type': 'Label'},
-                  stdTau = {'label':' ','widget_type': 'Label'},
-                  stdAmp = {'label':' ','widget_type': 'Label'},
-                  stdDrift = {'label':' ','widget_type': 'Label'},
-        )
-        def infoBox2(tau = 0, stdTau= '', amp=0, stdAmp='', drift=0, stdDrift=''):
-            self.infoBox2.tau.value = f'{tau:.1f} ± {stdTau:.1f} s' 
-            self.infoBox2.amp.value = f'{amp*1000:.1f} ± {stdAmp*1000:.1f} pm' 
-            self.infoBox2.drift.value = f'{drift*1000*60:.1f} ± {stdDrift*1000*60:.1f} pm/min'
 
         @magicgui(layout='horizontal', call_button='fit',
                   time0 = {'max':1e6},
@@ -177,25 +137,10 @@ class FitWidget(QWidget):
             self.drawGraph()
             self.drawCleanGraph()
 
-            self.infoBox3(slope= self.kF.fittedParam[:,1].mean(),
-                         stdSlope= self.kF.fittedParam[:,1].std(),
-                          drift= self.kF.fittedParam[:,3].mean(),
-                         stdDrift= self.kF.fittedParam[:,3].std(),
-            )
             print('fitted the data')
 
             print(f'fitted parameters {self.kF.fittedParam}')
 
-
-        @magicgui(layout='horizontal', call_button=False,
-                  slope = {'label':'tau','widget_type': 'Label'},
-                  drift = {'label':'drift','widget_type': 'Label'},
-                  stdSlope = {'label':' ','widget_type': 'Label'},
-                  stdDrift = {'label':' ','widget_type': 'Label'},
-        )
-        def infoBox3(slope = 0, stdSlope= '', drift=0, stdDrift=''):
-            self.infoBox3.slope.value = f'{slope:.1f} ± {stdSlope:.1f} nm/s' 
-            self.infoBox3.drift.value = f'{drift*1000*60:.1f} ± {stdDrift*1000*60:.1f} pm/min'
 
         @magicgui(layout='horizontal', call_button='fit',
                   time0 = {'max':1e6},
@@ -233,41 +178,8 @@ class FitWidget(QWidget):
             self.drawGraph()
             self.drawCleanGraph()
 
-            self.infoBox4(
-                tau1    = self.kF.fittedParam[:,1].mean(),
-                stdTau1 = self.kF.fittedParam[:,1].std(),
-                amp1    = self.kF.fittedParam[:,2].mean(),
-                stdAmp1 = self.kF.fittedParam[:,2].std(),
-                tau2    = self.kF.fittedParam[:,3].mean(),
-                stdTau2 = self.kF.fittedParam[:,3].std(),
-                amp2    = self.kF.fittedParam[:,4].mean(),
-                stdAmp2 = self.kF.fittedParam[:,4].std(),
-                drift   = self.kF.fittedParam[:,6].mean(),
-                stdDrift= self.kF.fittedParam[:,6].std(),
-            )
             print(f'fitted parameters {self.kF.fittedParam}')
 
-
-        @magicgui(layout='horizontal', call_button=False,
-                  tau1    = {'label':'tau1',  'widget_type': 'Label'},
-                  stdTau1 = {'label':' ',     'widget_type': 'Label'},
-                  amp1    = {'label':'amp1',  'widget_type': 'Label'},
-                  stdAmp1 = {'label':' ',     'widget_type': 'Label'},
-                  tau2    = {'label':'tau2',  'widget_type': 'Label'},
-                  stdTau2 = {'label':' ',     'widget_type': 'Label'},
-                  amp2    = {'label':'amp2',  'widget_type': 'Label'},
-                  stdAmp2 = {'label':' ',     'widget_type': 'Label'},
-                  drift   = {'label':'drift', 'widget_type': 'Label'},
-                  stdDrift= {'label':' ',     'widget_type': 'Label'},
-        )
-        def infoBox4(tau1=0, stdTau1='', amp1=0, stdAmp1='',
-                     tau2=0, stdTau2='', amp2=0, stdAmp2='',
-                     drift=0, stdDrift=''):
-            self.infoBox4.tau1.value    = f'{tau1:.1f} ± {stdTau1:.1f} s'
-            self.infoBox4.amp1.value    = f'{amp1*1000:.1f} ± {stdAmp1*1000:.1f} pm'
-            self.infoBox4.tau2.value    = f'{tau2:.1f} ± {stdTau2:.1f} s'
-            self.infoBox4.amp2.value    = f'{amp2*1000:.1f} ± {stdAmp2*1000:.1f} pm'
-            self.infoBox4.drift.value   = f'{drift*1000*60:.1f} ± {stdDrift*1000*60:.1f} pm/min'
 
         @magicgui(call_button='transfer data')
         def dataBox(average:bool = False):
@@ -286,7 +198,7 @@ class FitWidget(QWidget):
                 timeMask = ((time>self.dataObject.sD.evalTime) & 
                             (time<(self.dataObject.sD.evalTime + self.dataObject.sD.dTime)))
 
-                # copy the name only 
+                # copy the name and position
                 table = {'name': [self.dataObject.sD.table["name"][ii] for ii in range(len(_vis)) if _vis[ii]==True],
                          'position': [self.dataObject.sD.table["position"][ii] for ii in range(len(_vis)) if _vis[ii]==True]}
 
@@ -357,13 +269,9 @@ class FitWidget(QWidget):
 
         # widgets
         self.fitParameter = fitParameter
-        self.infoBox = infoBox
         self.fitParameter2 = fitParameter2
-        self.infoBox2 = infoBox2
         self.fitParameter3 = fitParameter3
-        self.infoBox3 = infoBox3
         self.fitParameter4 = fitParameter4
-        self.infoBox4 = infoBox4
 
         self.dataBox = dataBox
         self.saveBox = saveBox
@@ -377,6 +285,16 @@ class FitWidget(QWidget):
         loadBtn = QPushButton("← Use fitted as initial values")
         loadBtn.clicked.connect(self.loadFittedToInitial)
 
+        self.statSelector = QComboBox()
+        self.statSelector.addItems(['average', 'median'])
+        self.statSelector.currentIndexChanged.connect(self.updateStatGraph)
+
+        loadRow = QHBoxLayout()
+        loadRow.addWidget(loadBtn)
+        loadRow.addWidget(QLabel("transfer:"))
+        loadRow.addWidget(self.statSelector)
+        loadRow.addStretch()
+
         tableRow = QHBoxLayout()
         tableRow.addWidget(self.paramTable, stretch=2)
         tableRow.addWidget(self.statGraph,  stretch=1)
@@ -385,7 +303,7 @@ class FitWidget(QWidget):
         paramPage = QWidget()
         paramPage_layout = QVBoxLayout()
         paramPage_layout.addLayout(tableRow)
-        paramPage_layout.addWidget(loadBtn)
+        paramPage_layout.addLayout(loadRow)
         paramPage_layout.addWidget(self.saveBox.native)
         paramPage.setLayout(paramPage_layout)
 
@@ -406,25 +324,21 @@ class FitWidget(QWidget):
 
         tab1 = QWidget()
         tab1_layout = QVBoxLayout()
-        tab1_layout.addWidget(self.infoBox.native)
         tab1_layout.addWidget(self.fitParameter.native)
         tab1.setLayout(tab1_layout)
 
         tab2 = QWidget()
         tab2_layout = QVBoxLayout()
-        tab2_layout.addWidget(self.infoBox2.native)
         tab2_layout.addWidget(self.fitParameter2.native)
         tab2.setLayout(tab2_layout)
 
         tab3 = QWidget()
         tab3_layout = QVBoxLayout()
-        tab3_layout.addWidget(self.infoBox3.native)
         tab3_layout.addWidget(self.fitParameter3.native)
         tab3.setLayout(tab3_layout)
 
         tab4 = QWidget()
         tab4_layout = QVBoxLayout()
-        tab4_layout.addWidget(self.infoBox4.native)
         tab4_layout.addWidget(self.fitParameter4.native)
         tab4.setLayout(tab4_layout)
 
@@ -446,10 +360,13 @@ class FitWidget(QWidget):
             pass  # value outside widget's allowed range — leave unchanged
 
     def loadFittedToInitial(self):
-        '''Push mean fitted parameter values back into the initial-value spin boxes.'''
+        '''Push average or median fitted parameter values back into the initial-value spin boxes.'''
         if self.kF.fittedParam is None:
             return
-        m = self.kF.fittedParam.mean(axis=0)
+        if self.statSelector.currentText() == 'median':
+            m = np.median(self.kF.fittedParam, axis=0)
+        else:
+            m = self.kF.fittedParam.mean(axis=0)
         s = self._set_value
         ft = self.kF.fitType
         if ft == FitType.ADSORPTION:
@@ -559,7 +476,10 @@ class FitWidget(QWidget):
                                      size=7)
         self.statGraph.addItem(scatter)
 
-        self.statGraph.setTitle(f'{param_name}:  {mean:.4g} ± {std:.4g}')
+        use_median = self.statSelector.currentText() == 'median'
+        centre     = median if use_median else mean
+        label      = 'median' if use_median else 'mean'
+        self.statGraph.setTitle(f'{param_name}:  {label}={centre:.4g} ± {std:.4g}')
         self.statGraph.setLabel('left', param_name)
         self.statGraph.getAxis('bottom').setTicks([[]])
         self.statGraph.setXRange(-0.5, 0.5)
