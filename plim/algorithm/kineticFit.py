@@ -7,6 +7,7 @@ from scipy.optimize import curve_fit
 from scipy.special import erf
 import inspect
 import csv
+import pickle
 from lmfit import Model
 from enum import Enum
 import inspect
@@ -201,67 +202,72 @@ class KineticFit:
         return self.model.func(self.time,*_param)
         
 
-    def saveFitInfo(self,folder,fileName):
+    def saveFitInfo(self, folder, fileName):
         ''' save fits info into .txt file'''
-        # save info table
-        # structure is following
-        # fitType.label
-        # header - name param1 param2 ....
-        # value - name param1 param2 ... (curve1)
-        # value - name param1 param2 ... (curve2)
-        # value - name param1 param2 ... (curveN)
-        
-        # 2. Build the dictionary dynamically
-        _dataDict = {'name': self.table['name']}
-
-        # 3. Loop through the parameters and map them to the column index
+        _dataDict = {}
+        if self.table:
+            for key, val in self.table.items():
+                _dataDict[key] = val
         for index, param in enumerate(self.fitType.parameters):
-            _dataDict[param] = self.fittedParam[:, index]
+            _dataDict[param + '_param'] = self.fittedParam[:, index]
 
-        with open(folder +"/" + fileName, "w") as outfile:
-        
-            # pass the csv file to csv.writer function.
-            #writer = csv.writer(outfile, delimiter ='\t')
-            writer = csv.writer(outfile, delimiter =',')
-            # write label of the fitting type
-            writer.writerow(self.fitType.label)            
-            # pass the dictionary keys to writerow
-            # function to frame the columns of the csv file
+        with open(folder + "/" + fileName, "w", newline='') as outfile:
+            outfile.write(self.fitType.label + '\n')
+            writer = csv.writer(outfile, delimiter=',')
             writer.writerow(_dataDict.keys())
-            # make use of writerows function to append
-            # the remaining values to the corresponding
-            # columns using zip function.
             writer.writerows(zip(*_dataDict.values()))
         print('fit info exported')
 
-    def loadFitInfo(self,folder,fileName):
+    def saveFit(self, filePath):
+        '''Save the full KineticFit state to a file.'''
+        state = {
+            'time':        self.time,
+            'signal':      self.signal,
+            'table':       self.table,
+            'fittedParam': self.fittedParam,
+            'fitType':     self.fitType,
+            'modelParams': self.modelParams,
+        }
+        with open(filePath, 'wb') as f:
+            pickle.dump(state, f)
+
+    @classmethod
+    def loadFit(cls, filePath):
+        '''Load a KineticFit instance from a file saved with saveFit.'''
+        with open(filePath, 'rb') as f:
+            state = pickle.load(f)
+        obj = cls()
+        obj.setFitFunction(state['fitType'])
+        obj.time        = state['time']
+        obj.signal      = state['signal']
+        obj.table       = state['table']
+        obj.fittedParam = state['fittedParam']
+        obj.modelParams = state['modelParams']
+        return obj
+
+    def loadFitInfo(self, folder, fileName):
         ''' load fit info
          return
-          fitType.label (string)
-           list of name of each curve
-            2D numpy array with parameters of the fit for each curve '''
-        name= []
-
-        with open(folder +"/" + fileName) as infile:
-            # 1. Read the very first row to get the fitType label
-            # .strip() removes any hidden newline characters (\n)
-            raw_label = infile.readline().strip()
-            # Clean up commas if it was saved as a CSV row (e.g., "my_label,")
-            fitTypeLabel = raw_label.split(',')[0]
-            
+          fitTypeLabel (string)
+          table (dict of lists, columns without _param suffix)
+          fittedParam (2D numpy array, columns with _param suffix) '''
+        with open(folder + "/" + fileName) as infile:
+            fitTypeLabel = infile.readline().strip()
             reader = csv.DictReader(infile, delimiter=',')
 
-            # get the names of the parameters (without the name parameter)
-            param_columns_dict = {key: [] for key in reader.fieldnames if key != 'name'}
+            table_cols = {key: [] for key in reader.fieldnames if not key.endswith('_param')}
+            param_cols = {key: [] for key in reader.fieldnames if key.endswith('_param')}
 
             for row in reader:
-                for param_key in param_columns_dict.keys():
-                    param_columns_dict[param_key].append(float(row[param_key]))
+                for key in table_cols:
+                    table_cols[key].append(row[key])
+                for key in param_cols:
+                    param_cols[key].append(float(row[key]))
 
-            fittedParam = np.array(list(param_columns_dict.values()), dtype=float).T
+            table = table_cols
+            fittedParam = np.array(list(param_cols.values()), dtype=float).T
 
-
-        return (fitTypeLabel, name, fittedParam)
+        return (fitTypeLabel, table, fittedParam)
 
 if __name__ == "__main__":
     pass

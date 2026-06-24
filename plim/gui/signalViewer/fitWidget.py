@@ -224,8 +224,12 @@ class FitWidget(QWidget):
                 self.kF.saveFitInfo(str(myPath.parent), str(myPath.name)+r"_data.txt")
                 print('fit info exported')
 
+                self.kF.saveFit(str(myPath.parent)+'/'+ str(myPath.name)+r"_fit.pkl")
+                print('fit exported')
+
+
                 # save signal graph
-                exporter = pyqtgraph.exporters.ImageExporter(self.graph.plotItem)
+                exporter = pyqtgraph.exporters.ImageExporter(self.cleanGraph.plotItem)
                 # set export parameters if needed
                 #exporter.parameters()['width'] = 100   # (note this also affects height parameter)
                 exporter.export(str(myPath.parent /myPath.name)  +r"_graph.png")
