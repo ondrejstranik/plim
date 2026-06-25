@@ -269,6 +269,45 @@ class KineticFit:
 
         return (fitTypeLabel, table, fittedParam)
 
+    def getParamStats(self, name):
+        '''Return descriptive statistics for a fitted parameter.
+
+        Parameters
+        ----------
+        name : str
+            Parameter name (must be in self.fitType.parameters).
+
+        Returns
+        -------
+        dict with keys: mean, median, std, iqr, q1, q3, lo, hi, n
+            lo/hi are the Tukey whisker ends (1.5 * IQR beyond Q1/Q3).
+        '''
+        if self.fittedParam is None:
+            raise ValueError('No fitted parameters available.')
+        if name not in self.fitType.parameters:
+            raise ValueError(f"'{name}' is not a parameter of {self.fitType}. "
+                             f"Available: {self.fitType.parameters}")
+        idx    = self.fitType.parameters.index(name)
+        values = self.fittedParam[:, idx]
+
+        q1     = np.percentile(values, 25)
+        median = np.percentile(values, 50)
+        q3     = np.percentile(values, 75)
+        iqr    = q3 - q1
+
+        return {
+            'values': values,
+            'mean':   float(values.mean()),
+            'median': float(median),
+            'std':    float(values.std()),
+            'iqr':    float(iqr),
+            'q1':     float(q1),
+            'q3':     float(q3),
+            'lo':     float(max(values.min(), q1 - 1.5 * iqr)),
+            'hi':     float(min(values.max(), q3 + 1.5 * iqr)),
+            'n':      int(len(values)),
+        }
+
 if __name__ == "__main__":
     pass
 

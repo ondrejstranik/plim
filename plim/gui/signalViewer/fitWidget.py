@@ -421,30 +421,21 @@ class FitWidget(QWidget):
         if not cols:
             return
         col = cols[0]
-        header = self.paramTable.horizontalHeaderItem(col)
-        param_name = header.text() if header else f'col {col}'
 
-        values = []
-        for row in range(self.paramTable.rowCount()):
-            item = self.paramTable.item(row, col)
-            if item:
-                try:
-                    values.append(float(item.text()))
-                except ValueError:
-                    pass
-        if not values:
+        if self.kF.fittedParam is None or col >= len(self.kF.fitType.parameters):
             return
 
-        values = np.array(values)
-        n      = len(values)
-        q1     = np.percentile(values, 25)
-        median = np.percentile(values, 50)
-        q3     = np.percentile(values, 75)
-        mean   = values.mean()
-        std    = values.std()
-        iqr    = q3 - q1
-        lo     = max(values.min(), q1 - 1.5 * iqr)
-        hi     = min(values.max(), q3 + 1.5 * iqr)
+        param_name = self.kF.fitType.parameters[col]
+        st     = self.kF.getParamStats(param_name)
+        values = st['values']
+        n      = st['n']
+        mean   = st['mean']
+        median = st['median']
+        std    = st['std']
+        q1     = st['q1']
+        q3     = st['q3']
+        lo     = st['lo']
+        hi     = st['hi']
 
         w = 0.25   # half-width of the box
 

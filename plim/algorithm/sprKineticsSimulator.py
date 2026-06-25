@@ -19,25 +19,25 @@ class SPRKineticsSimulator:
 
     Parameters
     ----------
-    ka    : float  Association rate constant  (M⁻¹ s⁻¹)
-    kd    : float  Dissociation rate constant (s⁻¹)
+    kon   : float  Association rate constant  (M⁻¹ s⁻¹)
+    koff  : float  Dissociation rate constant (s⁻¹)
     Rmax  : float  Maximum SPR response       (nm)
     ka2   : float  Forward conformational rate (s⁻¹)  [two_state only]
     kd2   : float  Reverse conformational rate (s⁻¹)  [two_state only]
     km    : float  Mass transfer coefficient  (nm M⁻¹ s⁻¹)  [transport only];
-                   same dimension as ka*Rmax — transport-limited when km << ka*Rmax
+                   same dimension as kon*Rmax — transport-limited when km << kon*Rmax
     model : str    'langmuir', 'two_state', or 'transport'
     dt    : float  Time resolution             (s)
     """
 
     MODELS = ('langmuir', 'two_state', 'transport')
 
-    def __init__(self, ka=1e4, kd=1e-3, Rmax=1.0,
+    def __init__(self, kon=1e4, koff=1e-3, Rmax=1.0,
                  ka2=0.0, kd2=0.0, km=1e3, model='langmuir', dt=1.0):
         if model not in self.MODELS:
             raise ValueError(f"model must be one of {self.MODELS}")
-        self.ka    = float(ka)
-        self.kd    = float(kd)
+        self.kon   = float(kon)
+        self.koff  = float(koff)
         self.Rmax  = float(Rmax)
         self.ka2   = float(ka2)
         self.kd2   = float(kd2)
@@ -48,19 +48,50 @@ class SPRKineticsSimulator:
     # ── Public properties ────────────────────────────────────────────────────
 
     @property
-    def KD(self):
+    def Kd(self):
         """Equilibrium dissociation constant (M)."""
-        return self.kd / self.ka
+        return self.koff / self.kon
+
+    @property
+    def Kd_apparent(self):
+        """Apparent Kd including the two-state correction (M).
+
+        For langmuir/transport: same as Kd.
+        For two_state: Kd_app = Kd * kd2 / (kd2 + ka2)  (tighter than Kd).
+        """
+        if self.model == 'two_state' and (self.ka2 + self.kd2) > 0:
+            return self.Kd * self.kd2 / (self.kd2 + self.ka2)
+        return self.Kd
 
     def Req(self, concentration):
         """Steady-state response at the given analyte concentration (nm)."""
         C = float(concentration)
-        return self.Rmax * C / (self.KD + C)
+        return self.Rmax * C / (self.Kd_apparent + C)
+
+    def simulate_isotherm(self, concentrations):
+        """Compute the Langmuir isotherm (equilibrium binding curve).
+
+        Returns the steady-state SPR response R_eq for each analyte
+        concentration, using the model-appropriate apparent Kd.
+
+        Parameters
+        ----------
+        concentrations : array-like  Analyte concentrations (M).
+
+        Returns
+        -------
+        c    : ndarray (N,)  Concentrations (M).
+        Req  : ndarray (N,)  Equilibrium response (nm).
+        """
+        c   = np.asarray(concentrations, dtype=float).ravel()
+        Req = self.Rmax * c / (self.Kd_apparent + c)
+        return c, Req
 
     # ── Main simulation entry point ──────────────────────────────────────────
 
     def simulate(self, durations, concentrations, bulk_n,
-                 bulk_sensitivity=0.0, noise_std=0.0, rng_seed=None):
+                 bulk_sensitivity=0.0, noise_std=0.0, rng_seed=None,
+                 t_sample=None):
         """Simulate an SPR experiment defined as a sequence of sections.
 
         Each section has a duration, an analyte concentration (drives surface
@@ -117,6 +148,12 @@ class SPRKineticsSimulator:
         time   = np.concatenate(time_segments)
         signal = np.concatenate(signal_segments)
 
+        if t_sample is not None:
+            n = max(1, round(t_sample / self.dt))
+            trim = (len(time) // n) * n
+            time   = time[:trim].reshape(-1, n).mean(axis=1)
+            signal = signal[:trim].reshape(-1, n).mean(axis=1)
+
         if noise_std > 0:
             signal += rng.normal(0.0, noise_std, size=signal.shape)
 
@@ -126,12 +163,12 @@ class SPRKineticsSimulator:
 
     def _langmuir_phase(self, C, duration, R0, t_offset):
         """Analytical Langmuir phase solution."""
-        t = np.arange(0.0, duration + self.dt * 0.5, self.dt)
-        kobs = self.ka * C + self.kd
+        t    = np.arange(0.0, duration + self.dt * 0.5, self.dt)
+        kobs = self.kon * C + self.koff
         if kobs < 1e-30:
             signal = np.full_like(t, R0)
         else:
-            Req = self.Rmax * self.ka * C / kobs   # = 0 when C = 0
+            Req    = self.Rmax * self.kon * C / kobs   # = 0 when C = 0
             signal = Req + (R0 - Req) * np.exp(-kobs * t)
 
         R_end = float(signal[-1])
@@ -143,17 +180,17 @@ class SPRKineticsSimulator:
         """Numerical integration for the two-film transport-limited model.
 
         Surface ODE (quasi-steady-state transport layer):
-            dR/dt = km * [ka * (Rmax - R) * C - kd * R] / (km + ka * (Rmax - R))
+            dR/dt = km * [kon * (Rmax - R) * C - koff * R] / (km + kon * (Rmax - R))
 
         Limits:
-            km >> ka*(Rmax-R)  ->  pure Langmuir
-            km << ka*(Rmax-R)  ->  dR/dt = km * C  (transport-limited, tau independent of C)
+            km >> kon*(Rmax-R)  ->  pure Langmuir
+            km << kon*(Rmax-R)  ->  dR/dt = km * C  (transport-limited, tau independent of C)
         """
         def odes(t, y):
             R     = y[0]
             Rfree = self.Rmax - R
-            denom = self.km + self.ka * Rfree
-            dR    = self.km * (self.ka * Rfree * C - self.kd * R) / denom
+            denom = self.km + self.kon * Rfree
+            dR    = self.km * (self.kon * Rfree * C - self.koff * R) / denom
             return [dR]
 
         t_eval = np.arange(0.0, duration + self.dt * 0.5, self.dt)
@@ -169,7 +206,7 @@ class SPRKineticsSimulator:
         def odes(t, y):
             R1, R2 = y
             Rfree = self.Rmax - R1 - R2
-            dR1 = self.ka * C * Rfree - self.kd * R1 - self.ka2 * R1 + self.kd2 * R2
+            dR1 = self.kon * C * Rfree - self.koff * R1 - self.ka2 * R1 + self.kd2 * R2
             dR2 = self.ka2 * R1 - self.kd2 * R2
             return [dR1, dR2]
 
@@ -178,48 +215,66 @@ class SPRKineticsSimulator:
                         method='RK45', rtol=1e-8, atol=1e-10, dense_output=False)
         R1, R2 = sol.y
         signal = R1 + R2
-        R_end = np.array([R1[-1], R2[-1]])
+        R_end  = np.array([R1[-1], R2[-1]])
         return sol.t + t_offset, signal, R_end
 
 # ── Usage example ─────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
 
-    # 40 bp ssDNA — strongly transport-limited model demonstrating that
-    # 1 mM and 2 mM look indistinguishable (both saturate in ~3 s of a 300 s window)
-    # ka = 2e5 M⁻¹s⁻¹, kd = 1e-4 s⁻¹  →  KD = 0.5 nM
-    # km = 1e3 nm M⁻¹ s⁻¹  (km / (ka*Rmax) ≈ 0.002 → strongly transport-limited)
-    sim = SPRKineticsSimulator(
-        ka=2e5, kd=1e-4, Rmax=3,
-        km=1e3, model='transport', dt=1.0,
-    )
-    print(f"KD              = {sim.KD * 1e9:.1f} nM")
-    print(f"tau_dissoc      = {1/sim.kd:.0f} s")
-    print(f"km/(ka*Rmax)    = {sim.km/(sim.ka*sim.Rmax):.4f}  (<<1 → strongly transport-limited)")
+    KON, KOFF, RMAX = 1e4, 1e-4, 1.0   # kon (M⁻¹s⁻¹), koff (s⁻¹), Rmax (nm)  →  Kd = 10 nM
+    sim = SPRKineticsSimulator(kon=KON, koff=KOFF, Rmax=RMAX, model='langmuir', dt=1.0)
 
-    noise          = 0.02
-    n0             = 1.333
-    durations      = [300, 300, 300]
-    bulk_n         = [n0, n0, n0]
-    concentrations = [1e-5, 1e-4, 5e-4, 1e-3, 2e-3, 5e-3]   # 10 µM → 5 mM
+    print(f"Kd          = {sim.Kd*1e9:.1f} nM")
+    print(f"tau_dissoc  = {1/KOFF:.0f} s")
+
+    # 7 concentrations log-spaced from Kd/10 to Kd*100 (reaches saturation)
+    concentrations = np.logspace(np.log10(sim.Kd / 10), np.log10(sim.Kd * 100), 7)
+
+    # 60 s baseline + 15 min assoc + 15 min dissoc
+    durations = [60, 900, 900]
+
+    colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
 
     def _clabel(C):
-        return f'{C*1e6:.0f} µM' if C < 1e-3 else f'{C*1e3:.0f} mM'
+        return f'{C*1e9:.2g} nM'
 
-    # tau_assoc approximation: tau ≈ 1/(ka*C) + Rmax/(km*C)
-    print(f"\n{'C':>10}  {'tau_assoc (s)':>14}  {'tau_dissoc (s)':>14}")
-    fig, ax = plt.subplots()
-    for C in concentrations:
-        tau_assoc = 1.0 / (sim.ka * C) + sim.Rmax / (sim.km * C)
-        print(f"{_clabel(C):>10}  {tau_assoc:>14.1f}  {1/sim.kd:>14.1f}")
-        t, s = sim.simulate(durations, [0, C, 0], bulk_n, noise_std=noise)
-        ax.plot(t, s, label=_clabel(C))
+    # kinetics — one curve per concentration
+    Req_pts = []
+    fig_k, ax_k = plt.subplots()
+    for i, C in enumerate(concentrations):
+        color = colors[i % len(colors)]
+        t, s  = sim.simulate(durations, [0, C, 0], [0, 0, 0])
+        ax_k.plot(t, s, color=color, label=_clabel(C))
+        Req_pts.append(sim.Req(C))
 
-    ax.axvline(300, color='gray', linestyle='--', linewidth=0.8)
-    ax.axvline(600, color='gray', linestyle='--', linewidth=0.8)
-    ax.set_xlabel('Time (s)')
-    ax.set_ylabel('Signal (nm)')
-    ax.set_title(f'40 bp ssDNA — transport-limited  (km = {sim.km:.0e} nm·M⁻¹·s⁻¹,  KD = {sim.KD*1e9:.0f} nM)')
-    ax.legend(title='Concentration')
-    fig.tight_layout()
+    ax_k.axvline(durations[0],                color='gray', ls=':', linewidth=0.8)
+    ax_k.axvline(durations[0] + durations[1], color='gray', ls=':', linewidth=0.8)
+    ax_k.set_xlabel('Time (s)')
+    ax_k.set_ylabel('Signal (nm)')
+    ax_k.set_title(f'1:1 Langmuir  |  Kd = {sim.Kd*1e9:.0f} nM'
+                   f'  kon = {KON:.0e} /M/s  koff = {KOFF:.0e} /s')
+    ax_k.legend(title='Concentration', fontsize=8)
+    fig_k.tight_layout()
+
+    # isotherm — continuous curve + simulated concentrations coloured to match
+    c_iso = np.logspace(np.log10(sim.Kd / 100), np.log10(sim.Kd * 1000), 300)
+    _, Req_iso = sim.simulate_isotherm(c_iso)
+
+    fig_i, ax_i = plt.subplots()
+    ax_i.semilogx(c_iso * 1e9, Req_iso, 'b-', zorder=1)
+    for i, (C, Req) in enumerate(zip(concentrations, Req_pts)):
+        ax_i.plot(C * 1e9, Req, 'o', color=colors[i % len(colors)],
+                  zorder=5, label=_clabel(C))
+    ax_i.axvline(sim.Kd * 1e9, color='gray', ls='--', linewidth=0.8,
+                 label=f'Kd = {sim.Kd*1e9:.1f} nM')
+    ax_i.axhline(sim.Rmax / 2, color='gray', ls=':', linewidth=0.8)
+    ax_i.axhline(sim.Rmax,     color='gray', ls=':', linewidth=0.8,
+                 label=f'Rmax = {sim.Rmax} nm')
+    ax_i.set_xlabel('Concentration (nM)')
+    ax_i.set_ylabel('R_eq (nm)')
+    ax_i.set_title('Langmuir isotherm')
+    ax_i.legend(title='Concentration', fontsize=8)
+    fig_i.tight_layout()
+
     plt.show()
