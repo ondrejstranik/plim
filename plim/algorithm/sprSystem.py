@@ -5,7 +5,7 @@ Units used throughout:
   signal               nm          (plasmon resonance wavelength shift)
   bulk_sensitivity     nm/RIU
   surface_sensitivity  nm/(RIU·nm) (signal per RI change per layer thickness)
-  evanescent_length    nm          (derived: 2 * S_bulk / S_d)
+  evanescent_length    nm          (derived: S_bulk / S_d)
   dn_dc                cm³/g       (= mL/g; note: 1 cm³/g = 1 nm/(ng/mm²))
   coverage             ng/mm²
 
@@ -14,11 +14,12 @@ De Feijter formula for a thin adsorbed layer:
   where delta_n = layer RI contrast [RIU], d = layer thickness [nm], Gamma = surface mass [ng/mm²]
 
 Derived quantities:
-  l_d    = 2 * S_bulk / S_d   [nm/RIU] / [nm/(RIU·nm)] = [nm]
+  l_d    = S_bulk / S_d       [nm/RIU] / [nm/(RIU·nm)] = [nm]
   Gamma  = signal / (S_d * dn_dc)                         [ng/mm²]
 """
 
 import numpy as np
+import matplotlib.pyplot as plt
 
 
 class SPRSystem:
@@ -48,11 +49,16 @@ class SPRSystem:
     }
 
     def __init__(self, bulk_sensitivity=None, surface_sensitivity=None, noise=None,
-                 dn_dc=None):
+                 dn_dc=None, dt=1.0, bulk_n_baseline=0.0, bulk_n_sample=0.0,
+                 rng_seed=None):
         self.bulk_sensitivity    = float(self.DEFAULT['bulk_sensitivity']    if bulk_sensitivity    is None else bulk_sensitivity)
         self.surface_sensitivity = float(self.DEFAULT['surface_sensitivity'] if surface_sensitivity is None else surface_sensitivity)
         self.noise               = float(self.DEFAULT['noise']               if noise               is None else noise)
         self.dn_dc               = self.DEFAULT['dn_dc'] if dn_dc is None else dn_dc
+        self.dt               = float(dt)
+        self.bulk_n_baseline  = float(bulk_n_baseline)
+        self.bulk_n_sample    = float(bulk_n_sample)
+        self.rng_seed         = rng_seed
 
     @property
     def dn_dc(self):
@@ -134,9 +140,11 @@ class SPRSystem:
     def evanescent_length(self):
         """Evanescent field 1/e intensity decay length (nm).
 
-        Approximated from the de Feijter formula:  l_d = 2 * S_bulk / S_d
+        Derived from the de Feijter formula integrating intensity:
+            S_bulk = ∫₀^∞ S_d · exp(−z / l_d) dz  =  S_d · l_d
+        so  l_d = S_bulk / S_d
         """
-        return 2.0 * self.bulk_sensitivity / self.surface_sensitivity
+        return self.bulk_sensitivity / self.surface_sensitivity
 
     @property
     def LOD_coverage(self):
@@ -163,6 +171,36 @@ class SPRSystem:
         """Convert surface mass density (ng/mm²) to SPR signal (nm)."""
         return np.asarray(coverage, dtype=float) * (self.surface_sensitivity * self.dn_dc)
 
+    # ── Plotting ─────────────────────────────────────────────────────────────
+
+    def plotSurfaceSensitivity(self):
+        """Plot surface sensitivity s(z) = S_d · exp(−z / l_d) from 0 to l_d.
+
+        Returns
+        -------
+        fig, ax
+        """
+
+
+        l_d = self.evanescent_length
+        z   = np.linspace(0, l_d, 300)
+        s   = self.surface_sensitivity * np.exp(-z / l_d)
+
+        z_half = l_d * np.log(2)
+
+        fig, ax = plt.subplots()
+        ax.plot(z, s)
+        ax.axvline(l_d, color='gray', ls='--', linewidth=0.8,
+                   label=f'$l_d$ = {l_d:.0f} nm')
+        ax.axvline(z_half, color='tab:orange', ls='--', linewidth=0.8,
+                   label=f'$z_{{1/2}}$ = {z_half:.0f} nm')
+        ax.set_xlabel('Distance from surface (nm)')
+        ax.set_ylabel('Surface sensitivity (nm / (RIU·nm))')
+        ax.set_title('Evanescent field — surface sensitivity profile')
+        ax.legend(fontsize=9)
+        fig.tight_layout()
+        return fig, ax
+
     # ── Summary ──────────────────────────────────────────────────────────────
 
     def summary(self):
@@ -188,6 +226,8 @@ if __name__ == "__main__":
         bsa_signal=6
     )
     system.summary()
+    system.plotSurfaceSensitivity()
+    plt.show()
 
     # ── Conversions ──────────────────────────────────────────────────────────
     signal_nm = 0.3
