@@ -13,10 +13,9 @@ Output units match the rest of the plim codebase: time in seconds, signal in nm.
 import numpy as np
 from scipy.integrate import solve_ivp
 
-try:
-    from plim.algorithm.sprSystem import SPRSystem
-except ImportError:
-    from sprSystem import SPRSystem
+from plim.algorithm.sprSystem import SPRSystem
+from plim.algorithm.sprSystem import SPRChamber
+
 
 
 class SPRKineticsSimulator:
@@ -260,12 +259,27 @@ class SPRKineticsSimulator:
         fig.tight_layout()
         return fig, ax
 
-    def plotTau(self, concentrations):
+    def plotTau(self, concentrations, t_acq=None):
         """Plot observed time constant τ = 1/(kon·C + koff) vs concentration.
+
+        Error bars are derived by propagating the instrument noise through the
+        exponential fit:
+
+          1. The fractional uncertainty in k_obs comes from the signal-to-noise
+             ratio of the fitted amplitude Req(C) = Rmax·C/(Kd+C):
+                 δk_obs / k_obs ≈ noise / Req(C)
+
+          2. Since τ = 1/k_obs, error propagation gives:
+                 δτ = τ · noise / Req(C)
+
+        The error bars therefore grow at low concentrations (small Req, poor SNR)
+        and shrink at high concentrations (Req → Rmax).
 
         Parameters
         ----------
-        concentrations : array-like  Analyte concentrations (M).
+        concentrations : array-like    Analyte concentrations (M).
+        t_acq          : float | None  Acquisition time (s) drawn as a horizontal
+                         reference line; None = omit.
 
         Returns
         -------
@@ -289,11 +303,64 @@ class SPRKineticsSimulator:
 
         ax.set_xscale('log')
         ax.set_yscale('log')
+        if t_acq is not None:
+            ax.axhline(t_acq, color='gray', ls='--', linewidth=0.8,
+                       label=f't_acq = {t_acq:.0f} s')
         ax.set_xlabel('Concentration (nM)')
         ax.set_ylabel('τ (s)')
         ax.set_title(f'Observed time constant  |  kon = {self.kon:.1e} /M/s'
                      f'  koff = {self.koff:.1e} /s')
         ax.legend(title='Concentration', fontsize=8)
+        fig.tight_layout()
+        return fig, ax
+
+    def plotKobs(self, concentrations, t_acq=None):
+        """Plot observed rate constant kobs = kon·C + koff vs concentration.
+
+        Error bars use the same propagation as plotTau:
+            δkobs = kobs · noise / Req(C)
+
+        A linear fit line is overlaid; its slope and intercept recover kon and
+        koff directly.  If t_acq is given, a horizontal reference line is drawn
+        at kobs = 1/t_acq (the minimum resolvable rate for that acquisition time).
+
+        Parameters
+        ----------
+        concentrations : array-like    Analyte concentrations (M).
+        t_acq          : float | None  Acquisition time (s); drawn as a horizontal
+                         reference line at 1/t_acq (s⁻¹).  None = omit.
+
+        Returns
+        -------
+        fig, ax
+        """
+        import matplotlib.pyplot as plt
+        concentrations = np.asarray(concentrations, dtype=float).ravel()
+        colors         = plt.rcParams['axes.prop_cycle'].by_key()['color']
+
+        kobs  = self.kon * concentrations + self.koff
+        req   = self.Rmax * concentrations / (self.Kd_apparent + concentrations)
+        dkobs = kobs * self.system.noise / req
+
+        fig, ax = plt.subplots()
+        for i, (C, k, dk) in enumerate(zip(concentrations, kobs, dkobs)):
+            ax.errorbar(C * 1e9, k, yerr=dk,
+                        fmt='o', color=colors[i % len(colors)],
+                        capsize=4, label=f'{C*1e9:.2g} nM')
+
+        c_line = np.array([concentrations.min(), concentrations.max()])
+        ax.plot(c_line * 1e9, self.kon * c_line + self.koff,
+                'k--', linewidth=0.8,
+                label=f'kon = {self.kon:.1e} /M/s\nkoff = {self.koff:.1e} /s')
+
+        if t_acq is not None:
+            ax.axhline(1.0 / t_acq, color='gray', ls='--', linewidth=0.8,
+                       label=f't_acq = {t_acq:.0f} s')
+
+        ax.set_xlabel('Concentration (nM)')
+        ax.set_ylabel('k$_{obs}$ (s⁻¹)')
+        ax.set_title(f'Observed rate constant  |  Kd = {self.Kd*1e9:.1f} nM')
+        ax.legend(fontsize=8)
         fig.tight_layout()
         return fig, ax
 
@@ -348,9 +415,19 @@ if __name__ == "__main__":
         )
     msSystem.calibrate_from_BSA(bsa_signal=6)
 
+    msChamber = SPRChamber(h=500, w=500, L=1000, Q=30,
+                               M_Da=7200, molecule='ssdna')
+
+
+  
+    print(f' km  is {msChamber.km} m/s') 
+
+
+    print(f' damkohler  is {msChamber.damkohler(1e4, msSystem.signal_to_coverage(1.1))}')
+
 
     sim = SPRKineticsSimulator(
-        kon=1e4, koff=1e-4, Rmax=0.3, model='langmuir',
+        kon=1e4, koff=1e-4, Rmax=1.1, model='langmuir',
         system=msSystem)
 
 
@@ -361,5 +438,6 @@ if __name__ == "__main__":
 
     sim.plotKinetics(concentrations, durations)
     sim.plotIsotherm(concentrations)
-    sim.plotTau(concentrations)
+    sim.plotTau(concentrations, t_acq=15*60)
+    sim.plotKobs(concentrations, t_acq=15*60)
     plt.show()

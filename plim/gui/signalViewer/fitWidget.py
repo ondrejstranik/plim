@@ -565,6 +565,9 @@ class FitWidget(QWidget):
         mypen3 = QPen()
         mypen3.setWidth(0)        
 
+        if self.kF.signal is None:
+            print(f'no self.kF.signal')
+            return
 
         for ii in range(self.kF.signal.shape[1]):
             mypen = QPen()

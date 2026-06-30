@@ -171,6 +171,28 @@ class SPRSystem:
         """Convert surface mass density (ng/mm²) to SPR signal (nm)."""
         return np.asarray(coverage, dtype=float) * (self.surface_sensitivity * self.dn_dc)
 
+    def signal_to_surface_density(self, signal, M_Da):
+        """Convert SPR signal to surface number density (molecules/μm²).
+
+        signal [nm]  →  coverage [ng/mm²]  →  molecules/μm²
+
+        Conversion:
+            molecules/μm² = coverage [ng/mm²] · NA / (M_Da · 1e15)
+            (1 ng/mm² = 1e-15 g/μm²;  M_Da [Da] = M_Da [g/mol])
+
+        Parameters
+        ----------
+        signal : array-like  SPR signal (nm).
+        M_Da   : float        Molecular mass of the analyte (Da).
+
+        Returns
+        -------
+        surface_density : ndarray  Number of molecules per μm².
+        """
+        NA = 6.022e23
+        coverage = self.signal_to_coverage(signal)   # ng/mm²
+        return coverage * NA / (float(M_Da) * 1e15)  # molecules/μm²
+
     # ── Plotting ─────────────────────────────────────────────────────────────
 
     def plotSurfaceSensitivity(self):
@@ -219,16 +241,223 @@ class SPRSystem:
         print("=" * 55)
 
 
+class SPRChamber:
+    """Microfluidic chamber geometry and flow-transport properties for an SPR sensor.
+
+    Computes the mass-transfer coefficient km and the diffusion (depletion) layer
+    thickness δ using the Lévêque solution for laminar flow in a rectangular channel.
+
+    Geometry
+    --------
+    The sensor surface is the bottom wall of a rectangular channel:
+        height h  (μm) — gap between sensor and top wall
+        width  w  (μm) — direction perpendicular to flow
+        length L  (μm) — sensor-patch length along the flow direction
+
+    Lévêque solution (valid for Pe = v·h/D >> 1):
+        wall shear rate  γ = 6·Q / (w·h²)          [s⁻¹]
+        km = 0.538 · (γ · D² / L)^(1/3)             [m/s]
+        δ  = D / km                                  [m]
+
+    Parameters
+    ----------
+    h : float  Channel height (μm).
+    w : float  Channel width  (μm).
+    L : float  Sensor-patch length along flow (μm).
+    Q        : float        Volumetric flow rate (μL/min).
+    D        : float | None Analyte diffusion coefficient (m²/s). Supply directly,
+                            or omit and provide M_Da + molecule instead.
+    M_Da     : float | None Molecular mass (Da) — D computed via Stokes-Einstein.
+    molecule : str          Analyte type; selects density and hydration defaults.
+                            'protein' : ρ = 1350 kg/m³, hydration = 1.3 (default)
+                            'ssdna'   : ρ = 1500 kg/m³, hydration = 1.2
+    T        : float        Temperature (K) used when computing D.
+                            Default 298.15 K (25 °C).
+    """
+
+    NU_WATER = 1e-6   # kinematic viscosity of water at 25 °C (m²/s)
+
+    _MOLECULE_PARAMS = {
+        'protein': {'rho': 1350.0, 'hydration': 1.3},
+        'ssdna':   {'rho': 1500.0, 'hydration': 1.2},
+    }
+
+    def __init__(self, h, w, L, Q, D=None, M_Da=None, molecule='protein', T=298.15):
+        self.h = float(h) * 1e-6          # μm → m
+        self.w = float(w) * 1e-6
+        self.L = float(L) * 1e-6
+        self.Q = float(Q) / 60 * 1e-9     # μL/min → m³/s
+
+        self.M_Da = float(M_Da) if M_Da is not None else None
+
+        if D is not None:
+            self.D = float(D)
+        elif M_Da is not None:
+            if molecule not in self._MOLECULE_PARAMS:
+                raise ValueError(f"molecule must be one of {list(self._MOLECULE_PARAMS)}")
+            params = self._MOLECULE_PARAMS[molecule]
+            self.D = self.diffusion_coefficient(M_Da, T=T, **params)
+        else:
+            raise ValueError("Provide D, or M_Da with molecule='protein'/'ssdna'.")
+
+    # ── Derived transport quantities ─────────────────────────────────────────
+
+    @property
+    def flow_velocity(self):
+        """Mean flow velocity (m/s)."""
+        return self.Q / (self.h * self.w)
+
+    @property
+    def wall_shear_rate(self):
+        """Wall shear rate for parabolic flow in a rectangular channel (s⁻¹).
+
+        γ = 6·Q / (w·h²)  — exact for h << w (wide-channel limit).
+        """
+        return 6.0 * self.Q / (self.w * self.h**2)
+
+    @property
+    def Re(self):
+        """Reynolds number Re = v·h / ν."""
+        return self.flow_velocity * self.h / self.NU_WATER
+
+    @property
+    def Pe(self):
+        """Péclet number Pe = v·h / D."""
+        return self.flow_velocity * self.h / self.D
+
+    @property
+    def km(self):
+        """Mass transfer coefficient (m/s) from the Lévêque solution.
+
+        km = 0.538 · (γ · D² / L)^(1/3)
+
+        Requires Pe >> 1.  The Péclet number is available as self.Pe.
+        """
+        return 0.538 * (self.wall_shear_rate * self.D**2 / self.L) ** (1.0 / 3.0)
+
+    @property
+    def delta(self):
+        """Diffusion (depletion) layer thickness δ = D / km  (nm)."""
+        return self.D / self.km * 1e9   # m → nm
+
+    # ── Analyte properties ───────────────────────────────────────────────────
+
+    @staticmethod
+    def diffusion_coefficient(M_Da, T=298.15, rho=1350.0, hydration=1.3):
+        """Estimate diffusion coefficient D for a globular protein (Stokes-Einstein).
+
+        Steps
+        -----
+        1. Compute bare radius from molecular mass assuming a sphere of density ρ:
+               r_bare = (3·M / (4π·NA·ρ))^(1/3)
+        2. Apply hydration factor to get hydrodynamic radius:
+               rh = hydration · r_bare
+        3. Apply Stokes-Einstein:
+               D = kB·T / (6π·η(T)·rh)
+
+        Water viscosity η(T) uses the Vogel-Tammann-Fulcher approximation:
+               η = 2.414e-5 · 10^(247.8 / (T − 140))  [Pa·s]
+
+        Parameters
+        ----------
+        M_Da     : float  Molecular mass (Da).
+        T        : float  Temperature (K). Default 298.15 K (25 °C).
+        rho      : float  Protein density (kg/m³). Default 1350.
+        hydration: float  Ratio rh / r_bare accounting for hydration shell.
+                          Default 1.3.
+
+        Returns
+        -------
+        D : float  Diffusion coefficient (m²/s).
+        """
+        kB = 1.381e-23
+        NA = 6.022e23
+        eta  = 2.414e-5 * 10 ** (247.8 / (T - 140.0))
+        M_kg = M_Da / (NA * 1000)
+        r_bare = (3.0 * M_kg / (4.0 * np.pi * rho)) ** (1.0 / 3.0)
+        rh = hydration * r_bare
+        return kB * T / (6.0 * np.pi * eta * rh)
+
+    def damkohler(self, kon, Rmax):
+        """Damköhler number Da = kon · Γmax / km  (dimensionless).
+
+        Compares the surface binding rate to the diffusive transport rate.
+        Da >> 1 : transport-limited  (apparent kinetics are distorted)
+        Da << 1 : reaction-limited   (kinetics can be measured reliably)
+
+        Derivation
+        ----------
+        The surface binding flux is  J_rxn = kon · C · Γmax  [mol/(m²·s)]
+        The transport flux is        J_tr  = km · C           [mol/(m²·s)]
+        Their ratio (independent of C):
+
+            Da = kon [m³/(mol·s)] · Γmax [mol/m²] / km [m/s]
+
+        Unit conversions applied internally:
+            kon  [M⁻¹s⁻¹]  →  kon · 1e-3  [m³/(mol·s)]
+            Rmax [ng/mm²]  →  Rmax · 1e-3 / self.M_Da  [mol/m²]
+
+        Parameters
+        ----------
+        kon  : float  Association rate constant (M⁻¹ s⁻¹).
+        Rmax : float  Maximum surface binding capacity (ng/mm²).
+
+        Returns
+        -------
+        Da : float  Damköhler number (dimensionless).
+        """
+        kon_si    = kon  * 1e-3                    # M⁻¹s⁻¹  → m³/(mol·s)
+        Gamma_max = Rmax * 1e-3 / float(self.M_Da) # ng/mm²   → mol/m²
+        return kon_si * Gamma_max / self.km
+
+    # ── Summary ─────────────────────────────────────────────────────────────
+
+    def summary(self):
+        """Print a summary of chamber geometry and transport quantities."""
+        print("=" * 55)
+        print("  SPR Chamber")
+        print("=" * 55)
+        print(f"  Channel height       : {self.h*1e6:.1f} μm")
+        print(f"  Channel width        : {self.w*1e6:.1f} μm")
+        print(f"  Sensor-patch length  : {self.L*1e6:.1f} μm")
+        print(f"  Flow rate            : {self.Q*60*1e9:.1f} μL/min")
+        print(f"  Diffusion coeff.     : {self.D:.2e} m²/s")
+        print(f"  Mean flow velocity   : {self.flow_velocity*1e3:.2f} mm/s")
+        print(f"  Wall shear rate      : {self.wall_shear_rate:.0f} s⁻¹")
+        print(f"  Reynolds number      : {self.Re:.4f}  (laminar < 2000)")
+        print(f"  Péclet number        : {self.Pe:.0f}  (Lévêque valid >> 1)")
+        print(f"  km  (Lévêque)        : {self.km*1e6:.2f} μm/s")
+        print(f"  δ   (depletion layer): {self.delta:.1f} nm")
+        print("=" * 55)
+
+
 # ── Usage example ─────────────────────────────────────────────────────────────
 if __name__ == "__main__":
-    system = SPRSystem()
-    system.calibrate_from_BSA(
-        bsa_signal=6
-    )
+    system = SPRSystem(
+            dt               = 3.0,      # 3 s sampling interval
+            noise            = 0.02,     # 20 pm Gaussian noise
+            bulk_sensitivity = 200.0,    # 200 nm/RIU
+        )
+    system.calibrate_from_BSA(bsa_signal=6)
+
     system.summary()
     system.plotSurfaceSensitivity()
     plt.show()
 
-    # ── Conversions ──────────────────────────────────────────────────────────
-    signal_nm = 0.3
-    print(f"\n{signal_nm} nm  ->  {system.signal_to_coverage(signal_nm):.3f} ng/mm²")
+    # ── SPRChamber — ssDNA (24-mer, M = 7200 Da) ─────────────────────────────
+    chamber = SPRChamber(h=400, w=4000, L=7000, Q=30,
+                               M_Da=7200, molecule='ssdna')
+    chamber.summary()
+
+    # ── Damköhler number ─────────────────────────────────────────────────────
+    # Units:  kon [M⁻¹s⁻¹] * 1e-3 → [m³/(mol·s)]
+    #         Rmax [ng/mm²] * 1e-3 / M_Da → [mol/m²]
+    #         Da = [m³/(mol·s)] * [mol/m²] / [m/s] = dimensionless  ✓
+    kon  = 1e4   # M⁻¹s⁻¹  
+    Rmax = system.signal_to_coverage(0.3)   # convert 1.1 nm SPR signal → ng/mm²
+    Da   = chamber.damkohler(kon=kon, Rmax=Rmax)
+    regime = ("reaction-limited" if Da < 0.1
+              else "transport-limited" if Da > 10
+              else "mixed regime")
+    print(f"\nDamköhler number (ssDNA, kon={kon:.0e} /M/s, Rmax={Rmax:.3f} ng/mm²):")
+    print(f"  Da = {Da:.4f}  →  {regime}")
