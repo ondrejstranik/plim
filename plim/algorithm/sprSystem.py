@@ -340,6 +340,21 @@ class SPRChamber:
         """Diffusion (depletion) layer thickness δ = D / km  (nm)."""
         return self.D / self.km * 1e9   # m → nm
 
+    @property
+    def kobs_transport_limit(self):
+        """Maximum observable kobs in the transport-limited regime (s⁻¹).
+
+        At high analyte concentration (C >> Kd) and transport limitation
+        (kon·Γmax >> km), the apparent rate saturates at:
+
+            kobs_max = km / δ  =  km² / D
+
+        This is the rate at which analyte is replenished across the depletion
+        layer.  Any measured kobs above this value indicates the kinetics are
+        not purely transport-limited.
+        """
+        return self.km**2 / self.D
+
     # ── Analyte properties ───────────────────────────────────────────────────
 
     @staticmethod
@@ -428,6 +443,8 @@ class SPRChamber:
         print(f"  Péclet number        : {self.Pe:.0f}  (Lévêque valid >> 1)")
         print(f"  km  (Lévêque)        : {self.km*1e6:.2f} μm/s")
         print(f"  δ   (depletion layer): {self.delta:.1f} nm")
+        print(f"  kobs_max (transport) : {self.kobs_transport_limit:.3f} s⁻¹")
+        print(f' tau max (transport)   : {1/chamber.kobs_transport_limit:.3f} s') 
         print("=" * 55)
 
 
@@ -442,10 +459,10 @@ if __name__ == "__main__":
 
     system.summary()
     system.plotSurfaceSensitivity()
-    plt.show()
+    
 
     # ── SPRChamber — ssDNA (24-mer, M = 7200 Da) ─────────────────────────────
-    chamber = SPRChamber(h=400, w=4000, L=7000, Q=30,
+    chamber = SPRChamber(h=400, w=4000, L=30*16, Q=30,
                                M_Da=7200, molecule='ssdna')
     chamber.summary()
 
@@ -461,3 +478,5 @@ if __name__ == "__main__":
               else "mixed regime")
     print(f"\nDamköhler number (ssDNA, kon={kon:.0e} /M/s, Rmax={Rmax:.3f} ng/mm²):")
     print(f"  Da = {Da:.4f}  →  {regime}")
+
+    plt.show()

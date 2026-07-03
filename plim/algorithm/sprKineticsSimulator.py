@@ -415,12 +415,13 @@ if __name__ == "__main__":
         )
     msSystem.calibrate_from_BSA(bsa_signal=6)
 
-    msChamber = SPRChamber(h=500, w=500, L=1000, Q=30,
+    msChamber = SPRChamber(h=400, w=4000, L=7000, Q=30,
                                M_Da=7200, molecule='ssdna')
 
 
   
     print(f' km  is {msChamber.km} m/s') 
+    print(f' tau max is {1/msChamber.kobs_transport_limit} s') 
 
 
     print(f' damkohler  is {msChamber.damkohler(1e4, msSystem.signal_to_coverage(1.1))}')
