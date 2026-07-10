@@ -15,6 +15,7 @@ from plim.gui.positionTrackGUI import PositionTrackGUI
 
 #spectral camera system
 fFolder = r'G:\office\work\git\plim\plim\DATA\test_video'
+fFolder = r'D:\ondra\LPI\plim\DATA\tunableFilterBased\26-07-30 Tomas_sensitivity\LbL\04_Bulk_sensitivity_pumpplan_0-70percent_to_LbL_with_water_v1_LED_V2\images'
 sCamera = SCameraFromFile()
 sCamera.connect()
 sCamera.setParameter('threadingNow',True)  

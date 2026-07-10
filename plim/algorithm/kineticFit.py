@@ -111,6 +111,7 @@ class KineticFit:
 
         # fitting parameters
         self.fittedParam = None
+        self.fitRMS = None # root mean square of the fit residuals, one value per fitted curve
         self.fitType = self.DEFAULT['fitType']
         self.model = None
         self.modelParams = None
@@ -151,12 +152,14 @@ class KineticFit:
         ''' calculate fits'''
         nFit = self.signal.shape[1]
         self.fittedParam = np.zeros((nFit,len(self.modelParams)))
+        self.fitRMS = np.zeros(nFit)
 
         for ii in range(nFit):
             try:
                 result = self.model.fit(self.signal[:,ii],self.modelParams, x= self.time)
                 self.fittedParam[ii,:] = np.array([result.best_values[_name]
                                                 for _name in result.best_values.keys()])
+                self.fitRMS[ii] = np.sqrt(np.mean(result.residual**2))
                 # for double exponential ensure tau1 <= tau2
                 if self.fitType == FitType.ADSORPTION_DOUBLE:
                     if self.fittedParam[ii, 1] > self.fittedParam[ii, 3]:
@@ -210,6 +213,8 @@ class KineticFit:
                 _dataDict[key] = val
         for index, param in enumerate(self.fitType.parameters):
             _dataDict[param + '_param'] = self.fittedParam[:, index]
+        if self.fitRMS is not None:
+            _dataDict['fitRMS'] = self.fitRMS
 
         with open(folder + "/" + fileName, "w", newline='') as outfile:
             outfile.write(self.fitType.label + '\n')
@@ -225,6 +230,7 @@ class KineticFit:
             'signal':      self.signal,
             'table':       self.table,
             'fittedParam': self.fittedParam,
+            'fitRMS':      self.fitRMS,
             'fitType':     self.fitType,
             'modelParams': self.modelParams,
         }
@@ -242,6 +248,7 @@ class KineticFit:
         obj.signal      = state['signal']
         obj.table       = state['table']
         obj.fittedParam = state['fittedParam']
+        obj.fitRMS      = state.get('fitRMS') # missing in files saved before fitRMS was added
         obj.modelParams = state['modelParams']
         return obj
 
@@ -249,25 +256,32 @@ class KineticFit:
         ''' load fit info
          return
           fitTypeLabel (string)
-          table (dict of lists, columns without _param suffix)
-          fittedParam (2D numpy array, columns with _param suffix) '''
+          table (dict of lists, columns without _param suffix and without fitRMS)
+          fittedParam (2D numpy array, columns with _param suffix)
+          fitRMS (1D numpy array, or None if the file has no fitRMS column) '''
         with open(folder + "/" + fileName) as infile:
             fitTypeLabel = infile.readline().strip()
             reader = csv.DictReader(infile, delimiter=',')
 
-            table_cols = {key: [] for key in reader.fieldnames if not key.endswith('_param')}
+            table_cols = {key: [] for key in reader.fieldnames
+                          if not key.endswith('_param') and key != 'fitRMS'}
             param_cols = {key: [] for key in reader.fieldnames if key.endswith('_param')}
+            hasRMS = 'fitRMS' in reader.fieldnames
+            rms_col = [] if hasRMS else None
 
             for row in reader:
                 for key in table_cols:
                     table_cols[key].append(row[key])
                 for key in param_cols:
                     param_cols[key].append(float(row[key]))
+                if hasRMS:
+                    rms_col.append(float(row['fitRMS']))
 
             table = table_cols
             fittedParam = np.array(list(param_cols.values()), dtype=float).T
+            fitRMS = np.array(rms_col, dtype=float) if hasRMS else None
 
-        return (fitTypeLabel, table, fittedParam)
+        return (fitTypeLabel, table, fittedParam, fitRMS)
 
     def getParamStats(self, name):
         '''Return descriptive statistics for a fitted parameter.
@@ -275,20 +289,25 @@ class KineticFit:
         Parameters
         ----------
         name : str
-            Parameter name (must be in self.fitType.parameters).
+            Parameter name (must be in self.fitType.parameters, or 'fitRMS').
 
         Returns
         -------
         dict with keys: mean, median, std, iqr, q1, q3, lo, hi, n
             lo/hi are the Tukey whisker ends (1.5 * IQR beyond Q1/Q3).
         '''
-        if self.fittedParam is None:
-            raise ValueError('No fitted parameters available.')
-        if name not in self.fitType.parameters:
-            raise ValueError(f"'{name}' is not a parameter of {self.fitType}. "
-                             f"Available: {self.fitType.parameters}")
-        idx    = self.fitType.parameters.index(name)
-        values = self.fittedParam[:, idx]
+        if name == 'fitRMS':
+            if self.fitRMS is None:
+                raise ValueError('No fitted parameters available.')
+            values = self.fitRMS
+        else:
+            if self.fittedParam is None:
+                raise ValueError('No fitted parameters available.')
+            if name not in self.fitType.parameters:
+                raise ValueError(f"'{name}' is not a parameter of {self.fitType}. "
+                                 f"Available: {self.fitType.parameters}")
+            idx    = self.fitType.parameters.index(name)
+            values = self.fittedParam[:, idx]
 
         q1     = np.percentile(values, 25)
         median = np.percentile(values, 50)

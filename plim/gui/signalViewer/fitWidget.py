@@ -5,7 +5,7 @@ class for viewing signals and their Fits
 import pyqtgraph as pg
 import pyqtgraph.exporters
 from PyQt5.QtGui import QColor, QPen
-from qtpy.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QFileDialog, QTabWidget, QTableWidget, QTableWidgetItem, QShortcut, QApplication, QPushButton, QComboBox, QLabel
+from qtpy.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QFileDialog, QTabWidget, QTableWidget, QTableWidgetItem, QShortcut, QApplication, QPushButton, QComboBox, QLabel, QSplitter
 from qtpy.QtGui import QKeySequence
 from qtpy import QtCore
 from magicgui import magicgui
@@ -252,7 +252,7 @@ class FitWidget(QWidget):
         # stat graph (boxplot, shown next to the table)
         self.statGraph = pg.PlotWidget()
         self.statGraph.setLabel('bottom', 'curve index')
-        self.statGraph.setMaximumWidth(300)
+        self.statGraph.setMinimumWidth(150)
 
         # spatial map graph (colour-coded by selected parameter)
         self.mapWidget = pg.GraphicsLayoutWidget()
@@ -299,14 +299,18 @@ class FitWidget(QWidget):
         loadRow.addWidget(self.statSelector)
         loadRow.addStretch()
 
-        tableRow = QHBoxLayout()
-        tableRow.addWidget(self.paramTable, stretch=2)
-        tableRow.addWidget(self.statGraph,  stretch=1)
-        tableRow.addWidget(self.mapWidget,  stretch=2)
+        tableSplitter = QSplitter(QtCore.Qt.Horizontal)
+        tableSplitter.addWidget(self.paramTable)
+        tableSplitter.addWidget(self.statGraph)
+        tableSplitter.addWidget(self.mapWidget)
+        tableSplitter.setStretchFactor(0, 2)
+        tableSplitter.setStretchFactor(1, 1)
+        tableSplitter.setStretchFactor(2, 2)
+        tableSplitter.setSizes([400, 200, 400])
 
         paramPage = QWidget()
         paramPage_layout = QVBoxLayout()
-        paramPage_layout.addLayout(tableRow)
+        paramPage_layout.addWidget(tableSplitter)
         paramPage_layout.addLayout(loadRow)
         paramPage_layout.addWidget(self.saveBox.native)
         paramPage.setLayout(paramPage_layout)
@@ -422,10 +426,11 @@ class FitWidget(QWidget):
             return
         col = cols[0]
 
-        if self.kF.fittedParam is None or col >= len(self.kF.fitType.parameters):
+        param_names = list(self.kF.fitType.parameters) + ['fitRMS']
+        if self.kF.fittedParam is None or col >= len(param_names):
             return
 
-        param_name = self.kF.fitType.parameters[col]
+        param_name = param_names[col]
         st     = self.kF.getParamStats(param_name)
         values = st['values']
         n      = st['n']
@@ -519,9 +524,9 @@ class FitWidget(QWidget):
         if self.kF.fittedParam is None:
             return
         nFit, nParam = self.kF.fittedParam.shape
-        param_names = self.kF.fitType.parameters
+        param_names = list(self.kF.fitType.parameters) + ['fitRMS']
         self.paramTable.setRowCount(nFit)
-        self.paramTable.setColumnCount(nParam)
+        self.paramTable.setColumnCount(nParam + 1)
         self.paramTable.setHorizontalHeaderLabels(param_names)
         names = (self.kF.table or {}).get('name') or [str(i) for i in range(nFit)]
         self.paramTable.setVerticalHeaderLabels([str(n) for n in names])
@@ -532,6 +537,8 @@ class FitWidget(QWidget):
         for i in range(nFit):
             for j in range(nParam):
                 self.paramTable.setItem(i, j, QTableWidgetItem(_fmt(self.kF.fittedParam[i, j])))
+            rms = self.kF.fitRMS[i] if self.kF.fitRMS is not None else float('nan')
+            self.paramTable.setItem(i, nParam, QTableWidgetItem(_fmt(rms)))
         self.paramTable.resizeColumnsToContents()
 
     def drawCleanGraph(self):
