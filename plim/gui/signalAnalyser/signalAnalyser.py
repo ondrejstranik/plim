@@ -6,11 +6,10 @@ import numpy as np
 import napari
 
 from qtpy.QtWidgets import (
-    QApplication,QMainWindow,QWidget,QToolBar,QVBoxLayout, QFileDialog, QLabel)
+    QMainWindow,QWidget,QToolBar,QVBoxLayout, QFileDialog, QLabel)
 import pyqtgraph.exporters
 import csv
 
-import sys
 from pathlib import Path
 
 from plim.algorithm.spotData import SpotData
@@ -23,7 +22,7 @@ from plim.gui.signalViewer.infoWidget import InfoWidget
 from plim.gui.signalViewer.fitWidget import FitWidget
 
 
-class Window(QMainWindow):
+class SignalAnalyser(QMainWindow):
     '''  main class for data analysis
     '''
 
@@ -420,15 +419,6 @@ class Window(QMainWindow):
 
         # initial update
         self.updateFromSW()
-
-
-if __name__ == "__main__":
-    app = QApplication([])
-    window = Window()
-    window.show()
-    sys.exit(app.exec())
-
-
 
 
 #%%
