@@ -20,6 +20,15 @@ dependencies ([Viscope](https://ondrejstranik.github.io/viscope/) and
 [spectralCamera](https://github.com/ondrejstranik/spectralCamera) included).
 To upgrade later, re-run the same command with `--upgrade`.
 
+2. (optional) create Desktop shortcuts for the run scripts
+   ```bash
+   plim-create-shortcut
+   ```
+   This adds a "plim" folder to the Desktop containing an icon for each
+   `run*` script (e.g. Signal Analyser, Real IFC, Virtual IFC), each
+   launching using this environment's Python. Run it again from within the
+   environment if the shortcuts are ever lost.
+
 ## For developers
 
 Use this if you want to modify Plim itself -- the package is installed

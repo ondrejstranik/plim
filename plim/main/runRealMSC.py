@@ -27,7 +27,7 @@ from viscope.gui.saveImageGUI import SaveImageGUI
 from viscope.gui.histogramGUI import HistogramGUI
 
 
-def main(cls):
+def main():
     # some global settings
     viscope.dataFolder = plim.dataFolder
 

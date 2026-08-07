@@ -21,6 +21,7 @@ dependencies = [
         'pyserial',
         'lmfit',
         'pytest',
+        'pyshortcuts',
         ]
 requires-python='>=3.9'
 authors = [
@@ -36,6 +37,14 @@ classifiers = [
   "Intended Audience :: Developers",
   "Programming Language :: Python :: 3",
 ]
+
+[project.scripts]
+runRealIFC = "plim.main.runRealIFC:main"
+runVirtualIFC = "plim.main.runVirtualIFC:main"
+runRealMSC = "plim.main.runRealMSC:main"
+runSImageAnalyser = "plim.main.runSImageAnalyser:main"
+runSignalAnalyser = "plim.main.runSignalAnalyser:main"
+plim-create-shortcut = "plim._install.createShortcut:main"
 
 [project.optional-dependencies]
 docs = [
