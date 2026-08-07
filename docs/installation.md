@@ -6,9 +6,14 @@ Use this if you just want to use Plim in your own project (no need to
 edit Plim's own source).
 
 0. (optional) create and activate a dedicated conda environment
-   `conda create --name plim python=3.9` then `conda activate plim`
+   ```bash
+   conda create --name plim python=3.10
+   conda activate plim
+   ```
 1. install directly from the GitHub repository
-   `python -m pip install git+https://github.com/ondrejstranik/plim.git`
+   ```bash
+   python -m pip install git+https://github.com/ondrejstranik/plim.git
+   ```
 
 This installs the latest version from the `main` branch, along with its
 dependencies ([Viscope](https://ondrejstranik.github.io/viscope/) and
@@ -22,16 +27,23 @@ in editable mode, so changes to the source take effect immediately without
 reinstalling.
 
 0. clone the repository and move into it
-   `git clone https://github.com/ondrejstranik/plim.git` then
-   `cd plim`
+   ```bash
+   git clone https://github.com/ondrejstranik/plim.git
+   cd plim
+   ```
 1. create and activate a conda environment
-   `conda create --name plim python=3.9` then `conda activate plim`
+   ```bash
+   conda create --name plim python=3.9
+   conda activate plim
+   ```
 2. install the package in editable mode
-   `python -m pip install -e .`
+   ```bash
+   python -m pip install -e .
+   ```
 
 If you use Pylance in VS Code, add the following to `.vscode\settings.json`
 so it can resolve the package while it's installed in editable mode:
-```
+```json
     "python.languageServer": "Pylance",
     "python.analysis.extraPaths": [
         "path\to\the\package\folder"
@@ -41,7 +53,7 @@ so it can resolve the package while it's installed in editable mode:
 ## Building the docs locally
 
 Install the `docs` extra and run mkdocs:
-```
+```bash
 python -m pip install -e .[docs]
 mkdocs serve
 ```

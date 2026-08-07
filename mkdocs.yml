@@ -3,7 +3,10 @@ nav:
   - Home: index.md
   - Installation: installation.md
   - Examples: examples.md
-theme: readthedocs
+theme:
+  name: material
+  features:
+    - content.code.copy
 
 hooks:
   - docs/hooks.py
