@@ -48,8 +48,8 @@ def align_stack_unmasked(stack, reference_index=None, upsample_factor=4):
     Align a 3D stack (z, y, x) using subpixel phase correlation (no mask).
 
     Returns:
-        aligned_stack : same shape as input
-        shifts : list of (y, x) shifts
+        aligned_stack (numpy.ndarray): same shape as input
+        shifts (list): list of (y, x) shifts
     """
     
     stack = stack.astype(np.float32)
