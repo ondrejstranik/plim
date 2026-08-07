@@ -15,7 +15,11 @@ from plim.algorithm.spotData import SpotData
 
 class InfoWidget(QWidget):
     ''' main class for viewing signal'''
-    DEFAULT = {'nameGUI':'Signal'}
+    DEFAULT = {'nameGUI':'Signal',
+               # columns shown in the info table that are computed/reference
+               # values and must not be overwritten by the (text-only) table
+               # widget content
+               'notEditableColumn': ['position', 'dSignal', 'noise']}
 
     sigUpdateData = Signal()
 
@@ -27,6 +31,25 @@ class InfoWidget(QWidget):
 
         # set this gui of this class
         InfoWidget._setWidget(self)
+
+    def _displayTable(self):
+        ''' dict shown in the info table widget, including read-only columns '''
+        return self.sD.table | {'dSignal': self.sD.dSignal, 'noise': self.sD.noise}
+
+    def _styleNonEditableColumns(self):
+        ''' grey out and lock the non-editable columns in the info table '''
+        columns = list(self._displayTable().keys())
+        table = self.infoBox.infoTable.native
+        for key in self.DEFAULT['notEditableColumn']:
+            if key not in columns:
+                continue
+            col = columns.index(key)
+            for row in range(table.rowCount()):
+                item = table.item(row, col)
+                if item is None:
+                    continue
+                item.setBackground(QColor('lightgray'))
+                item.setFlags(item.flags() & ~Qt.ItemIsEditable)
 
 
     def keyPressEvent(self, evt):
@@ -64,12 +87,20 @@ class InfoWidget(QWidget):
         @magicgui(auto_call=True,
                   infoTable = {'widget_type':'Table'})
         def infoBox(
-            infoTable: dict = self.sD.table | {'dSignal': self.sD.dSignal, 'noise': self.sD.noise}
+            infoTable: dict = self._displayTable()
             ):
             self.infoBox._auto_call = False
 
+            # non-editable columns hold computed/reference values; the table
+            # widget only stores displayed text, so reading them back would
+            # corrupt values like the position arrays into their string repr
+            _notEditable = {key: self.sD.table[key] for key in self.DEFAULT['notEditableColumn']
+                             if key in self.sD.table}
             self.sD.table = dict(self.infoBox.infoTable)
-            
+            for key in self.DEFAULT['notEditableColumn']:
+                self.sD.table.pop(key, None)
+            self.sD.table |= _notEditable
+
             #print(f'sD.table from infoBox {self.sD.table}')
 
 
@@ -77,13 +108,14 @@ class InfoWidget(QWidget):
 
             # update values in the case color is changed
             self.sD.setReference()
-            _dSignal = self.sD.getDSignal()
-            _noise = self.sD.getNoise()
+            self.sD.getDSignal()
+            self.sD.getNoise()
 
-            self.infoBox.infoTable.value = self.sD.table | {'dSignal': _dSignal, 'noise': _noise}
+            self.infoBox.infoTable.value = self._displayTable()
 
             for ii,_color in enumerate(self.sD.table['color']):
                 self.infoBox.infoTable.native.item(ii,1).setBackground(QColor(_color))
+            self._styleNonEditableColumns()
 
             self.infoBox._auto_call = True
 
@@ -107,11 +139,11 @@ class InfoWidget(QWidget):
         _temp =  self.infoBox._auto_call
         self.infoBox._auto_call = False
         # update values
-        _dict = {'dSignal': self.sD.dSignal, 'noise': self.sD.noise}
-        self.infoBox.infoTable.value = self.sD.table | _dict
+        self.infoBox.infoTable.value = self._displayTable()
         
         for ii,_color in enumerate(self.sD.table['color']):
             self.infoBox.infoTable.native.item(ii,1).setBackground(QColor(_color))
+        self._styleNonEditableColumns()
 
         # switch auto_call on initial value
         self.infoBox._auto_call = _temp
