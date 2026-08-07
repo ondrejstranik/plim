@@ -6,9 +6,21 @@ build-backend = "setuptools.build_meta"
 name="plim"
 version="0.0.1"
 dependencies = [
-        #'spectralCamera@git+https://github.com/ondrejstranik/spectralCamera',
-       'pyserial',
-       'lmfit',
+        'viscope@git+https://github.com/ondrejstranik/viscope',
+        'spectralCamera@git+https://github.com/ondrejstranik/spectralCamera',
+        'numpy<2',
+        'scipy',
+        'scikit-image',
+        'matplotlib',
+        'tifffile',
+        'napari',
+        'PyQt5',
+        'qtpy',
+        'magicgui',
+        'pyqtgraph',
+        'pyserial',
+        'lmfit',
+        'pytest',
         ]
 requires-python='>=3.9'
 authors = [
@@ -24,5 +36,15 @@ classifiers = [
   "Intended Audience :: Developers",
   "Programming Language :: Python :: 3",
 ]
+
+[project.optional-dependencies]
+docs = [
+        'mkdocs',
+        'mkdocstrings[python]',
+        ]
+
 [project.urls]
 Repository = "https://github.com/ondrejstranik/plim"
+
+[tool.setuptools.packages.find]
+include = ["plim*"]

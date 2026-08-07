@@ -1,0 +1,21 @@
+site_name: Plim
+nav:
+  - Home: index.md
+  - Installation: installation.md
+  - Examples: examples.md
+theme: readthedocs
+
+hooks:
+  - docs/hooks.py
+
+markdown_extensions:
+  - pymdownx.superfences
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            show_source: true
+            merge_init_into_class: true
