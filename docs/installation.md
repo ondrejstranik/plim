@@ -10,17 +10,27 @@ edit Plim's own source).
    conda create --name plim python=3.10
    conda activate plim
    ```
-1. install directly from the GitHub repository
+1. install directly from the GitHub repository, using the `all` extra so
+   [Viscope](https://ondrejstranik.github.io/viscope/) and
+   [spectralCamera](https://github.com/ondrejstranik/spectralCamera) are
+   installed along with it
    ```bash
-   python -m pip install git+https://github.com/ondrejstranik/plim.git
+   python -m pip install "plim[all] @ git+https://github.com/ondrejstranik/plim.git"
+   ```
+   Without the `[all]` extra, Viscope and spectralCamera are **not** installed.
+
+This installs the latest version from the `main` branch.
+
+2. to upgrade later, force a fresh install of all three packages. A plain
+   `--upgrade` is not enough for git dependencies -- pip only checks that the
+   URL still matches, not whether the remote has new commits -- so
+   `--force-reinstall` is required too (`--no-deps` keeps it from also
+   reinstalling every other dependency such as napari):
+   ```bash
+   python -m pip install --upgrade --force-reinstall --no-deps "plim[all] @ git+https://github.com/ondrejstranik/plim.git" "viscope @ git+https://github.com/ondrejstranik/viscope.git" "spectralCamera @ git+https://github.com/ondrejstranik/spectralCamera.git"
    ```
 
-This installs the latest version from the `main` branch, along with its
-dependencies ([Viscope](https://ondrejstranik.github.io/viscope/) and
-[spectralCamera](https://github.com/ondrejstranik/spectralCamera) included).
-To upgrade later, re-run the same command with `--upgrade`.
-
-2. (optional) create Desktop shortcuts for the run scripts
+3. (optional) create Desktop shortcuts for the run scripts
    ```bash
    plim-create-shortcut
    ```
@@ -46,9 +56,22 @@ reinstalling.
    conda activate plim
    ```
 2. install the package in editable mode
-   ```bash
-   python -m pip install -e .
-   ```
+
+   - If you're only developing Plim itself (not Viscope or spectralCamera),
+     use the `all` extra so they get installed for you from GitHub:
+     ```bash
+     python -m pip install -e ".[all]"
+     ```
+   - If you're also a developer of Viscope and/or spectralCamera and already
+     have them installed locally (e.g. in editable mode from their own
+     repos), leave out the extra so pip doesn't touch them:
+     ```bash
+     python -m pip install -e .
+     ```
+     See [Viscope's installation guide](https://ondrejstranik.github.io/viscope/installation/)
+     and [spectralCamera's repository](https://github.com/ondrejstranik/spectralCamera)
+     for how to install those in editable mode, so that changes to those
+     packages take effect immediately too, the same way they do for Plim.
 
 If you use Pylance in VS Code, add the following to `.vscode\settings.json`
 so it can resolve the package while it's installed in editable mode:

@@ -6,8 +6,6 @@ build-backend = "setuptools.build_meta"
 name="plim"
 version="0.0.1"
 dependencies = [
-        'viscope @ git+https://github.com/ondrejstranik/viscope.git',
-        'spectralCamera @ git+https://github.com/ondrejstranik/spectralCamera.git',
         'numpy<2',
         'scipy',
         'scikit-image',
@@ -51,6 +49,10 @@ docs = [
         'mkdocs',
         'mkdocs-material',
         'mkdocstrings[python]',
+        ]
+all = [
+        'viscope @ git+https://github.com/ondrejstranik/viscope.git',
+        'spectralCamera @ git+https://github.com/ondrejstranik/spectralCamera.git',
         ]
 
 [project.urls]
