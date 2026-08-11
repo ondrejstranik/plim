@@ -106,8 +106,12 @@ def main():
     svGui  = SaveSIVideoGUI(viscope)
     svGui.setDevice(sCamera)
 
+    # place the windows
+    scGui.vWindow.setRegion('bottom')
+    
     # carry out some GUI settings
     #newGUI.plasmonViewer.spotIdentGui()
+
 
     # main event loop
     viscope.run()
