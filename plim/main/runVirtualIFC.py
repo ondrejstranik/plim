@@ -107,7 +107,10 @@ def main():
     svGui.setDevice(sCamera)
 
     # place the windows
-    scGui.vWindow.setRegion('bottom')
+    adGui.vWindow.setRegion('right')
+    ptGui.vWindow.setRegion('right')
+    viscope.wManager.setRegionRatio('right', 0.45) 
+    viscope.wManager.setVWindowAlignment('overlap')
     
     # carry out some GUI settings
     #newGUI.plasmonViewer.spotIdentGui()

@@ -33,8 +33,8 @@ class SpotSpectraViewer(SViewer):
 
         # calculated parameters
         # upgrade spotSpectra class
-        _image = self.spotSpectra.image 
-        _wavelength = self.spotSpectra.wavelength 
+        _image = self.spotSpectra.image
+        _wavelength = self.spotSpectra.wavelength
         self.spotSpectra = SpotSpectra(image= _image,wavelength=_wavelength)
 
         #napari widget
@@ -70,6 +70,11 @@ class SpotSpectraViewer(SViewer):
         }
         self.maskLayer = self.viewer.add_image(self.spotSpectra.getMask(), name='spot_mask',
         colormap=transparentRedGreen_colormap, opacity = 0.5)
+        # adding the mask layer makes napari select it as the active layer,
+        # which switches the visible layer-controls panel away from
+        # spectraLayer (hiding its already-toggled auto-contrast button) -
+        # select spectraLayer back so its controls stay in view
+        self.viewer.layers.selection.active = self.spectraLayer
 
         # set pyqt
         @magicgui(auto_call= 'True', 
@@ -195,7 +200,8 @@ class SpotSpectraViewer(SViewer):
         for _ in range(self.maxNLine):
             self.linePlotList2.append(self.spectraGraph.plot())
             self.linePlotList2[-1].hide()
-            self._speedUpLineDrawing(self.linePlotList2[-1])        
+            self._speedUpLineDrawing(self.linePlotList2[-1])
+
 
     def drawSpectraGraph(self):
         ''' draw all new lines in the spectraGraph
@@ -269,8 +275,12 @@ class SpotSpectraViewer(SViewer):
            '''
         start = timer()
         if (modified=='image') or (modified=='all'):
-            self.spectraLayer.data = self.spotSpectra.getImage()
-            self.drawSpectraGraph()           
+            newImage = self.spotSpectra.getImage()
+            resetView = self.spectraLayer.data.shape != newImage.shape
+            self.spectraLayer.data = newImage
+            if resetView:
+                self.viewer.reset_view()
+            self.drawSpectraGraph()
         if (modified=='point') or (modified=='all'):
             self.maskLayer.data = self.spotSpectra.maskImage            
             self.drawSpectraGraph()
@@ -278,7 +288,6 @@ class SpotSpectraViewer(SViewer):
         print(f'viewer redraw evaluation time {end -start} s')
 
     
-
 if __name__ == "__main__":
     pass
 
