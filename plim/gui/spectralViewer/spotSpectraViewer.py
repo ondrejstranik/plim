@@ -127,7 +127,7 @@ class SpotSpectraViewer(SViewer):
             spectraParameterGui._auto_call = True
 
         #automatic identification of spots
-        @magicgui
+        @magicgui(call_button='Set')
         def spotIdentGui(
             onGrid: bool = True,
         ):

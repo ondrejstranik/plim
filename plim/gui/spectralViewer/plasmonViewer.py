@@ -46,7 +46,7 @@ class PlasmonViewer(SpotSpectraViewer):
         ''' prepare the qui '''
 
         # set pyqt
-        @magicgui()
+        @magicgui(call_button='Set')
         def fitParameterGui(
             wavelengthStart: float = self.pF.wavelengthStartFit,
             wavelengthStop: float = self.pF.wavelengthStopFit,
