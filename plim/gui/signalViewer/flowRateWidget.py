@@ -84,7 +84,7 @@ class FlowRateWidget(QWidget):
         self.flowData.setData(signal,time)
         self.drawGraph()
 
-    def addDataValue(valueVector,time):
+    def addDataValue(self,valueVector,time):
         ''' add new value '''        
         self.flowData.addDataValue(valueVector,time)
         self.drawGraph()
