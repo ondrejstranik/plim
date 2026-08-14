@@ -4,17 +4,10 @@ camera based on multi filter camera technology
 '''
 #%%
 
-# devices
-from spectralCamera.instrument.camera.pfCamera.pFCamera import PFCamera 
-from spectralCamera.algorithm.calibratePFImage import CalibratePFImage
-from spectralCamera.instrument.sCamera.sCamera import SCamera
-from plim.instrument.pump.regloICC import RegloICC
-from plim.instrument.plasmonProcessor import PlasmonProcessor
-
-# gui
+# gui must be imported before camera SDK to ensure PyQt5 DLLs are loaded first
 import plim
 from viscope.main import viscope
-from viscope.gui.allDeviceGUI import AllDeviceGUI 
+from viscope.gui.allDeviceGUI import AllDeviceGUI
 from plim.gui.plasmonViewerGUI import PlasmonViewerGUI
 from plim.gui.positionTrackGUI import PositionTrackGUI
 from viscope.gui.cameraGUI import CameraGUI
@@ -26,6 +19,13 @@ from spectralCamera.gui.saveSIVideoGUI import SaveSIVideoGUI
 from viscope.gui.saveImageGUI import SaveImageGUI
 from viscope.gui.histogramGUI import HistogramGUI
 
+# devices (imported after GUI to avoid DLL conflicts with camera SDK on Windows)
+from spectralCamera.instrument.camera.pfCamera.pFCamera import PFCamera
+from spectralCamera.algorithm.calibratePFImage import CalibratePFImage
+from spectralCamera.instrument.sCamera.sCamera import SCamera
+from plim.instrument.pump.regloICC import RegloICC
+from plim.instrument.plasmonProcessor import PlasmonProcessor
+
 
 def main():
     # some global settings
@@ -35,8 +35,8 @@ def main():
     #camera
     camera = PFCamera(name='pfCamera')
     camera.connect()
-    camera.setParameter('exposureTime',2)
-    camera.setParameter('nFrame',33)
+    camera.setParameter('exposureTime',10)
+    camera.setParameter('nFrame',5)
 
     camera.setParameter('threadingNow',True)
 
@@ -51,7 +51,7 @@ def main():
 
     # pump
     #pump = VirtualPump('pump')
-    RegloICC.DEFAULT['port'] = 'COM6'
+    RegloICC.DEFAULT['port'] = 'COM7'
     pump = RegloICC('pump')
     
     pump.connect()
@@ -87,6 +87,12 @@ def main():
     svGui  = SaveSIVideoGUI(viscope)
     svGui.setDevice(sCamera)
 
+
+    # place the windows
+    adGui.vWindow.setRegion('right')
+    ptGui.vWindow.setRegion('right')
+    viscope.wManager.setRegionRatio('right', 0.45) 
+    viscope.wManager.setVWindowAlignment('overlap')
 
     # carry out some GUI settings
     #newGUI.plasmonViewer.spotIdentGui()
