@@ -7,6 +7,7 @@ class for tracking of plasmon peaks
 from viscope.gui.baseGUI import BaseGUI
 from plim.gui.signalViewer.signalWidget  import SignalWidget
 from plim.gui.signalViewer.flowRateWidget import FlowRateWidget
+from plim.gui.signalViewer.injectionWidget import InjectionWidget
 #from qtpy.QtWidgets import QVBoxLayout
 import traceback
 
@@ -31,13 +32,41 @@ class PositionTrackGUI(BaseGUI):
     def __setWidget(self):
         ''' prepare the gui '''
 
-        # add widgets 
+        # add widgets
         self.positionTrack = SignalWidget()
         self.flowTrack = FlowRateWidget()
+        self.injectionTrack = InjectionWidget()
 
         #self.vWindow.addMainGUI(self.positionTrack,name=self.DEFAULT['nameGUI'])
         self.vWindow.addParameterGui(self.positionTrack,name=self.positionTrack.DEFAULT['nameGUI'])
         self.vWindow.addParameterGui(self.flowTrack,name=self.flowTrack.DEFAULT['nameGUI'])
+        self.vWindow.addParameterGui(self.injectionTrack,name=self.injectionTrack.DEFAULT['nameGUI'])
+
+        # update the injection time input when the eval time marker (vLine[0]) is moved
+        self.positionTrack.vLine[0].sigPositionChanged.connect(self.updateInjectionTimeInput)
+
+        # mirror the first two vLine markers of positionTrack onto flowTrack
+        for ii in range(2):
+            self.positionTrack.vLine[ii].sigPositionChanged.connect(
+                lambda _, ii=ii: self.flowTrack.vLine[ii].setPos(self.positionTrack.vLine[ii].value()))
+
+        # allow the same '1'/'2' keyboard shortcuts to move the markers from flowTrack
+        self.flowTrack.sigSetEvalTime.connect(self.setEvalTimeFromFlow)
+        self.flowTrack.sigSetDTime.connect(self.setDTimeFromFlow)
+
+    def setEvalTimeFromFlow(self,value):
+        ''' set evalTime in positionTrack, triggered from a key press in flowTrack '''
+        self.positionTrack.lineParameter.evalTime.value = value
+
+    def setDTimeFromFlow(self,value):
+        ''' set dTime in positionTrack, triggered from a key press in flowTrack '''
+        value = value - self.positionTrack.sD.evalTime
+        if value < 0: value = 0
+        self.positionTrack.lineParameter.dTime.value = value
+
+    def updateInjectionTimeInput(self):
+        ''' set the injectionInfo time input to the position of vLine[0] '''
+        self.injectionTrack.timeInput.setText(str(int(self.positionTrack.vLine[0].value())))
 
     def interconnectGui(self,plasmonViewerGUI=None):
         ''' connect with other gui'''
@@ -52,6 +81,7 @@ class PositionTrackGUI(BaseGUI):
         # connect data container with device container
         self.positionTrack.sD = self.device.spotData
         self.flowTrack.flowData = self.device.flowData
+        self.injectionTrack.iD = self.device.injectionData
 
         # connect signals
         self.device.worker.yielded.connect(self.guiUpdateTimed)
@@ -99,6 +129,7 @@ class PositionTrackGUI(BaseGUI):
         # update the graph
         self.positionTrack.drawGraph()
         self.flowTrack.drawGraph()
+        self.injectionTrack.updateEditor()
 
   
 

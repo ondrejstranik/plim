@@ -15,7 +15,7 @@ class InjectionData:
         ''' initialization of the parameters '''
 
         self.data = ''
-        self.time0 = time.time_ns() #  time in ns from the start of Epoch
+        self.time0 = time.time() #  time in s from the start of Epoch
 
         if data is not None: self.data = data
         if time0 is not None: self.time0 = time0 # same as in spotData
@@ -32,9 +32,9 @@ class InjectionData:
     def clearData(self):
         ''' clear the data '''
         self.data = ''
-        self.time0 = time.time_ns() #  time in ns from the start of Epoch
+        self.time0 = time.time() #  time in s from the start of Epoch
 
-        
+
 #%%
 
 if __name__ == "__main__":

@@ -15,6 +15,7 @@ from plim.algorithm.plasmonFit import PlasmonFit
 from plim.algorithm.spotSpectra import SpotSpectra
 from plim.algorithm.spotData import SpotData
 from plim.algorithm.flowData import FlowData
+from plim.algorithm.injectionData import InjectionData
 
 
 class PlasmonProcessor(BaseProcessor):
@@ -39,6 +40,7 @@ class PlasmonProcessor(BaseProcessor):
         self.spotSpectra = SpotSpectra()
         self.spotData = SpotData()
         self.flowData = FlowData()
+        self.injectionData = InjectionData()
 
 
     def connect(self,sCamera=None,pump=None):
@@ -88,6 +90,7 @@ class PlasmonProcessor(BaseProcessor):
             if t0 is not None: 
                 self.flowData.clearData()
                 self.flowData.setT0(t0)
+                self.injectionData.setT0(t0)
         if newFlow is not None:
             self.flowData.addDataValue([newFlow],newTime)
     

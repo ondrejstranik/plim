@@ -42,7 +42,7 @@ class InjectionWidget(QWidget):
             # show the already existing data
             self.editor.setPlainText(self.iD.data)
         else:
-            self.iD.setData(self._makeTimeTagLine(0) + '\n')
+            self.iD.setData(self._formatTimeTag(0) + '\n')
             self.editor.setPlainText(self.iD.data)
 
         cursor = self.editor.textCursor()
@@ -65,17 +65,9 @@ class InjectionWidget(QWidget):
         timeTagLayout.addWidget(self.addNowTimeTagButton)
         layout.addLayout(timeTagLayout)
 
-    def _makeTimeTagLine(self, relativeTime):
+    def _formatTimeTag(self, relativeTime):
         ''' format a time tag line for the given relative time (in s) '''
-        relativeTime = int(float(relativeTime))
-        absoluteTimeNs = int(self.iD.time0 + relativeTime * 1e9)
-        return f'#%% {relativeTime} s ({absoluteTimeNs} ns)'
-
-    def _makeTimeTagLineNow(self):
-        ''' format a time tag line for the actual (current) time '''
-        absoluteTimeNs = int(time.time() * 1e9)
-        relativeTime = int((absoluteTimeNs - self.iD.time0) / 1e9)
-        return f'#%% {relativeTime} s ({absoluteTimeNs} ns)'
+        return f'#%% {int(float(relativeTime))} s'
 
     def _insertLine(self, line):
         ''' insert a line on a new line below the cursor '''
@@ -95,13 +87,19 @@ class InjectionWidget(QWidget):
         # emit signal to eventually update data in other guis
         self.sigUpdateData.emit()
 
+    def updateEditor(self):
+        ''' update the editor if its content differs from injectionData '''
+        if self.editor.toPlainText() != self.iD.data:
+            self.editor.setPlainText(self.iD.data)
+
     def addTimeTag(self):
         ''' insert a time tag on a new line below the cursor, using the relative time from the input box '''
-        self._insertLine(self._makeTimeTagLine(self.timeInput.text()))
+        self._insertLine(self._formatTimeTag(self.timeInput.text()))
 
     def addNowTimeTag(self):
         ''' insert a time tag on a new line below the cursor, using the actual (current) time '''
-        self._insertLine(self._makeTimeTagLineNow())
+        relativeTime = time.time() - self.iD.time0
+        self._insertLine(self._formatTimeTag(relativeTime))
 
 
 

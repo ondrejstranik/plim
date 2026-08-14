@@ -19,21 +19,23 @@ from plim.algorithm.plasmonFit import PlasmonFit
 from plim.algorithm.spotSpectra import SpotSpectra
 from plim.algorithm.spotData import SpotData
 from plim.algorithm.flowData import FlowData
+from plim.algorithm.injectionData import InjectionData
 
 
 class FileData:
     ''' class to save load all relevant data  '''
-    
+
     DEFAULT = {'nameSet'  : {
                             'flow':'_flowData.npz',
                             'image': '_image.npz',
                             'spot': '_spotData.npz',
                             'fit': '_fit.npz',
-                            'info': '_info.dat'
+                            'info': '_info.dat',
+                            'injection': '_injectionData.txt'
                             }
                             }
 
-    def __init__(self,spotData=None,spotSpectra=None, plasmonFit=None, flowData=None, **kwargs):
+    def __init__(self,spotData=None,spotSpectra=None, plasmonFit=None, flowData=None, injectionData=None, **kwargs):
         ''' initialisation '''
 
         # data container
@@ -41,6 +43,7 @@ class FileData:
         self.spotSpectra = SpotSpectra() if spotSpectra is None else spotSpectra
         self.spotData = SpotData() if spotData is None else spotData
         self.flowData = FlowData() if flowData is None else flowData
+        self.injectionData = InjectionData() if injectionData is None else injectionData
 
     def saveImageFile(self,folder,fileMainName):
         ''' save image file'''
@@ -190,6 +193,32 @@ class FileData:
              self.spotData.evalTime,
              self.spotData.dTime) = pickle.load(f) 
 
+    def saveInjectionFile(self,folder,fileMainName):
+        ''' save injection Data file'''
+        with open(str(folder) + '/' +  str(fileMainName)  + self.DEFAULT['nameSet']['injection'],'w') as f:
+            f.write(f'#%% header - time0= {self.injectionData.time0} s\n')
+            f.write(self.injectionData.data)
+
+    def loadInjectionFile(self,folder,fileMainName):
+        ''' load injection Data file'''
+        _file = Path(folder + '/' + fileMainName + self.DEFAULT['nameSet']['injection'])
+        if not _file.is_file():
+            print(f'could not find file {_file}')
+            return
+
+        with open(_file,'r') as f:
+            headerLine = f.readline()
+            data = f.read()
+
+        time0 = self.injectionData.time0
+        if 'time0=' in headerLine:
+            try:
+                time0 = float(headerLine.split('time0=')[1].split('s')[0].strip())
+            except ValueError:
+                print(f'could not parse time0 from header in file {_file}')
+
+        self.injectionData.setData(data,time0)
+
     def saveAllFile(self,folder,fileMainName):
         ''' save all data'''
         self.saveImageFile(folder,fileMainName)
@@ -197,6 +226,7 @@ class FileData:
         self.saveFlowFile(folder,fileMainName)
         self.saveSpotFile(folder,fileMainName)
         self.saveInfoFile(folder,fileMainName)
+        self.saveInjectionFile(folder,fileMainName)
 
     def loadAllFile(self,folder,fileMainName):
         ''' save all data'''
@@ -205,6 +235,7 @@ class FileData:
         self.loadFlowFile(folder,fileMainName)
         self.loadSpotFile(folder,fileMainName)
         self.loadInfoFile(folder,fileMainName)
+        self.loadInjectionFile(folder,fileMainName)
 
 
 

@@ -33,7 +33,8 @@ class SaveDataGUI(BaseGUI):
             _fileData = FileData(spotData=self.device.spotData,
                                  flowData=self.device.flowData,
                                  spotSpectra=self.device.spotSpectra,
-                                 plasmonFit=self.device.pF)
+                                 plasmonFit=self.device.pF,
+                                 injectionData=self.device.injectionData)
             
             _fileData.saveAllFile(folder=filePath,fileMainName=fileName)
 
@@ -41,6 +42,7 @@ class SaveDataGUI(BaseGUI):
         def resetGui():
             self.device.spotData.clearData()
             self.device.flowData.clearData()
+            self.device.injectionData.clearData()
 
         # add widgets 
 

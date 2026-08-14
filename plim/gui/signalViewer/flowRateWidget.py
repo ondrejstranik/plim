@@ -6,7 +6,8 @@ import napari
 import pyqtgraph as pg
 from PyQt5.QtGui import QColor, QPen
 from qtpy.QtWidgets import QLabel, QSizePolicy,QWidget, QApplication, QVBoxLayout
-from qtpy.QtCore import Qt
+from qtpy import QtCore
+from qtpy.QtCore import Qt, Signal
 from magicgui import magicgui
 
 import numpy as np
@@ -19,16 +20,23 @@ class FlowRateWidget(QWidget):
                'maxNLine': 4, # maxNLine ... max number of line plotted in the gra
             }
 
+    sigSetEvalTime = Signal(float)
+    sigSetDTime = Signal(float)
+
     def __init__(self,signal=None, time= None, flowData=None, **kwargs):
         ''' initialise the class '''
         super().__init__()
 
-        if flowData is not None: self.flowData= flowData 
+        if flowData is not None: self.flowData= flowData
         else:
             self.flowData = FlowData(signal,time)
 
         self.linePlotList = []
+        self.vLine = []
         self.maxNLine = FlowRateWidget.DEFAULT['maxNLine']
+
+        # define position of mouse on the graph - used for the vLine keyboard shortcuts
+        self.mousePoint = QtCore.QPointF()
 
         # set this gui of this class
         FlowRateWidget._setWidget(self)
@@ -44,14 +52,39 @@ class FlowRateWidget(QWidget):
         styles = {'color':'r', 'font-size':'20px'}
         self.graph.setLabel('left', 'Flow Rate', units='ul/min')
         self.graph.setLabel('bottom', 'time', units= 's')
+        # add vertical lines (mirroring the first two of SignalWidget)
+        vLineColor = ['g','r']
+        for c in vLineColor:
+            vLine = pg.InfiniteLine(angle=90, movable=False, pen=pg.mkPen(c, width=0, style=Qt.SolidLine), pos=0)
+            self.graph.addItem(vLine, ignoreBounds=True)
+            self.vLine.append(vLine)
         # pre allocate lines for the graph
         for ii in range(self.maxNLine):
             self.linePlotList.append(self.graph.plot())
             self.linePlotList[-1].hide()
-  
+
+        self.graph.scene().sigMouseMoved.connect(self.mouse_moved)
+
         layout = QVBoxLayout()
         layout.addWidget(self.graph)
         self.setLayout(layout)
+
+    def mouse_moved(self, pos):
+        self.mousePoint = self.graph.plotItem.vb.mapSceneToView(pos)
+
+    def keyPressEvent(self, evt):
+        ''' request a change of the vLine position, same keys as in SignalWidget '''
+        if self.graph.underMouse():
+            _text = evt.text()
+
+            if _text == '1':
+                self.sigSetEvalTime.emit(self.mousePoint.x())
+
+            if _text == '2':
+                self.sigSetDTime.emit(self.mousePoint.x())
+
+        # keep the keyPressEvent on this widget
+        self.setFocus()
 
     def drawGraph(self):
         ''' draw all valid lines in the graph '''
