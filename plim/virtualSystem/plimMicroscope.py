@@ -8,6 +8,7 @@ components: camera
 #%%
 
 import time
+import traceback
 
 from viscope.virtualSystem.base.baseSystem import BaseSystem
 from viscope.virtualSystem.component.component import Component
@@ -139,39 +140,42 @@ class PlimMicroscope(BaseSystem):
         time0 = time.time()
 
         while True:
-            yield 
+            try:
+                yield
 
-            # recalculate total volume
-            timeDelta = time.time() - time0
-            self.totalFlow += self.device['pump'].getParameter('flowRateReal')*timeDelta/60
-            time0 += timeDelta 
+                # recalculate total volume
+                timeDelta = time.time() - time0
+                self.totalFlow += self.device['pump'].getParameter('flowRateReal')*timeDelta/60
+                time0 += timeDelta
 
-            # recalculate if sample is changed
-            plasmonShift = self.sample.getActualShift(totalFlow=self.totalFlow)
-            if plasmonShift != plasmonShift0:
-                #self.sample.setPlasmonShift(plasmonShift,np.arange(0,len(self.sample.peakList),2))
-                self.sample.setPlasmonShift(plasmonShift, spot=1/2)
-                self.device['camera'].flagSetParameter.set()
-                self.device['camera2'].flagSetParameter.set()
-                plasmonShift0 = plasmonShift
+                # recalculate if sample is changed
+                plasmonShift = self.sample.getActualShift(totalFlow=self.totalFlow)
+                if plasmonShift != plasmonShift0:
+                    #self.sample.setPlasmonShift(plasmonShift,np.arange(0,len(self.sample.peakList),2))
+                    self.sample.setPlasmonShift(plasmonShift, spot=1/2)
+                    self.device['camera'].flagSetParameter.set()
+                    self.device['camera2'].flagSetParameter.set()
+                    plasmonShift0 = plasmonShift
 
-            # recalculate cameras if stage moved
-            if self.device['stage'].flagSetParameter.is_set():
-                self.device['camera'].flagSetParameter.set()
-                self.device['camera2'].flagSetParameter.set()
-                self.device['stage'].flagSetParameter.clear()
-            # recalculate camera parameters are changed
-            if self.device['camera'].flagSetParameter.is_set():
-                #print(f'calculate virtual frame - camera ')
-                self.device['camera'].virtualFrame = self.calculateVirtualFrameCamera()
-                self.device['camera'].flagSetParameter.clear()
-            # recalculate camera parameters are changed
-            if self.device['camera2'].flagSetParameter.is_set():
-                #print(f'calculate virtual frame - camera2')
-                self.device['camera2'].virtualFrame = self.calculateVirtualFrameCamera2()
-                self.device['camera2'].flagSetParameter.clear()
-
-            time.sleep(0.03)
+                # recalculate cameras if stage moved
+                if self.device['stage'].flagSetParameter.is_set():
+                    self.device['camera'].flagSetParameter.set()
+                    self.device['camera2'].flagSetParameter.set()
+                    self.device['stage'].flagSetParameter.clear()
+                # recalculate camera parameters are changed
+                if self.device['camera'].flagSetParameter.is_set():
+                    #print(f'calculate virtual frame - camera ')
+                    self.device['camera'].virtualFrame = self.calculateVirtualFrameCamera()
+                    self.device['camera'].flagSetParameter.clear()
+                # recalculate camera parameters are changed
+                if self.device['camera2'].flagSetParameter.is_set():
+                    #print(f'calculate virtual frame - camera2')
+                    self.device['camera2'].virtualFrame = self.calculateVirtualFrameCamera2()
+                    self.device['camera2'].flagSetParameter.clear()
+            except:
+                print(f"An exception occurred in thread of {self.__class__.__name__}:\n")
+                traceback.print_exc()
+            time.sleep(self.loopDelay)
 
         
 
