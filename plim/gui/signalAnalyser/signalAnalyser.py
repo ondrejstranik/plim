@@ -20,6 +20,7 @@ from plim.gui.signalViewer.signalWidget import SignalWidget
 from plim.gui.signalViewer.flowRateWidget import FlowRateWidget
 from plim.gui.signalViewer.infoWidget import InfoWidget
 from plim.gui.signalViewer.fitWidget import FitWidget
+from plim.gui.signalViewer.injectionWidget import InjectionWidget
 
 
 class SignalAnalyser(QMainWindow):
@@ -48,6 +49,7 @@ class SignalAnalyser(QMainWindow):
         self.sD: SpotData = None
         self.fD: FlowData = None
         self.sS: SpotSpectra = None
+        self.iD: InjectionWidget = None
         #self.fileData = FileData()
         self.pxAve = None
 
@@ -59,6 +61,7 @@ class SignalAnalyser(QMainWindow):
         self.sW = None
         self.fW = None
         self.iW = None
+        self.injW = None
 
         self._createToolBar()
 
@@ -152,7 +155,9 @@ class SignalAnalyser(QMainWindow):
         # update data widgets
         self.sW.sD = self.sD
         self.iW.sD = self.sD
+        self.injW.iD = self.iD
         self.imageLayer.data = self.image
+        
         # update widgets
         self.sW.lineParameter(
                 lineIndex = self.sW.lineIndex,
@@ -164,6 +169,7 @@ class SignalAnalyser(QMainWindow):
         )
         self.sW.drawGraph()
         self.fW.drawGraph()
+        self.injW.updateEditor()
 
     def _updateInfoLabel(self):
         ''' update info label '''
@@ -175,8 +181,9 @@ class SignalAnalyser(QMainWindow):
         if fileMainName is not None: self.fileMainName = fileMainName
 
         # set the data into the saving data class fileData
-        _fileData = FileData(spotData=self.sD)
+        _fileData = FileData(spotData=self.sD, injectionData=self.iD)
         _fileData.saveInfoFile(self.folder,self.fileMainName)
+        _fileData.saveInjectionFile(self.folder,self.fileMainName)
         print('saving info file')
 
 
@@ -202,6 +209,9 @@ class SignalAnalyser(QMainWindow):
 
         # copy info data parameters as well
         self.sD = _fileData.spotData
+
+        # injection data
+        self.iD = _fileData.injectionData
 
         #self.sD.setData(signal=_fileData.spotData.signal,time=_fileData.spotData.time,
         #                table=_fileData.spotData.table)
@@ -236,6 +246,7 @@ class SignalAnalyser(QMainWindow):
         self.sW.close()
         self.iW.close()
         self.fW.close()
+        self.injW.close()
         self.viewer.close()
         self.close()
 
@@ -417,8 +428,19 @@ class SignalAnalyser(QMainWindow):
         self.fW.show()
         self.fW.connectDataObject(self.sW)
 
+        # injection widget
+        self.injW = InjectionWidget(injectionData=self.iD)
+        self.injW.show()
+
+        # update the injection time input when the eval time marker (vLine[0]) is moved
+        self.sW.vLine[0].sigPositionChanged.connect(self.updateInjectionTimeInput)
+
         # initial update
         self.updateFromSW()
+
+    def updateInjectionTimeInput(self):
+        ''' set the injection time input to the position of vLine[0] '''
+        self.injW.timeInput.setText(str(int(self.sW.vLine[0].value())))
 
 
 #%%
