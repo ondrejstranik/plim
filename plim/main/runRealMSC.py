@@ -59,9 +59,10 @@ def main():
     pump.setParameter('flow',False)
 
 
-    # plasmon data processor    
+    # plasmon data processor
     pP = PlasmonProcessor()
     pP.connect(sCamera=sCamera, pump=pump)
+    pP.setParameter('loopDelay',1) # throttle down the fitting loop to reduce GUI freezing
     pP.setParameter('threadingNow',True)
 
     # set GUIs
