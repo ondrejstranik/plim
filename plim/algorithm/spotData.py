@@ -6,6 +6,7 @@ import numpy as np
 import time
 import pickle
 import csv
+import re
 
 class SpotData:
     ''' class for processing signal from spots '''
@@ -63,7 +64,11 @@ class SpotData:
     def checkTableValues(self):
         self.table['visible'] = [
             'True' if str(x).lower() in ("true", "1") else 'False' for x in self.table['visible']
-            ] 
+            ]
+
+        self.table['color'] = [
+            x if re.fullmatch(r'#[0-9A-Fa-f]{6}', str(x)) else '#ffffff' for x in self.table['color']
+            ]
 
     def setData(self,signal,time=None, table=None):
         ''' set signal and (time)'''
