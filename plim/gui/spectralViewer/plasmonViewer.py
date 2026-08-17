@@ -56,10 +56,15 @@ class PlasmonViewer(SpotSpectraViewer):
             ):
 
             self.pF.wavelengthStartFit = wavelengthStart
+            fitParameterGui.wavelengthStart.value = wavelengthStart
             self.pF.wavelengthStopFit = wavelengthStop
+            fitParameterGui.wavelengthStop.value = wavelengthStop
             self.pF.orderFit = orderFit
+            fitParameterGui.orderFit.value = orderFit
             self.pF.peakWidth =  peakWidth
+            fitParameterGui.peakWidth.value = peakWidth
             self.pF.wavelengthGuess = wavelengthGuess
+            fitParameterGui.wavelengthGuess.value = wavelengthGuess
 
             # recalculate fit and redraw the spectra
             self.calculateSpectra()

@@ -8,6 +8,7 @@ from viscope.gui.baseGUI import BaseGUI
 from plim.gui.signalViewer.signalWidget  import SignalWidget
 from plim.gui.signalViewer.flowRateWidget import FlowRateWidget
 from plim.gui.signalViewer.injectionWidget import InjectionWidget
+from plim.gui.signalViewer.infoWidget import InfoWidget
 #from qtpy.QtWidgets import QVBoxLayout
 import traceback
 
@@ -25,9 +26,10 @@ class PositionTrackGUI(BaseGUI):
         # widget
         self.positionTrack = None
         self.flowTrack = None
+        self.infoWidget = None
 
         # prepare the gui of the class
-        PositionTrackGUI.__setWidget(self) 
+        PositionTrackGUI.__setWidget(self)
 
     def __setWidget(self):
         ''' prepare the gui '''
@@ -36,11 +38,19 @@ class PositionTrackGUI(BaseGUI):
         self.positionTrack = SignalWidget()
         self.flowTrack = FlowRateWidget()
         self.injectionTrack = InjectionWidget()
+        self.infoWidget = InfoWidget()
 
         #self.vWindow.addMainGUI(self.positionTrack,name=self.DEFAULT['nameGUI'])
         self.vWindow.addParameterGui(self.positionTrack,name=self.positionTrack.DEFAULT['nameGUI'])
         self.vWindow.addParameterGui(self.flowTrack,name=self.flowTrack.DEFAULT['nameGUI'])
         self.vWindow.addParameterGui(self.injectionTrack,name=self.injectionTrack.DEFAULT['nameGUI'])
+        self.vWindow.addParameterGui(self.infoWidget,name=self.infoWidget.DEFAULT['nameGUI'])
+
+        # keep the signal graph in sync with edits made in the info table (color/visible/...)
+        self.infoWidget.sigUpdateData.connect(self.positionTrack.redrawWidget)
+
+        # select the same row in the info table when the line selection changes in positionTrack
+        self.positionTrack.sigUpdateData.connect(self.updateInfoSelectionFromSignal)
 
         # update the injection time input when the eval time marker (vLine[0]) is moved
         self.positionTrack.vLine[0].sigPositionChanged.connect(self.updateInjectionTimeInput)
@@ -68,13 +78,19 @@ class PositionTrackGUI(BaseGUI):
         ''' set the injectionInfo time input to the position of vLine[0] '''
         self.injectionTrack.timeInput.setText(str(int(self.positionTrack.vLine[0].value())))
 
+    def updateInfoSelectionFromSignal(self):
+        ''' select the same row in the info table as the line currently selected in positionTrack '''
+        self.infoWidget.updateSelect(self.positionTrack.lineIndex)
+
     def interconnectGui(self,plasmonViewerGUI=None):
         ''' connect with other gui'''
         self.pvGui = plasmonViewerGUI
 
         # connect signals
         self.positionTrack.sigUpdateData.connect(self.updatePlasmonViewer)
+        self.infoWidget.sigUpdateData.connect(self.updatePlasmonViewer)
         self.pvGui.plasmonViewer.sigUpdateData.connect(self.updatePositionTrack)
+        self.pvGui.plasmonViewer.sigSelectionChanged.connect(self.updateInfoSelectionFromPlasmonViewer)
 
     def setDevice(self,device):
         super().setDevice(device)
@@ -82,6 +98,7 @@ class PositionTrackGUI(BaseGUI):
         self.positionTrack.sD = self.device.spotData
         self.flowTrack.flowData = self.device.flowData
         self.injectionTrack.iD = self.device.injectionData
+        self.infoWidget.sD = self.device.spotData
 
         # connect signals
         self.device.worker.yielded.connect(self.guiUpdateTimed)
@@ -116,6 +133,11 @@ class PositionTrackGUI(BaseGUI):
         # update the offset for data
         #self.positionTrack.sD.setOffset()
 
+    def updateInfoSelectionFromPlasmonViewer(self):
+        ''' select the same rows in the info table when spots are selected in the plasmon viewer '''
+        idx = list(self.pvGui.plasmonViewer.pointLayer.selected_data)
+        self.infoWidget.updateSelect(idx)
+
 
 
     def updateGui(self):
@@ -130,6 +152,7 @@ class PositionTrackGUI(BaseGUI):
         self.positionTrack.drawGraph()
         self.flowTrack.drawGraph()
         self.injectionTrack.updateEditor()
+        self.infoWidget.redrawWidget()
 
   
 

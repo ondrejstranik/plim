@@ -73,6 +73,7 @@ def main():
     # plasmon data processor    
     pP = PlasmonProcessor()
     pP.connect(sCamera=sCamera, pump=pump)
+    pP.setParameter('loopDelay',1) # throttle down the fitting loop to reduce GUI freezing
     pP.setParameter('threadingNow',True)
 
     # virtual microscope
@@ -98,9 +99,12 @@ def main():
     #deviceGUI.setDevice(camera2)
     pvGui  = PlasmonViewerGUI(viscope,vWindow='new')
     pvGui.setDevice(pP)
+    pvGui.plasmonViewer.fitParameterGui(peakWidth=80)
+    pvGui.plasmonViewer.spectraParameterGui(showRawSpectra=False, pxSpace=2)
     ptGui  = PositionTrackGUI(viscope,vWindow='new')
     ptGui.setDevice(pP)
     ptGui.interconnectGui(pvGui)
+    ptGui.positionTrack.fitParameter(align=True)
     sdGui = SaveDataGUI(viscope,vWindow=ptGui.vWindow)
     sdGui.setDevice(pP)
     svGui  = SaveSIVideoGUI(viscope)

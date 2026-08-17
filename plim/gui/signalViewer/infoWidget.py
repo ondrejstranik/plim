@@ -29,7 +29,7 @@ class _InfoTable(QTableWidget):
 
 class InfoWidget(QWidget):
     ''' main class for viewing signal'''
-    DEFAULT = {'nameGUI':'Signal',
+    DEFAULT = {'nameGUI':'Info',
                # columns shown in the info table that are computed/reference
                # values and must not be overwritten by the (text-only) table
                # widget content
@@ -48,7 +48,10 @@ class InfoWidget(QWidget):
 
     def _displayTable(self):
         ''' dict shown in the info table widget, including read-only columns '''
-        return self.sD.table | {'dSignal': self.sD.dSignal, 'noise': self.sD.noise}
+        nRow = len(self.sD.table['name']) if self.sD.table.get('name') is not None else 0
+        dSignal = self.sD.dSignal if self.sD.dSignal is not None else [None]*nRow
+        noise = self.sD.noise if self.sD.noise is not None else [None]*nRow
+        return self.sD.table | {'dSignal': dSignal, 'noise': noise}
 
     def keyPressEvent(self, evt):
         ''' react on the key pressed, when focused on the widget'''
@@ -139,13 +142,28 @@ class InfoWidget(QWidget):
         self.sD.getDSignal()
         self.sD.getNoise()
 
-        self.redrawWidget()
+        self._redrawTable()
 
         # emit signal to eventually update data in other guis
         self.sigUpdateData.emit()
 
     def redrawWidget(self):
-        ''' redraw all values in the widget from class parameters'''
+        ''' redraw all values in the widget from class parameters.
+
+        Skips the refresh while a cell is actively being edited, so
+        periodic external updates (e.g. from a running acquisition) don't
+        interrupt the user mid-edit. '''
+        if self.infoTable.state() == QAbstractItemView.EditingState:
+            return
+        self._redrawTable()
+
+    def _redrawTable(self):
+        ''' unconditionally redraw all values in the table from sD '''
+
+        if self.sD.table.get('name') is None:
+            # no spots yet (e.g. acquisition just started, no data received)
+            self.infoTable.setRowCount(0)
+            return
 
         table = self._displayTable()
         columns = list(table.keys())

@@ -113,9 +113,10 @@ class SpotSpectraViewer(SViewer):
             self.spotSpectra.darkCount = darkCount
             spectraParameterGui.darkCount.value = darkCount
             self.spotSpectra.spectraSigma = spectraSigma
-            spectraParameterGui.darkCount.value = darkCount
+            spectraParameterGui.spectraSigma.value = spectraSigma
 
             self.showRawSpectra = showRawSpectra
+            spectraParameterGui.showRawSpectra.value = showRawSpectra
 
             # recalculate mask
             self.spotSpectra.setMask()

@@ -124,6 +124,9 @@ class SpotData:
 
         signal, time = self.getData()
 
+        if signal is None:
+            return (signal, time)
+
         if update:
             self.setOffset()
             self.setReference()
@@ -198,8 +201,8 @@ class SpotData:
         if range is not None: self.range = range
         if useOffset is not None: self.useOffset = useOffset
 
-        # no offset applied
-        if not self.useOffset:
+        # no offset applied, or no data yet to compute it from
+        if not self.useOffset or self.signal is None:
             self.offset = 0
             return
 
@@ -216,6 +219,10 @@ class SpotData:
         if evalTime is not None: self.evalTime = evalTime
         if dTime is not None: self.dTime = dTime
         if range is not None: self.range = range
+
+        # no data yet to compute it from
+        if self.signal is None:
+            return self.dSignal
 
         if self.useReference:
             _signal = self.signal - self.reference[:,None]
@@ -237,6 +244,10 @@ class SpotData:
         if evalTime is not None: self.evalTime = evalTime
         if dTime is not None: self.dTime = dTime
         if range is not None: self.range = range
+
+        # no data yet to compute it from
+        if self.signal is None:
+            return self.noise
 
         range = self.getRange(self.evalTime+self.dTime)
 

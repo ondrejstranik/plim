@@ -65,13 +65,23 @@ class SignalWidget(QWidget):
                 alignTime: float = self.sD.alignTime,
                 range: int = self.sD.range):
 
+            fitParameter._auto_call = False
+
             self.sD.setOffset(alignTime,range, align)
+            fitParameter.align.value = align
+            fitParameter.alignTime.value = alignTime
+            fitParameter.range.value = range
             self.sD.setReference(color=referenceColor,
                                  useReference=useReference)
+            fitParameter.useReference.value = useReference
+            fitParameter.referenceColor.value = referenceColor
+
+            fitParameter._auto_call = True
 
             self.sD.getDSignal() # recalculate in the case the range changed
             _noise = self.sD.getNoise()
-            self.lineParameter.noise.value =  f"{_noise[self.lineIndex]:.2E}"
+            if _noise is not None:
+                self.lineParameter.noise.value =  f"{_noise[self.lineIndex]:.2E}"
 
             self.drawGraph()
 
