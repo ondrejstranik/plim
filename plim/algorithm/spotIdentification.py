@@ -21,12 +21,12 @@ class SpotIdentification:
 
         self.spotPosition = None
         self.spectralImage = spectralImage
-        self.spotRadius = None
+        self.spotRadius = SpotIdentification.DEFAULT['radius']
         self.maxNSpot = SpotIdentification.DEFAULT['maxNSpot']
 
     def getPosition(self, contrastChannel=None):
         ''' get the position of plasmonic spots '''
-        
+
         # make contrast image by sum projection
         # TODO: (optional) improve contrast by selecting only part of the spectral
         if contrastChannel is None:
@@ -34,10 +34,12 @@ class SpotIdentification:
         else:
             _sumIm = self.spectralImage[contrastChannel,...]
         _sumIm = _sumIm/_sumIm.max()
-        sumIm = ski.util.img_as_uint(gaussian(_sumIm))
+        # 8-bit (256 bins) is much faster than 16-bit (65536 bins) for
+        # rank.otsu, which scans the whole local histogram per pixel
+        sumIm = ski.util.img_as_ubyte(gaussian(_sumIm))
 
-        # use local otsu to threshold image
-        footprint = disk(4*self.DEFAULT['radius'])
+        # use local otsu to threshold image, sized from the estimated radius
+        footprint = disk(4*self.spotRadius)
         local_otsu = rank.otsu(sumIm, footprint)
         mask = sumIm < local_otsu
 

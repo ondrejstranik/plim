@@ -131,10 +131,15 @@ class SpotSpectraViewer(SViewer):
         @magicgui(call_button='Set')
         def spotIdentGui(
             onGrid: bool = True,
+            onSum: bool = True,
+            estimatedRadius: int = SpotIdentification.DEFAULT['radius'],
         ):
             # identify the spot
             sI = SpotIdentification(self.spotSpectra.image)
-            myPosition = sI.getPosition()
+            sI.spotRadius = estimatedRadius
+            # on the sum of the spectral images, or just the displayed one
+            contrastChannel = None if onSum else int(self.viewer.dims.point[0])
+            myPosition = sI.getPosition(contrastChannel=contrastChannel)
             myRadius = sI.getRadius()
             print(f'detected radius: {myRadius}')
 
