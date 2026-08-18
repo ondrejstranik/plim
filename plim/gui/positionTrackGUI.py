@@ -90,6 +90,7 @@ class PositionTrackGUI(BaseGUI):
         self.positionTrack.sigUpdateData.connect(self.updatePlasmonViewer)
         self.infoWidget.sigUpdateData.connect(self.updatePlasmonViewer)
         self.pvGui.plasmonViewer.sigUpdateData.connect(self.updatePositionTrack)
+        self.pvGui.plasmonViewer.sigColorChanged.connect(self.updatePositionTrackColor)
         self.pvGui.plasmonViewer.sigSelectionChanged.connect(self.updateInfoSelectionFromPlasmonViewer)
 
     def setDevice(self,device):
@@ -105,48 +106,68 @@ class PositionTrackGUI(BaseGUI):
 
     def updatePlasmonViewer(self):
         ''' update plasmonViewer because data in position track changed '''
+        if self.pvGui is None:
+            return
 
-        # update colors in the plasmonViewerGUI
-        if self.pvGui is not None:
-            print('updating plasmonViewer Color')
-            rgb = self.positionTrack.sD.table['color']
-            vis = self.positionTrack.sD.table['visible']
-            _color = [rgb[ii] + 'ff' if vis[ii]=='True' else rgb[ii] + '00' for ii in range(len(rgb))]
+        # no data received yet - nothing to push to the viewer
+        rgb = self.positionTrack.sD.table['color']
+        if rgb is None:
+            return
 
-        self.pvGui.plasmonViewer.pointLayer.face_color = _color        
+        vis = self.positionTrack.sD.table['visible']
+        _color = [rgb[ii] + 'ff' if vis[ii]=='True' else rgb[ii] + '00' for ii in range(len(rgb))]
+
+        self.pvGui.plasmonViewer.pointLayer.face_color = _color
+
+        # keep the point annotations in sync with the (possibly renamed) spots
+        try:
+            self.pvGui.plasmonViewer.pointLayer.features = {'names': self.positionTrack.sD.table['name']}
+        except:
+            print('error updating plasmonViewer point annotations')
+            traceback.print_exc()
 
     def updatePositionTrack(self):
-        ''' update color in position Track because color in plasmon viewer changed'''
+        ''' update spotData because the number/position of spots changed in the plasmon viewer '''
 
-        print(f'updating from Napari - color or number of spots')
-    
-        # update color in spotData
         try:
-            _fc = 1*self.pvGui.plasmonViewer.pointLayer.face_color #  deep copy of the colors
-            _fc[list(self.pvGui.plasmonViewer.pointLayer.selected_data)] = self.pvGui.plasmonViewer.pointLayer._face.current_color # adjust the just modified 
-            _fcHex = ['#{:02x}{:02x}{:02x}'.format( *ii.tolist()) for ii in (_fc*255).astype(int)]
+            _fcHex = ['#{:02x}{:02x}{:02x}'.format( *ii.tolist())
+                      for ii in (self.pvGui.plasmonViewer.pointLayer.face_color*255).astype(int)]
+
+            # keep name/visible consistent with the (possibly changed) number of
+            # points, so the table stays internally consistent immediately -
+            # otherwise a point add/delete would leave 'color' resized to the
+            # new spot count while 'name'/'visible' are still the old length
+            nSpot = len(_fcHex)
+            _oldName = self.positionTrack.sD.table.get('name') or []
+            _oldVisible = self.positionTrack.sD.table.get('visible') or []
+            self.positionTrack.sD.table['name'] = [_oldName[ii] if ii < len(_oldName) else str(ii) for ii in range(nSpot)]
+            self.positionTrack.sD.table['visible'] = [_oldVisible[ii] if ii < len(_oldVisible) else 'True' for ii in range(nSpot)]
             self.positionTrack.sD.table['color'] = _fcHex
         except:
             print('error in updatePositionTrack')
             traceback.print_exc()
 
-        # update the offset for data
-        #self.positionTrack.sD.setOffset()
+    def updatePositionTrackColor(self):
+        ''' update color in spotData because a point's color was changed in the plasmon viewer '''
+
+        print(f'updating from Napari - color')
+
+        try:
+            _fc = 1*self.pvGui.plasmonViewer.pointLayer.face_color #  deep copy of the colors
+            _fc[list(self.pvGui.plasmonViewer.pointLayer.selected_data)] = self.pvGui.plasmonViewer.pointLayer._face.current_color # adjust the just modified
+            _fcHex = ['#{:02x}{:02x}{:02x}'.format( *ii.tolist()) for ii in (_fc*255).astype(int)]
+            self.positionTrack.sD.table['color'] = _fcHex
+        except:
+            print('error in updatePositionTrackColor')
+            traceback.print_exc()
 
     def updateInfoSelectionFromPlasmonViewer(self):
         ''' select the same rows in the info table when spots are selected in the plasmon viewer '''
         idx = list(self.pvGui.plasmonViewer.pointLayer.selected_data)
         self.infoWidget.updateSelect(idx)
 
-
-
     def updateGui(self):
         ''' update the data in gui '''
-
-        # connect the color of the line with the plasmon viewer
-        #self.positionTrack.sD.signalColor = self.pvGui.plasmonViewer.pointLayer.face_color
-        #self.positionTrack.sD.table['color'] = self.pvGui.plasmonViewer.pointLayer.face_color
-
 
         # update the graph
         self.positionTrack.drawGraph()

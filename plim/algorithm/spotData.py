@@ -101,7 +101,10 @@ class SpotData:
                 self.time0 = self.time[0] # reset time0
             else:
                 self.time0 = 0
-            self.setTable()
+            # preserve the current table (e.g. colors synced from the viewer)
+            # if it already matches the new spot count, instead of always
+            # resetting it to plain defaults
+            self.setTable(table=self.table)
             self.setOffset()
             self.setReference()
             return self.time0

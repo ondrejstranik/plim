@@ -167,13 +167,13 @@ class SpotSpectraViewer(SViewer):
             # avoid setting this signal
             with self.pointLayer.events.data.blocker():
                 self.pointLayer.data = myPosition
+            # the blocker above suppresses the automatic annotation refresh
+            # normally done in pointChanged(), so do it explicitly here
+            self.updatePointAnnotations()
             # emit the signal in this case
             self.spectraParameterGui(pxAve=int(myRadius))
 
-
-
             # emit signal 
-            # TODO: check if it is right
             self.sigUpdateData.emit()
 
         # add widget setParameterGui
