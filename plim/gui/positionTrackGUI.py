@@ -146,11 +146,16 @@ class PositionTrackGUI(BaseGUI):
         except:
             print('error in updatePositionTrack')
             traceback.print_exc()
+            return
+
+        # don't rely on the periodic updateGui() tick - it only runs when new
+        # data arrives from the device, which may be paused/idle (e.g. when
+        # reviewing a recorded file-based dataset rather than a live camera)
+        self.positionTrack.drawGraph()
+        self.infoWidget.redrawWidget()
 
     def updatePositionTrackColor(self):
         ''' update color in spotData because a point's color was changed in the plasmon viewer '''
-
-        print(f'updating from Napari - color')
 
         try:
             _fc = 1*self.pvGui.plasmonViewer.pointLayer.face_color #  deep copy of the colors
@@ -160,6 +165,11 @@ class PositionTrackGUI(BaseGUI):
         except:
             print('error in updatePositionTrackColor')
             traceback.print_exc()
+            return
+
+        # don't rely on the periodic updateGui() tick - see updatePositionTrack()
+        self.positionTrack.drawGraph()
+        self.infoWidget.redrawWidget()
 
     def updateInfoSelectionFromPlasmonViewer(self):
         ''' select the same rows in the info table when spots are selected in the plasmon viewer '''
