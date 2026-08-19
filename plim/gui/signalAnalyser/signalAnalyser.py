@@ -15,6 +15,7 @@ from pathlib import Path
 from plim.algorithm.spotData import SpotData
 from plim.algorithm.flowData import FlowData
 from plim.algorithm.fileData import FileData
+from plim.algorithm.injectionData import InjectionData
 from plim.algorithm.spotSpectra import SpotSpectra
 from plim.gui.signalViewer.signalWidget import SignalWidget
 from plim.gui.signalViewer.flowRateWidget import FlowRateWidget
@@ -49,7 +50,7 @@ class SignalAnalyser(QMainWindow):
         self.sD: SpotData = None
         self.fD: FlowData = None
         self.sS: SpotSpectra = None
-        self.iD: InjectionWidget = None
+        self.iD: InjectionData = None
         #self.fileData = FileData()
         self.pxAve = None
 
