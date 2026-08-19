@@ -97,12 +97,18 @@ class PositionTrackGUI(BaseGUI):
         super().setDevice(device)
         # connect data container with device container
         self.positionTrack.sD = self.device.spotData
+        # so SignalWidget can fall back to the live spot positions if its
+        # sD.table has none yet (e.g. FitWidget's 'transfer data' button, on
+        # the live pipeline where nothing ever writes table['position'])
+        self.positionTrack.spotSpectra = self.device.spotSpectra
         self.flowTrack.flowData = self.device.flowData
         self.injectionTrack.iD = self.device.injectionData
         self.infoWidget.sD = self.device.spotData
 
-        # connect signals
-        self.device.worker.yielded.connect(self.guiUpdateTimed)
+        # connect signals - FileDataProcessor (offline review) never starts a
+        # worker thread, so there is nothing to poll for it
+        if self.device.worker is not None:
+            self.device.worker.yielded.connect(self.guiUpdateTimed)
 
     def updatePlasmonViewer(self):
         ''' update plasmonViewer because data in position track changed '''

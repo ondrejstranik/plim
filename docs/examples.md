@@ -3,22 +3,10 @@
 ## Analysing plasmon signals (`runSignalAnalyser`)
 
 The main entry point for offline analysis is
-[`plim.main.runSignalAnalyser`](reference/main/runSignalAnalyser.md). It
-opens the [`SignalAnalyser`](reference/gui/signalAnalyser/signalAnalyser.md)
-GUI, which loads a previously recorded experiment (image, spot positions,
-flow and signal data), lets you inspect and select spots in the info table,
-and fit their kinetic binding curves.
-
-```python
-from qtpy.QtWidgets import QApplication
-import sys
-from plim.gui.signalAnalyser.signalAnalyser import SignalAnalyser
-
-app = QApplication([])
-window = SignalAnalyser()
-window.show()
-sys.exit(app.exec())
-```
+[`plim.main.runSignalAnalyser`](reference/main/runSignalAnalyser.md), which
+loads a previously recorded experiment (image, spot positions, flow and
+signal data), lets you inspect and select spots in the info table, and fit
+their kinetic binding curves.
 
 Run it directly as a script:
 ```

@@ -2,18 +2,49 @@
 script to run analysis of plasmon signals
 '''
 #%%
-from qtpy.QtWidgets import QApplication
-import sys
-from plim.gui.signalAnalyser.signalAnalyser import SignalAnalyser
+from viscope.main import viscope
+
+from plim.instrument.fileDataProcessor import FileDataProcessor
+from plim.gui.positionTrackGUI import PositionTrackGUI
+from plim.gui.signalAnalyser.spotViewerGUI import SpotViewerGUI
+from plim.gui.signalAnalyser.fitGUI import FitGUI
+from plim.gui.signalAnalyser.fileDataProcessorGUI import FileDataProcessorGUI
+
 
 def main():
-    app = QApplication([])
-    window = SignalAnalyser()
-    window.show()
-    sys.exit(app.exec())
+
+    device = FileDataProcessor()
+    device.connect()
+
+    fileDataGui = FileDataProcessorGUI(viscope)
+
+    ptGui = PositionTrackGUI(viscope, vWindow='new')
+    spotViewerGui = SpotViewerGUI(viscope, vWindow='new')
+    fitGui = FitGUI(viscope, vWindow=ptGui.vWindow)
+
+    ptGui.setDevice(device)
+    spotViewerGui.setDevice(device)
+    fitGui.setDevice(device)
+    fileDataGui.setDevice(device)
+
+    ptGui.interconnectGui(spotViewerGui)
+    fitGui.interconnectGui(ptGui)
+    fileDataGui.interconnectGui(ptGui, spotViewerGui)
+
+    # place the windows
+    fileDataGui.vWindow.setRegion('top')
+    viscope.wManager.setRegionRatio('top', 0.15) 
+
+    # simulate pressing 'Load' once at startup
+    #fileDataGui.selectAndLoad()
+
+    # main event loop
+    viscope.run()
+
+    device.disconnect()
+
 
 if __name__ == "__main__":
     main()
-    
-#%%
 
+#%%

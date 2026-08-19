@@ -198,14 +198,31 @@ class FitWidget(QWidget):
                 timeMask = ((time>self.dataObject.sD.evalTime) & 
                             (time<(self.dataObject.sD.evalTime + self.dataObject.sD.dTime)))
 
-                # copy the name and position
-                table = {'name': [self.dataObject.sD.table["name"][ii] for ii in range(len(_vis)) if _vis[ii]==True],
-                         'position': [self.dataObject.sD.table["position"][ii] for ii in range(len(_vis)) if _vis[ii]==True]}
+                # copy the name and position - position is optional (e.g. no
+                # image was loaded alongside this dataset, so spot
+                # coordinates were never recorded in the table). on the live
+                # pipeline nothing ever writes table['position'] at all, so
+                # fall back to the connected device's current spot positions
+                _position = self.dataObject.sD.table.get("position")
+                if _position is None:
+                    # spotSpectra.spotPosition defaults to [] (not None)
+                    # before any spot has been identified
+                    _spotSpectra = getattr(self.dataObject, 'spotSpectra', None)
+                    if (_spotSpectra is not None and _spotSpectra.spotPosition is not None
+                            and len(_spotSpectra.spotPosition) > 0):
+                        _position = _spotSpectra.spotPosition
+                table = {'name': [self.dataObject.sD.table["name"][ii] for ii in range(len(_vis)) if _vis[ii]==True]}
+                # spotSpectra may have re-identified a different spot count
+                # since sD.table was last updated - guard against a mismatch
+                if _position is not None and len(_position) >= len(_vis):
+                    table['position'] = [_position[ii] for ii in range(len(_vis)) if _vis[ii]==True]
 
                 if average:
                     signal = np.mean(signal,axis=1)[:,None]
-                    table = {'name': table['name'][0],
-                             'position': table['position'][0]}
+                    _avgTable = {'name': table['name'][0]}
+                    if 'position' in table:
+                        _avgTable['position'] = table['position'][0]
+                    table = _avgTable
 
                 self.setData(signal[timeMask,:],time[timeMask],table=table)
 

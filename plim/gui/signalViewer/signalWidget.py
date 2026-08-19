@@ -353,8 +353,10 @@ class SignalWidget(QWidget):
         self.lineParameter.lineVisible.value =  self.sD.table['visible'][self.lineIndex]=='True'
         self.lineParameter.lineName.value =  self.sD.table['name'][self.lineIndex]
         self.lineParameter.lineColor.value =  self.sD.table['color'][self.lineIndex]
+        self.lineParameter.evalTime.value = self.sD.evalTime
+        self.lineParameter.dTime.value = self.sD.dTime
         self.lineParameter.noise.value =  f"{self.sD.noise[self.lineIndex]:.2E}"
-        self.lineParameter._auto_call = True        
+        self.lineParameter._auto_call = True
 
         # fit parameter widget
         self.fitParameter._auto_call = False
