@@ -97,9 +97,8 @@ class PositionTrackGUI(BaseGUI):
         super().setDevice(device)
         # connect data container with device container
         self.positionTrack.sD = self.device.spotData
-        # so SignalWidget can fall back to the live spot positions if its
-        # sD.table has none yet (e.g. FitWidget's 'transfer data' button, on
-        # the live pipeline where nothing ever writes table['position'])
+        # spotData carries no spot coordinates - FitWidget's 'transfer data'
+        # button pulls them straight from here (via SignalWidget) instead
         self.positionTrack.spotSpectra = self.device.spotSpectra
         self.flowTrack.flowData = self.device.flowData
         self.injectionTrack.iD = self.device.injectionData

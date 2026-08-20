@@ -198,19 +198,16 @@ class FitWidget(QWidget):
                 timeMask = ((time>self.dataObject.sD.evalTime) & 
                             (time<(self.dataObject.sD.evalTime + self.dataObject.sD.dTime)))
 
-                # copy the name and position - position is optional (e.g. no
-                # image was loaded alongside this dataset, so spot
-                # coordinates were never recorded in the table). on the live
-                # pipeline nothing ever writes table['position'] at all, so
-                # fall back to the connected device's current spot positions
-                _position = self.dataObject.sD.table.get("position")
-                if _position is None:
-                    # spotSpectra.spotPosition defaults to [] (not None)
-                    # before any spot has been identified
-                    _spotSpectra = getattr(self.dataObject, 'spotSpectra', None)
-                    if (_spotSpectra is not None and _spotSpectra.spotPosition is not None
-                            and len(_spotSpectra.spotPosition) > 0):
-                        _position = _spotSpectra.spotPosition
+                # copy the name and position - position always comes fresh
+                # from the connected device's spotSpectra, never from
+                # sD.table (nothing writes it there; spotData just doesn't
+                # carry spot coordinates). optional: spotSpectra.spotPosition
+                # defaults to [] (not None) before any spot is identified
+                _spotSpectra = getattr(self.dataObject, 'spotSpectra', None)
+                _position = _spotSpectra.spotPosition if _spotSpectra is not None else None
+                if _position is None or len(_position) == 0:
+                    _position = None
+
                 table = {'name': [self.dataObject.sD.table["name"][ii] for ii in range(len(_vis)) if _vis[ii]==True]}
                 # spotSpectra may have re-identified a different spot count
                 # since sD.table was last updated - guard against a mismatch

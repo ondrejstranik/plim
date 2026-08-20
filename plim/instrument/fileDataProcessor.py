@@ -53,8 +53,6 @@ class FileDataProcessor(BaseProcessor):
             sD.getDSignal()
             sD.getNoise()
             sD.setTable(table=sD.table)
-            if sS.spotPosition is not None:
-                sD.table['position'] = sS.spotPosition
             if fD.signal is not None:
                 sD.time0 = fD.time[0]
         if sS.image is not None:

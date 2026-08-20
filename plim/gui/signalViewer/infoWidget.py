@@ -33,7 +33,7 @@ class InfoWidget(QWidget):
                # columns shown in the info table that are computed/reference
                # values and must not be overwritten by the (text-only) table
                # widget content
-               'notEditableColumn': ['position', 'dSignal', 'noise']}
+               'notEditableColumn': ['dSignal', 'noise']}
 
     sigUpdateData = Signal()
 
