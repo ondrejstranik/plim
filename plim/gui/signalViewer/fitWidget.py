@@ -43,27 +43,21 @@ class FitWidget(QWidget):
         @magicgui(layout='horizontal', call_button='fit',
                   time0 = {'max':1e6},
                   tau= {'max':1e6,'min': -1e6},
-                  p0 = {'step': 1e-2,'min':-10,'max':10},
-                  p1 = {'step': 1e-6,'min':-1,'max':1},
                   varyTime0 = {'label':'fixed'},
                   fixTau = {'label':'fixed'},
-                  fixAmp = {'label':'fixed'},
-                  fixP0 = {'label':'fixed'},
-                  fixP1 = {'label':'fixed'}
+                  fixAmp = {'label':'fixed'}
                    )
         def fitParameter(
                 time0: float = 0.0, varyTime0 = False,
                 tau: float = 1.0, fixTau = False,
-                amp: float = 1.0, fixAmp = False,
-                p0: float = 0.0, fixP0 = False,
-                p1: float = 0.0, fixP1 = False):
+                amp: float = 1.0, fixAmp = False):
 
             self.kF.setFitParameter(fitType=FitType.ADSORPTION)
             self.kF.setFitParameter(name='time0',value=time0,fixed=varyTime0)
             self.kF.setFitParameter(name='tau',value=tau,fixed=fixTau, min=0)
             self.kF.setFitParameter(name='amp',value=amp,fixed=fixAmp,min=0)
-            self.kF.setFitParameter(name='p0',value=p0,fixed=fixP0)
-            self.kF.setFitParameter(name='p1',value=p1,fixed=fixP1)
+            self.kF.setFitParameter(name='p0',value=self.fitParameter5.p0.value,fixed=self.fitParameter5.fixP0.value)
+            self.kF.setFitParameter(name='p1',value=self.fitParameter5.p1.value,fixed=self.fitParameter5.fixP1.value)
 
             self.kF.calculateFit()
 
@@ -78,27 +72,21 @@ class FitWidget(QWidget):
         @magicgui(layout='horizontal', call_button='fit',
                   time0 = {'max':1e6},
                   tau= {'max':1e6,'min': -1e6},
-                  p0 = {'step': 1e-2,'min':-10,'max':10},
-                  p1 = {'step': 1e-6,'min':-1,'max':1},
                   varyTime0 = {'label':'fixed'},
                   fixTau = {'label':'fixed'},
-                  fixAmp = {'label':'fixed'},
-                  fixP0 = {'label':'fixed'},
-                  fixP1 = {'label':'fixed'}
+                  fixAmp = {'label':'fixed'}
                    )
         def fitParameter2(
                 time0: float = 0.0, varyTime0 = False,
                 tau: float = 1.0, fixTau = False,
-                amp: float = 1.0, fixAmp = False,
-                p0: float = 0.0, fixP0 = False,
-                p1: float = 0.0, fixP1 = False):
+                amp: float = 1.0, fixAmp = False):
 
             self.kF.setFitParameter(fitType=FitType.DESORPTION)
             self.kF.setFitParameter(name='time0',value=time0,fixed=varyTime0)
             self.kF.setFitParameter(name='tau',value=tau,fixed=fixTau, min=0)
             self.kF.setFitParameter(name='amp',value=amp,fixed=fixAmp,min=0)
-            self.kF.setFitParameter(name='p0',value=p0,fixed=fixP0)
-            self.kF.setFitParameter(name='p1',value=p1,fixed=fixP1)
+            self.kF.setFitParameter(name='p0',value=self.fitParameter5.p0.value,fixed=self.fitParameter5.fixP0.value)
+            self.kF.setFitParameter(name='p1',value=self.fitParameter5.p1.value,fixed=self.fitParameter5.fixP1.value)
 
             self.kF.calculateFit()
 
@@ -113,24 +101,18 @@ class FitWidget(QWidget):
         @magicgui(layout='horizontal', call_button='fit',
                   time0 = {'max':1e6},
                   slope= {'max':10,'min': -10},
-                  p0 = {'step': 1e-2,'min':-10,'max':10},
-                  p1 = {'step': 1e-6,'min':-1,'max':1},
                   varyTime0 = {'label':'fixed'},
-                  fixSlope = {'label':'fixed'},
-                  fixP0 = {'label':'fixed'},
-                  fixP1 = {'label':'fixed'}
+                  fixSlope = {'label':'fixed'}
                    )
         def fitParameter3(
                 time0: float = 0.0, varyTime0 = False,
-                slope: float = 1.0, fixSlope = False,
-                p0: float = 0.0, fixP0 = False,
-                p1: float = 0.0, fixP1 = False):
+                slope: float = 1.0, fixSlope = False):
 
             self.kF.setFitParameter(fitType=FitType.LINEAR)
             self.kF.setFitParameter(name='time0',value=time0,fixed=varyTime0)
             self.kF.setFitParameter(name='slope',value=slope,fixed=fixSlope)
-            self.kF.setFitParameter(name='p0',value=p0,fixed=fixP0)
-            self.kF.setFitParameter(name='p1',value=p1,fixed=fixP1)
+            self.kF.setFitParameter(name='p0',value=self.fitParameter5.p0.value,fixed=self.fitParameter5.fixP0.value)
+            self.kF.setFitParameter(name='p1',value=self.fitParameter5.p1.value,fixed=self.fitParameter5.fixP1.value)
 
             self.kF.calculateFit()
 
@@ -146,24 +128,18 @@ class FitWidget(QWidget):
                   time0 = {'max':1e6},
                   tau1= {'max':1e6,'min': -1e6},
                   tau2= {'max':1e6,'min': -1e6},
-                  p0 = {'step': 1e-2,'min':-10,'max':10},
-                  p1 = {'step': 1e-6,'min':-1,'max':1},
                   varyTime0 = {'label':'fixed'},
                   fixTau1 = {'label':'fixed'},
                   fixAmp1 = {'label':'fixed'},
                   fixTau2 = {'label':'fixed'},
-                  fixAmp2 = {'label':'fixed'},
-                  fixP0 = {'label':'fixed'},
-                  fixP1 = {'label':'fixed'}
+                  fixAmp2 = {'label':'fixed'}
                    )
         def fitParameter4(
                 time0: float = 0.0, varyTime0 = False,
                 tau1: float = 10.0, fixTau1 = False,
                 amp1: float = 1.0,  fixAmp1 = False,
                 tau2: float = 100.0, fixTau2 = False,
-                amp2: float = 0.5,  fixAmp2 = False,
-                p0: float = 0.0, fixP0 = False,
-                p1: float = 0.0, fixP1 = False):
+                amp2: float = 0.5,  fixAmp2 = False):
 
             self.kF.setFitParameter(fitType=FitType.ADSORPTION_DOUBLE)
             self.kF.setFitParameter(name='time0', value=time0, fixed=varyTime0)
@@ -171,14 +147,27 @@ class FitWidget(QWidget):
             self.kF.setFitParameter(name='amp1',  value=amp1,  fixed=fixAmp1, min=0)
             self.kF.setFitParameter(name='tau2',  value=tau2,  fixed=fixTau2, min=0)
             self.kF.setFitParameter(name='amp2',  value=amp2,  fixed=fixAmp2, min=0)
-            self.kF.setFitParameter(name='p0',    value=p0,    fixed=fixP0)
-            self.kF.setFitParameter(name='p1',    value=p1,    fixed=fixP1)
+            self.kF.setFitParameter(name='p0',    value=self.fitParameter5.p0.value,    fixed=self.fitParameter5.fixP0.value)
+            self.kF.setFitParameter(name='p1',    value=self.fitParameter5.p1.value,    fixed=self.fitParameter5.fixP1.value)
 
             self.kF.calculateFit()
             self.drawGraph()
             self.drawCleanGraph()
 
             print(f'fitted parameters {self.kF.fittedParam}')
+
+
+        @magicgui(layout='horizontal', call_button=False,
+                  p0 = {'step': 1e-2,'min':-10,'max':10},
+                  p1 = {'step': 1e-6,'min':-1,'max':1},
+                  fixP0 = {'label':'fixed'},
+                  fixP1 = {'label':'fixed'}
+                   )
+        def fitParameter5(
+                p0: float = 0.0, fixP0 = False,
+                p1: float = 0.0, fixP1 = False):
+            ''' no fit of its own - just holds the p0/p1 (+ fixed) values
+            the other tabs' fits read directly when they run '''
 
 
         @magicgui(call_button='transfer data')
@@ -290,6 +279,7 @@ class FitWidget(QWidget):
         self.fitParameter2 = fitParameter2
         self.fitParameter3 = fitParameter3
         self.fitParameter4 = fitParameter4
+        self.fitParameter5 = fitParameter5
 
         self.dataBox = dataBox
         self.saveBox = saveBox
@@ -364,6 +354,12 @@ class FitWidget(QWidget):
         tab4_layout.addWidget(self.fitParameter4.native)
         tab4.setLayout(tab4_layout)
 
+        tab5 = QWidget()
+        tab5_layout = QVBoxLayout()
+        tab5_layout.addWidget(self.fitParameter5.native)
+        tab5.setLayout(tab5_layout)
+
+        tab_widget.addTab(tab5, "background")
         tab_widget.addTab(tab1, "binding")
         tab_widget.addTab(tab4, "binding double")
         tab_widget.addTab(tab3, "binding linear")
@@ -395,27 +391,27 @@ class FitWidget(QWidget):
             s(self.fitParameter.time0, m[0])
             s(self.fitParameter.tau,   m[1])
             s(self.fitParameter.amp,   m[2])
-            s(self.fitParameter.p0,    m[3])
-            s(self.fitParameter.p1,    m[4])
+            s(self.fitParameter5.p0,   m[3])
+            s(self.fitParameter5.p1,   m[4])
         elif ft == FitType.DESORPTION:
             s(self.fitParameter2.time0, m[0])
             s(self.fitParameter2.tau,   m[1])
             s(self.fitParameter2.amp,   m[2])
-            s(self.fitParameter2.p0,    m[3])
-            s(self.fitParameter2.p1,    m[4])
+            s(self.fitParameter5.p0,    m[3])
+            s(self.fitParameter5.p1,    m[4])
         elif ft == FitType.LINEAR:
             s(self.fitParameter3.time0, m[0])
             s(self.fitParameter3.slope, m[1])
-            s(self.fitParameter3.p0,    m[2])
-            s(self.fitParameter3.p1,    m[3])
+            s(self.fitParameter5.p0,    m[2])
+            s(self.fitParameter5.p1,    m[3])
         elif ft == FitType.ADSORPTION_DOUBLE:
             s(self.fitParameter4.time0, m[0])
             s(self.fitParameter4.tau1,  m[1])
             s(self.fitParameter4.amp1,  m[2])
             s(self.fitParameter4.tau2,  m[3])
             s(self.fitParameter4.amp2,  m[4])
-            s(self.fitParameter4.p0,    m[5])
-            s(self.fitParameter4.p1,    m[6])
+            s(self.fitParameter5.p0,    m[5])
+            s(self.fitParameter5.p1,    m[6])
 
     def _copyTableToClipboard(self):
         '''Copy selected table cells to the clipboard as tab-separated text.'''

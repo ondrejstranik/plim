@@ -133,7 +133,11 @@ class InfoWidget(QWidget):
                 continue
             newTable[key] = [self.infoTable.item(row, col).text() for row in range(nRow)]
 
-        self.sD.table = newTable | _notEditable
+        # mutate in place, don't rebind - keeps any external alias to
+        # sD.table (e.g. a live viewer sharing it by reference) valid
+        self.sD.table.clear()
+        self.sD.table.update(newTable)
+        self.sD.table.update(_notEditable)
 
         self.sD.checkTableValues()
 

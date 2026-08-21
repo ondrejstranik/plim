@@ -124,7 +124,10 @@ class SignalWidget(QWidget):
                 self.lineParameter._auto_call = True
                 print('index out of line')
 
-            # line index is changed
+            # line index is changed - resync everything to the new line and
+            # stop there: the other parameters below still hold the
+            # PREVIOUS line's values at this point, so they aren't real
+            # changes to apply to the newly focused one
             if self.lineIndex != lineIndex:
                 # change of the line focus
                 self.lineIndex = lineIndex
@@ -144,40 +147,45 @@ class SignalWidget(QWidget):
                 self.drawGraph()
                 print('change of index')
 
-            # visibility is changed
-            elif (self.sD.table['visible'][lineIndex]=='True') != lineVisible:
-                if lineVisible:
-                    self.sD.table['visible'][lineIndex]='True'
-                else:
-                    self.sD.table['visible'][lineIndex]='False'
-                self.drawGraph()
-                print('change of visibility')
-                print(f"line {lineIndex} is now {self.sD.table['visible'][lineIndex]}")
+            else:
+                # each of these is checked independently (not elif) - e.g. if
+                # lineColor is stale (left over from an external table update
+                # this widget was never told about), it must not block an
+                # actually-intended evalTime/dTime change (e.g. from the '1'/
+                # '2' keyboard shortcuts) from taking effect
+                changed = False
 
+                # visibility is changed
+                if (self.sD.table['visible'][lineIndex]=='True') != lineVisible:
+                    self.sD.table['visible'][lineIndex] = 'True' if lineVisible else 'False'
+                    changed = True
+                    print('change of visibility')
+                    print(f"line {lineIndex} is now {self.sD.table['visible'][lineIndex]}")
 
-            # color is changed            
-            elif self.sD.table['color'][lineIndex] != lineColor:
-                self.sD.table['color'][lineIndex] = lineColor
-                self.sD.setReference()
-                self.drawGraph()
-                print('change of color')
+                # color is changed
+                if self.sD.table['color'][lineIndex] != lineColor:
+                    self.sD.table['color'][lineIndex] = lineColor
+                    self.sD.setReference()
+                    changed = True
+                    print('change of color')
 
+                # name is changed
+                if self.sD.table['name'][lineIndex] != lineName:
+                    self.sD.table['name'][lineIndex] = lineName
+                    changed = True
+                    print('change of name')
 
-            # name is changed            
-            elif self.sD.table['name'][lineIndex] != lineName:
-                self.sD.table['name'][lineIndex] = lineName
-                print('change of name')
+                # evaluation time or delta time is changed
+                if (evalTime != self.sD.evalTime) or (dTime != self.sD.dTime):
+                    self.sD.getDSignal(evalTime,dTime)
+                    self.sD.getNoise()
+                    self.lineParameter.dSignal.value = f"{self.sD.dSignal[self.lineIndex]:.2E}"
+                    self.lineParameter.noise.value =  f"{self.sD.noise[self.lineIndex]:.2E}"
+                    changed = True
+                    print('change of evaluation')
 
-
-            # evaluation time or delta time is changed
-            elif  (evalTime != self.sD.evalTime) or (dTime != self.sD.dTime):
-                self.sD.getDSignal(evalTime,dTime)
-                self.sD.getNoise()
-                self.lineParameter.dSignal.value = f"{self.sD.dSignal[self.lineIndex]:.2E}"
-                self.lineParameter.noise.value =  f"{self.sD.noise[self.lineIndex]:.2E}"
-                self.drawGraph()
-                print('change of evaluation')
-
+                if changed:
+                    self.drawGraph()
 
             # emit signal to eventually update data in other guis
             self.sigUpdateData.emit()
@@ -238,7 +246,7 @@ class SignalWidget(QWidget):
 
             if _text == '2':
                 _value = self.mousePoint.x() - self.sD.evalTime
-                if _value < 0 : _value = 0 
+                if _value < 0 : _value = 0
                 self.lineParameter.dTime.value = _value
 
             if _text == 'v':
@@ -343,6 +351,28 @@ class SignalWidget(QWidget):
         ''' add new value '''        
         self.sD.addDataValue(valueVector,time)
         self.drawGraph()
+
+    def resyncLineTableWidgets(self):
+        ''' resync lineVisible/lineName/lineColor (but deliberately NOT
+        evalTime/dTime) with sD.table for the currently focused line.
+
+        Call this whenever sD.table changes from outside this widget (e.g.
+        a point added or recolored in the live plasmon viewer) - otherwise
+        lineParameter's cached values go stale, and the next auto_call
+        (e.g. from the '1'/'2' keyboard shortcuts) sees a stale lineColor,
+        wrongly detects it as a real change and writes it back into
+        sD.table, clobbering the colour that was just set from the viewer.
+
+        evalTime/dTime are excluded on purpose: unlike the other three,
+        they aren't sourced from sD.table, so they never go stale this way
+        - including them here would risk this resync firing in the middle
+        of the user actively setting them (e.g. via those same '1'/'2'
+        keys) and reverting the value back before it takes effect. '''
+        self.lineParameter._auto_call = False
+        self.lineParameter.lineVisible.value = self.sD.table['visible'][self.lineIndex]=='True'
+        self.lineParameter.lineName.value = self.sD.table['name'][self.lineIndex]
+        self.lineParameter.lineColor.value = self.sD.table['color'][self.lineIndex]
+        self.lineParameter._auto_call = True
 
     def redrawWidget(self):
         ''' update and redraw the complete widget according the class values'''

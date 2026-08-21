@@ -10,7 +10,6 @@ from plim.gui.signalViewer.flowRateWidget import FlowRateWidget
 from plim.gui.signalViewer.injectionWidget import InjectionWidget
 from plim.gui.signalViewer.infoWidget import InfoWidget
 #from qtpy.QtWidgets import QVBoxLayout
-import traceback
 
 
 class PositionTrackGUI(BaseGUI):
@@ -86,11 +85,19 @@ class PositionTrackGUI(BaseGUI):
         ''' connect with other gui'''
         self.pvGui = plasmonViewerGUI
 
+        # share the same table dict by identity - a mutation via either name
+        # is instantly visible through the other. Relies on SpotData.
+        # setTable()/clearData() and InfoWidget._syncFromTable() mutating
+        # self.table in place rather than rebinding it (see spotData.py/
+        # infoWidget.py) - otherwise this alias would silently break the
+        # first time either fires.
+        self.pvGui.plasmonViewer.table = self.positionTrack.sD.table
+
         # connect signals
-        self.positionTrack.sigUpdateData.connect(self.updatePlasmonViewer)
-        self.infoWidget.sigUpdateData.connect(self.updatePlasmonViewer)
-        self.pvGui.plasmonViewer.sigUpdateData.connect(self.updatePositionTrack)
-        self.pvGui.plasmonViewer.sigColorChanged.connect(self.updatePositionTrackColor)
+        self.positionTrack.sigUpdateData.connect(self.pvGui.plasmonViewer.syncPointsFromTable)
+        self.infoWidget.sigUpdateData.connect(self.pvGui.plasmonViewer.syncPointsFromTable)
+        self.pvGui.plasmonViewer.sigUpdateData.connect(self.onPlasmonViewerChanged)
+        self.pvGui.plasmonViewer.sigColorChanged.connect(self.onPlasmonViewerChanged)
         self.pvGui.plasmonViewer.sigSelectionChanged.connect(self.updateInfoSelectionFromPlasmonViewer)
 
     def setDevice(self,device):
@@ -109,70 +116,19 @@ class PositionTrackGUI(BaseGUI):
         if self.device.worker is not None:
             self.device.worker.yielded.connect(self.guiUpdateTimed)
 
-    def updatePlasmonViewer(self):
-        ''' update plasmonViewer because data in position track changed '''
-        if self.pvGui is None:
-            return
+    def onPlasmonViewerChanged(self):
+        ''' resync SignalWidget/InfoWidget's cached widgets and redraw after the
+        plasmon viewer changed the shared table - fired by sigUpdateData (point
+        add/move/delete) and sigColorChanged (a point's color changed). The
+        table mutation itself already happened at the source, in
+        SViewer.pointChanged()/colorChanged(), since plasmonViewer.table IS
+        positionTrack.sD.table - nothing left to reconstruct here.
 
-        # no data received yet - nothing to push to the viewer
-        rgb = self.positionTrack.sD.table['color']
-        if rgb is None:
-            return
-
-        vis = self.positionTrack.sD.table['visible']
-        _color = [rgb[ii] + 'ff' if vis[ii]=='True' else rgb[ii] + '00' for ii in range(len(rgb))]
-
-        self.pvGui.plasmonViewer.pointLayer.face_color = _color
-
-        # keep the point annotations in sync with the (possibly renamed) spots
-        try:
-            self.pvGui.plasmonViewer.pointLayer.features = {'names': self.positionTrack.sD.table['name']}
-        except:
-            print('error updating plasmonViewer point annotations')
-            traceback.print_exc()
-
-    def updatePositionTrack(self):
-        ''' update spotData because the number/position of spots changed in the plasmon viewer '''
-
-        try:
-            _fcHex = ['#{:02x}{:02x}{:02x}'.format( *ii.tolist())
-                      for ii in (self.pvGui.plasmonViewer.pointLayer.face_color*255).astype(int)]
-
-            # keep name/visible consistent with the (possibly changed) number of
-            # points, so the table stays internally consistent immediately -
-            # otherwise a point add/delete would leave 'color' resized to the
-            # new spot count while 'name'/'visible' are still the old length
-            nSpot = len(_fcHex)
-            _oldName = self.positionTrack.sD.table.get('name') or []
-            _oldVisible = self.positionTrack.sD.table.get('visible') or []
-            self.positionTrack.sD.table['name'] = [_oldName[ii] if ii < len(_oldName) else str(ii) for ii in range(nSpot)]
-            self.positionTrack.sD.table['visible'] = [_oldVisible[ii] if ii < len(_oldVisible) else 'True' for ii in range(nSpot)]
-            self.positionTrack.sD.table['color'] = _fcHex
-        except:
-            print('error in updatePositionTrack')
-            traceback.print_exc()
-            return
-
-        # don't rely on the periodic updateGui() tick - it only runs when new
-        # data arrives from the device, which may be paused/idle (e.g. when
-        # reviewing a recorded file-based dataset rather than a live camera)
-        self.positionTrack.drawGraph()
-        self.infoWidget.redrawWidget()
-
-    def updatePositionTrackColor(self):
-        ''' update color in spotData because a point's color was changed in the plasmon viewer '''
-
-        try:
-            _fc = 1*self.pvGui.plasmonViewer.pointLayer.face_color #  deep copy of the colors
-            _fc[list(self.pvGui.plasmonViewer.pointLayer.selected_data)] = self.pvGui.plasmonViewer.pointLayer._face.current_color # adjust the just modified
-            _fcHex = ['#{:02x}{:02x}{:02x}'.format( *ii.tolist()) for ii in (_fc*255).astype(int)]
-            self.positionTrack.sD.table['color'] = _fcHex
-        except:
-            print('error in updatePositionTrackColor')
-            traceback.print_exc()
-            return
-
-        # don't rely on the periodic updateGui() tick - see updatePositionTrack()
+        resync (not redrawWidget() - that also touches evalTime/dTime, which
+        could race with the '1'/'2' keyboard shortcuts) so lineParameter's
+        cached visible/name/color don't go stale and get misread as real
+        changes next time lineParameter runs '''
+        self.positionTrack.resyncLineTableWidgets()
         self.positionTrack.drawGraph()
         self.infoWidget.redrawWidget()
 

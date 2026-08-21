@@ -43,19 +43,23 @@ class SpotData:
         if signal is not None: self.setData(signal,time)
 
     def setTable(self,table=None):
-        ''' set table with info about the spots '''
+        ''' set table with info about the spots.
+
+        Mutates self.table in place rather than rebinding it, so that any
+        external alias to this dict (e.g. a live viewer sharing it by
+        reference) stays valid across calls. '''
         nSpot = self.signal.shape[1]
 
         #print(f'table {table}')
 
-        if table is not None and table['name'] is not None and len(table['name']) == nSpot:
-            self.table = table
-        else:
-            self.table = {
-            'name': [str(x) for x in range(nSpot)],
-            'color': ['#ffffff' for x in range(nSpot)],
-            'visible': ['True' for x in range(nSpot)]
-            }           
+        if table is not None and table is not self.table:
+            self.table.clear()
+            self.table.update(table)
+
+        if table is None or self.table.get('name') is None or len(self.table['name']) != nSpot:
+            self.table['name'] = [str(x) for x in range(nSpot)]
+            self.table['color'] = ['#ffffff' for x in range(nSpot)]
+            self.table['visible'] = ['True' for x in range(nSpot)]
 
     def getTable(self):
         return self.table
@@ -269,10 +273,10 @@ class SpotData:
         self.time = None
         self.time0 = 0
 
-        self.table = {
-            'name': None,
-            'color': None,
-            'visible': None}
+        # mutate in place (see setTable()) - keeps any external alias to
+        # self.table valid
+        self.table.clear()
+        self.table.update({'name': None, 'color': None, 'visible': None})
 
     def saveInfoFile(self,folder,fileName):
         ''' save dSignal and noise with info table into .txt file'''

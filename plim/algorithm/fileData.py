@@ -182,16 +182,22 @@ class FileData:
 
     def loadInfoFile(self,folder,fileMainName):
         ''' load info into the class from file'''
-        _file = Path(folder + '/' + fileMainName + self.DEFAULT['nameSet']['info'])        
+        _file = Path(folder + '/' + fileMainName + self.DEFAULT['nameSet']['info'])
         if not _file.is_file():
             print(f'could not find file {_file}')
             return
         with open(_file, 'rb') as f:
-            (self.spotData.table,
+            (table,
              self.spotData.alignTime,
              self.spotData.range,
              self.spotData.evalTime,
-             self.spotData.dTime) = pickle.load(f) 
+             self.spotData.dTime) = pickle.load(f)
+
+        # mutate spotData.table in place rather than rebinding it, so any
+        # external alias to it (e.g. a live/offline viewer sharing it by
+        # reference) stays valid
+        self.spotData.table.clear()
+        self.spotData.table.update(table)
 
     def saveInjectionFile(self,folder,fileMainName):
         ''' save injection Data file'''
@@ -203,12 +209,16 @@ class FileData:
         ''' load injection Data file'''
         _file = Path(folder + '/' + fileMainName + self.DEFAULT['nameSet']['injection'])
         if not _file.is_file():
+            # back-compatibility: older datasets stored the injection log as
+            # a single 'info.txt' per folder, not prefixed by fileMainName
+            _file = Path(folder) / 'info.txt'
+        if not _file.is_file():
             print(f'could not find file {_file}')
             return
 
         with open(_file,'r') as f:
             headerLine = f.readline()
-            data = f.read()
+            rest = f.read()
 
         time0 = self.injectionData.time0
         if 'time0=' in headerLine:
@@ -216,6 +226,12 @@ class FileData:
                 time0 = float(headerLine.split('time0=')[1].split('s')[0].strip())
             except ValueError:
                 print(f'could not parse time0 from header in file {_file}')
+            data = rest
+        else:
+            # no recognised header (e.g. the old info.txt format) - the
+            # whole file is the injection log, not just everything after
+            # line 1
+            data = headerLine + rest
 
         self.injectionData.setData(data,time0)
 

@@ -71,7 +71,6 @@ def functionDoubleBinding(x,time0,tau1,amp1,tau2,amp2,p0,p1):
             + functionPFO(x,time0,amp2,tau2)
             + functionP1(x-time0,p0,p1))
 
-
 class FitType(Enum):
     ADSORPTION = ("adsorption", functionBinding)
     DESORPTION = ("desorption", functionDesorption)

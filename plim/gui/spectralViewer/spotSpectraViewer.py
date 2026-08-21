@@ -172,8 +172,14 @@ class SpotSpectraViewer(SViewer):
             # avoid setting this signal
             with self.pointLayer.events.data.blocker():
                 self.pointLayer.data = myPosition
-            # the blocker above suppresses the automatic annotation refresh
-            # normally done in pointChanged(), so do it explicitly here
+            # the blocker above suppresses the automatic table-resize and
+            # annotation refresh normally done in pointChanged(), so do them
+            # explicitly here - updatePointAnnotations() reads self.table
+            # ['name'], which must already match the new point count or it
+            # raises (napari rejects a features length that doesn't match
+            # the number of points), aborting this function before the mask
+            # redraw below ever runs
+            self._growTableToPointCount()
             self.updatePointAnnotations()
             # emit the signal in this case
             self.spectraParameterGui(pxAve=int(myRadius))
@@ -223,6 +229,12 @@ class SpotSpectraViewer(SViewer):
         
         # loop over all points
         for ii in np.arange(nSig):
+            # hide the line(s) for spots marked not-visible (e.g. via the
+            # 'v' key toggle), same convention as SignalWidget.drawGraph()
+            try:
+                isVisible = self.table['visible'][ii] == 'True'
+            except (IndexError, KeyError, TypeError):
+                isVisible = True
             try:
                 self.penList[ii].setColor(QColor.fromRgbF(*list(
                     self.pointLayer.face_color[ii])))
@@ -236,11 +248,11 @@ class SpotSpectraViewer(SViewer):
                     self.linePlotList[ii].setData(self.spotSpectra.wavelength,
                                             self.spotSpectra.spectraRawSpot[ii],
                                             pen = self.penList[ii])
-                    self.linePlotList[ii].show()
+                    self.linePlotList[ii].show() if isVisible else self.linePlotList[ii].hide()
                     self.linePlotList2[ii].setData(self.spotSpectra.wavelength,
                                             self.spotSpectra.spectraRawBcg[ii],
                                             pen = self.penList[ii])
-                    self.linePlotList2[ii].show()
+                    self.linePlotList2[ii].show() if isVisible else self.linePlotList2[ii].hide()
                 except:
                     print('error occurred in drawSpectraGraph - pointSpectra')
                     traceback.print_exc()
@@ -251,7 +263,7 @@ class SpotSpectraViewer(SViewer):
                     self.linePlotList[ii].setData(self.spotSpectra.wavelength,
                                             self.spotSpectra.spectraSpot[ii],
                                             pen = self.penList[ii])
-                    self.linePlotList[ii].show()
+                    self.linePlotList[ii].show() if isVisible else self.linePlotList[ii].hide()
                 except:
                     print('error occurred in drawSpectraGraph - pointSpectra')
 

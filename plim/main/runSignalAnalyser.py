@@ -18,8 +18,8 @@ def main():
 
     fileDataGui = FileDataProcessorGUI(viscope)
 
-    ptGui = PositionTrackGUI(viscope, vWindow='new')
     spotViewerGui = SpotViewerGUI(viscope, vWindow='new')
+    ptGui = PositionTrackGUI(viscope, vWindow='new')
     fitGui = FitGUI(viscope, vWindow=ptGui.vWindow)
 
     ptGui.setDevice(device)
@@ -33,7 +33,7 @@ def main():
 
     # place the windows
     fileDataGui.vWindow.setRegion('top')
-    viscope.wManager.setRegionRatio('top', 0.15) 
+    viscope.wManager.setRegionRatio('top', 0.20) 
 
     # simulate pressing 'Load' once at startup
     #fileDataGui.selectAndLoad()

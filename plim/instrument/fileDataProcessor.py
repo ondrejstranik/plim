@@ -46,6 +46,10 @@ class FileDataProcessor(BaseProcessor):
         self.fileData.loadAllFile(folder, fileMainName)
 
         sD, sS, fD = self.spotData, self.spotSpectra, self.flowData
+        if fD.signal is not None:
+            # loadFlowFile() writes flowData.time directly, bypassing
+            # FlowData.setData() - so time0 is never recomputed on its own
+            fD.time0 = fD.time[0]
         if sD.signal is not None:
             sD.time0 = sD.time[0]
             sD.setOffset()

@@ -119,6 +119,13 @@ class PlasmonViewer(SpotSpectraViewer):
             fitPeak = self.pF.getFitPeak()
             # loop over all points
             for ii in np.arange(nSig):
+                # hide the line(s) for spots marked not-visible (e.g. via
+                # the 'v' key toggle), same convention as
+                # SignalWidget.drawGraph()
+                try:
+                    isVisible = self.table['visible'][ii] == 'True'
+                except (IndexError, KeyError, TypeError):
+                    isVisible = True
                 try:
                     self.penList[ii].setColor(QColor.fromRgbF(*list(
                         self.pointLayer.face_color[ii])))
@@ -129,11 +136,11 @@ class PlasmonViewer(SpotSpectraViewer):
                     # fit line
                     self.linePlotList2[ii].setData(w, fitSpectra[ii],
                                             pen = self.penList[ii])
-                    self.linePlotList2[ii].show()
+                    self.linePlotList2[ii].show() if isVisible else self.linePlotList2[ii].hide()
                     # peak line
                     self.linePlotList3[ii].setData(fitPeak[ii][0],fitPeak[ii][1],
                                                    pen = self.penList[ii] )
-                    self.linePlotList3[ii].show()
+                    self.linePlotList3[ii].show() if isVisible else self.linePlotList3[ii].hide()
                 except:
                     print('error occurred in drawSpectraGraph - could not draw')
                     traceback.print_exc()
