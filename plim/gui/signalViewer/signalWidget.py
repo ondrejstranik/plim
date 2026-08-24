@@ -352,6 +352,16 @@ class SignalWidget(QWidget):
         self.sD.addDataValue(valueVector,time)
         self.drawGraph()
 
+    def _clampLineIndex(self):
+        ''' keep self.lineIndex valid if sD.table shrunk since it was last
+        set (e.g. spot identification reducing the number of spots) - called
+        from resyncLineTableWidgets()/redrawWidget(), which are triggered by
+        external table changes and can't otherwise assume lineIndex is still
+        in range '''
+        nLine = len(self.sD.table['name'])
+        if self.lineIndex >= nLine:
+            self.lineIndex = nLine - 1
+
     def resyncLineTableWidgets(self):
         ''' resync lineVisible/lineName/lineColor (but deliberately NOT
         evalTime/dTime) with sD.table for the currently focused line.
@@ -368,6 +378,9 @@ class SignalWidget(QWidget):
         - including them here would risk this resync firing in the middle
         of the user actively setting them (e.g. via those same '1'/'2'
         keys) and reverting the value back before it takes effect. '''
+        if not self.sD.table['name']:
+            return
+        self._clampLineIndex()
         self.lineParameter._auto_call = False
         self.lineParameter.lineVisible.value = self.sD.table['visible'][self.lineIndex]=='True'
         self.lineParameter.lineName.value = self.sD.table['name'][self.lineIndex]
@@ -377,16 +390,18 @@ class SignalWidget(QWidget):
     def redrawWidget(self):
         ''' update and redraw the complete widget according the class values'''
         # line parameter Widget
-        self.lineParameter._auto_call = False
-        self.lineParameter.lineIndex.value = self.lineIndex
-        self.lineParameter.dSignal.value = f"{self.sD.dSignal[self.lineIndex]:.2E}"
-        self.lineParameter.lineVisible.value =  self.sD.table['visible'][self.lineIndex]=='True'
-        self.lineParameter.lineName.value =  self.sD.table['name'][self.lineIndex]
-        self.lineParameter.lineColor.value =  self.sD.table['color'][self.lineIndex]
-        self.lineParameter.evalTime.value = self.sD.evalTime
-        self.lineParameter.dTime.value = self.sD.dTime
-        self.lineParameter.noise.value =  f"{self.sD.noise[self.lineIndex]:.2E}"
-        self.lineParameter._auto_call = True
+        if self.sD.table['name']:
+            self._clampLineIndex()
+            self.lineParameter._auto_call = False
+            self.lineParameter.lineIndex.value = self.lineIndex
+            self.lineParameter.dSignal.value = f"{self.sD.dSignal[self.lineIndex]:.2E}"
+            self.lineParameter.lineVisible.value =  self.sD.table['visible'][self.lineIndex]=='True'
+            self.lineParameter.lineName.value =  self.sD.table['name'][self.lineIndex]
+            self.lineParameter.lineColor.value =  self.sD.table['color'][self.lineIndex]
+            self.lineParameter.evalTime.value = self.sD.evalTime
+            self.lineParameter.dTime.value = self.sD.dTime
+            self.lineParameter.noise.value =  f"{self.sD.noise[self.lineIndex]:.2E}"
+            self.lineParameter._auto_call = True
 
         # fit parameter widget
         self.fitParameter._auto_call = False
