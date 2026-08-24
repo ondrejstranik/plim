@@ -80,10 +80,19 @@ def main():
 
     pvGui  = PlasmonViewerGUI(viscope,vWindow='new')
     pvGui.setDevice(pP)
+    pvGui.plasmonViewer.fitParameterGui(peakWidth=80,wavelengthStart=700, wavelengthStop=900)
+    pvGui.plasmonViewer.spectraParameterGui(showRawSpectra=False,
+                                            circle=False,
+                                             spectraSigma=1,
+                                             pxBcg= 4,
+
+                                               pxSpace=2)
+
     ptGui  = PositionTrackGUI(viscope,vWindow='new')
     ptGui.setDevice(pP)
     ptGui.interconnectGui(pvGui)
-    sdGui = SaveDataGUI(viscope,vWindow=ptGui.vWindow)
+    ptGui.positionTrack.fitParameter(align=True)
+    sdGui = SaveDataGUI(viscope,vWindow=cGui.vWindow)
     sdGui.setDevice(pP)
     svGui  = SaveSIVideoGUI(viscope)
     svGui.setDevice(sCamera)
