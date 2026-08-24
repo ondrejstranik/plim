@@ -1,6 +1,7 @@
 # Plim
 
 [![GitHub](https://img.shields.io/badge/GitHub-ondrejstranik%2Fplim-blue?logo=github)](https://github.com/ondrejstranik/plim)
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/ondrejstranik/plim/main?urlpath=desktop)
 
 Plim is a package for plasmon imaging: acquiring, viewing, and fitting the
 kinetic binding signals from plasmonic-spot sensor arrays (e.g. SPR/LSPR).

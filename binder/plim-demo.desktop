@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Plim Demo
+Comment=Launch the virtual integral-field-camera plasmon sensing demo
+Exec=sh -c 'cd "$HOME/binder" && python3 binder.py'
+Terminal=true
+X-GNOME-Autostart-enabled=true

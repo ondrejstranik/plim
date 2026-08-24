@@ -1,0 +1,2 @@
+-e .[all]
+jupyter-remote-desktop-proxy
