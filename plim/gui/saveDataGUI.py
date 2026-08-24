@@ -20,7 +20,7 @@ class SaveDataGUI(BaseGUI):
         super().__init__(viscope, **kwargs)
 
         # prepare the gui of the class
-        SaveDataGUI.__setWidget(self) 
+        SaveDataGUI.__setWidget(self)
 
     def __setWidget(self):
         ''' prepare the gui '''
@@ -35,7 +35,7 @@ class SaveDataGUI(BaseGUI):
                                  spotSpectra=self.device.spotSpectra,
                                  plasmonFit=self.device.pF,
                                  injectionData=self.device.injectionData)
-            
+
             _fileData.saveAllFile(folder=filePath,fileMainName=fileName)
 
         @magicgui(call_button="Reset")

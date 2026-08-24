@@ -268,15 +268,15 @@ class SpotData:
         return self.noise
 
     def clearData(self):
-        ''' clear the data '''
+        ''' clear the signal/time data only - name/color/visible in
+        self.table are deliberately left untouched. The next addDataValue()
+        (a fresh reset-branch add) calls setTable(table=self.table), whose
+        existing "keep the current table if its length still matches"
+        logic then naturally keeps these values once new data arrives at
+        the same spot count, instead of resetting them to plain defaults '''
         self.signal = None
         self.time = None
         self.time0 = 0
-
-        # mutate in place (see setTable()) - keeps any external alias to
-        # self.table valid
-        self.table.clear()
-        self.table.update({'name': None, 'color': None, 'visible': None})
 
     def saveInfoFile(self,folder,fileName):
         ''' save dSignal and noise with info table into .txt file'''

@@ -12,7 +12,7 @@ from scipy.ndimage import gaussian_filter
 
 class SpotSpectra(SpotSpectraSimple):
     ''' class for calculating spot spectra '''
-    
+
     maskType = {'circle','square','offCentre'}
     
     DEFAULT = {'circle': True, # circle or square

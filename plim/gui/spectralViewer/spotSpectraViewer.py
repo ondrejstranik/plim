@@ -184,7 +184,7 @@ class SpotSpectraViewer(SViewer):
             # emit the signal in this case
             self.spectraParameterGui(pxAve=int(myRadius))
 
-            # emit signal 
+            # emit signal
             self.sigUpdateData.emit()
 
         # add widget setParameterGui
