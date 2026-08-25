@@ -18,6 +18,7 @@ from plim.gui.saveDataGUI import SaveDataGUI
 from spectralCamera.gui.saveSIVideoGUI import SaveSIVideoGUI
 from viscope.gui.saveImageGUI import SaveImageGUI
 from viscope.gui.histogramGUI import HistogramGUI
+from plim.gui.signalAnalyser.fitGUI import FitGUI
 
 # devices (imported after GUI to avoid DLL conflicts with camera SDK on Windows)
 from spectralCamera.instrument.camera.pfCamera.pFCamera import PFCamera
@@ -97,6 +98,8 @@ def main():
     svGui  = SaveSIVideoGUI(viscope)
     svGui.setDevice(sCamera)
 
+    fitGui = FitGUI(viscope, vWindow=ptGui.vWindow)
+    fitGui.interconnectGui(ptGui)
 
     # place the windows
     adGui.vWindow.setRegion('right')

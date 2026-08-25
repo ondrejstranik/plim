@@ -117,8 +117,11 @@ class KineticFit:
 
         self.setFitFunction()
 
-    def setSignal(self,signal):
+    def setSignal(self, signal):
         ''' define '''
+        if self.signal is not None and signal.shape[1] != self.signal.shape[1]:
+            self.fittedParam = None
+            self.fitRMS = None
         self.signal = signal
 
     def setTime(self,time):
