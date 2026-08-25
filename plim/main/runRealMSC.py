@@ -113,6 +113,7 @@ def main():
     # main event loop
     viscope.run()
 
+    pump.disconnect()
     sCamera.disconnect()
     camera.disconnect()
     pP.disconnect()
