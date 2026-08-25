@@ -430,17 +430,22 @@ class FitWidget(QWidget):
 
     def updateStatGraph(self):
         '''Boxplot of the currently selected table column with all individual points.'''
-        self.statGraph.clear()
         cols = sorted(set(item.column() for item in self.paramTable.selectedItems()))
         if not cols:
+            self.statGraph.clear()
             return
         col = cols[0]
 
+        # column 0 is 'name'; fit parameter columns start at 1
         param_names = list(self.kF.fitType.parameters) + ['fitRMS']
-        if self.kF.fittedParam is None or col >= len(param_names):
+        paramCol = col - 1
+        if self.kF.fittedParam is None or paramCol < 0 or paramCol >= len(param_names):
+            # 'name' column (or any column without fit statistics) selected -
+            # leave the stat graph/map exactly as they are
             return
 
-        param_name = param_names[col]
+        self.statGraph.clear()
+        param_name = param_names[paramCol]
         st     = self.kF.getParamStats(param_name)
         values = st['values']
         n      = st['n']
@@ -535,20 +540,24 @@ class FitWidget(QWidget):
             return
         nFit, nParam = self.kF.fittedParam.shape
         param_names = list(self.kF.fitType.parameters) + ['fitRMS']
-        self.paramTable.setRowCount(nFit)
-        self.paramTable.setColumnCount(nParam + 1)
-        self.paramTable.setHorizontalHeaderLabels(param_names)
         names = (self.kF.table or {}).get('name') or [str(i) for i in range(nFit)]
+
+        # 'name' is column 0, ahead of the fit parameters - updateStatGraph()
+        # maps column index back to param_names via (col - 1)
+        self.paramTable.setRowCount(nFit)
+        self.paramTable.setColumnCount(nParam + 2)
+        self.paramTable.setHorizontalHeaderLabels(['name'] + param_names)
         self.paramTable.setVerticalHeaderLabels([str(n) for n in names])
         def _fmt(v):
             s = f'{v:.6g}'
             return s if ('.' in s or 'e' in s) else s + '.0'
 
         for i in range(nFit):
+            self.paramTable.setItem(i, 0, QTableWidgetItem(str(names[i])))
             for j in range(nParam):
-                self.paramTable.setItem(i, j, QTableWidgetItem(_fmt(self.kF.fittedParam[i, j])))
+                self.paramTable.setItem(i, j + 1, QTableWidgetItem(_fmt(self.kF.fittedParam[i, j])))
             rms = self.kF.fitRMS[i] if self.kF.fitRMS is not None else float('nan')
-            self.paramTable.setItem(i, nParam, QTableWidgetItem(_fmt(rms)))
+            self.paramTable.setItem(i, nParam + 1, QTableWidgetItem(_fmt(rms)))
         self.paramTable.resizeColumnsToContents()
 
     def drawCleanGraph(self):
