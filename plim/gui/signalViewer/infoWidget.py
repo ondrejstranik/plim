@@ -43,6 +43,17 @@ class InfoWidget(QWidget):
 
         self.sD = spotData if spotData is not None else SpotData(np.arange(10*3).reshape(10,3))
 
+        # display-order state for column-header double-click sorting.
+        # _sortOrder[row] = underlying spot index shown at that display row
+        # (None = natural/identity order). Rows are never physically moved
+        # in sD.table itself - only how they're displayed/edited/selected
+        # here is remapped through this permutation, so other widgets that
+        # reference spots by their real index (SignalWidget.lineIndex,
+        # PositionTrackGUI's viewer-click selection, ...) stay correct
+        self._sortOrder = None
+        self._sortColumn = None
+        self._sortAscending = True
+
         # set this gui of this class
         InfoWidget._setWidget(self)
 
@@ -88,6 +99,7 @@ class InfoWidget(QWidget):
         self.infoTable = _InfoTable()
         self.infoTable.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.infoTable.itemChanged.connect(self._onItemChanged)
+        self.infoTable.horizontalHeader().sectionDoubleClicked.connect(self._onHeaderDoubleClicked)
 
         layout = QVBoxLayout()
         layout.addWidget(self.infoTable)
@@ -116,10 +128,51 @@ class InfoWidget(QWidget):
 
         self._syncFromTable()
 
+    def _onHeaderDoubleClicked(self, col):
+        ''' double-click a column header to sort rows by it - ascending,
+        or descending if that same column is already sorted ascending '''
+        self._sortAscending = not (self._sortColumn == col and self._sortAscending)
+        self._sortColumn = col
+        self._applySort()
+        self._redrawTable()
+
+    def _applySort(self):
+        ''' recompute self._sortOrder (spot indices in display order) from
+        self._sortColumn/_sortAscending against the current table data '''
+        if self._sortColumn is None or self.sD.table.get('name') is None:
+            return
+        table = self._displayTable()
+        columns = list(table.keys())
+        if self._sortColumn >= len(columns):
+            return
+        values = table[columns[self._sortColumn]]
+        nRow = len(self.sD.table['name'])
+
+        def sortKey(i):
+            # numeric compare when possible (so name '10' sorts after '2'),
+            # falling back to text - keeps mixed/renamed columns usable
+            try:
+                return (0, float(values[i]))
+            except (TypeError, ValueError):
+                return (1, str(values[i]))
+
+        self._sortOrder = sorted(range(nRow), key=sortKey, reverse=not self._sortAscending)
+
+    def _displayOrder(self):
+        ''' current display row -> spot index mapping, falling back to
+        natural order if there's no sort yet or the spot count moved on
+        since the last sort (e.g. after spot identification changed it) '''
+        nRow = len(self.sD.table['name']) if self.sD.table.get('name') is not None else 0
+        if self._sortOrder is not None and len(self._sortOrder) == nRow:
+            return self._sortOrder
+        self._sortOrder = None
+        return list(range(nRow))
+
     def _syncFromTable(self):
         ''' read the table widget content back into sD.table, recalculate and redraw '''
         columns = list(self._displayTable().keys())
         nRow = self.infoTable.rowCount()
+        order = self._displayOrder()
 
         # non-editable columns hold computed/reference values; the table
         # widget only stores displayed text, so reading them back would
@@ -131,7 +184,13 @@ class InfoWidget(QWidget):
         for col, key in enumerate(columns):
             if key in self.DEFAULT['notEditableColumn']:
                 continue
-            newTable[key] = [self.infoTable.item(row, col).text() for row in range(nRow)]
+            # order[row] is the real spot index shown at this display row -
+            # write it back there, not to `row`, so a sorted view doesn't
+            # scramble which spot an edited value belongs to
+            newColumn = [None] * nRow
+            for row in range(nRow):
+                newColumn[order[row]] = self.infoTable.item(row, col).text()
+            newTable[key] = newColumn
 
         # mutate in place, don't rebind - keeps any external alias to
         # sD.table (e.g. a live viewer sharing it by reference) valid
@@ -172,22 +231,30 @@ class InfoWidget(QWidget):
         table = self._displayTable()
         columns = list(table.keys())
         nRow = len(self.sD.table['name'])
+        order = self._displayOrder()   # order[row] = spot index shown there
 
         self.infoTable.blockSignals(True)
 
         self.infoTable.setColumnCount(len(columns))
         self.infoTable.setRowCount(nRow)
         self.infoTable.setHorizontalHeaderLabels(columns)
+        # vertical header shows the real spot index, so a sorted row is
+        # still identifiable once its on-screen position no longer matches it
+        self.infoTable.setVerticalHeaderLabels([str(ii) for ii in order])
+        if self._sortColumn is not None:
+            self.infoTable.horizontalHeader().setSortIndicator(
+                self._sortColumn,
+                Qt.AscendingOrder if self._sortAscending else Qt.DescendingOrder)
 
         for col, key in enumerate(columns):
             values = table[key]
             notEditable = key in self.DEFAULT['notEditableColumn']
-            for row in range(nRow):
+            for row, spotIdx in enumerate(order):
                 item = self.infoTable.item(row, col)
                 if item is None:
                     item = QTableWidgetItem()
                     self.infoTable.setItem(row, col, item)
-                item.setText(str(values[row]))
+                item.setText(str(values[spotIdx]))
                 if notEditable:
                     item.setFlags(item.flags() & ~Qt.ItemIsEditable)
                     item.setBackground(QColor('lightgray'))
@@ -196,8 +263,9 @@ class InfoWidget(QWidget):
 
         if 'color' in columns:
             colorCol = columns.index('color')
-            for row, _color in enumerate(self.sD.table['color']):
-                self.infoTable.item(row, colorCol).setBackground(QColor(_color))
+            for row, spotIdx in enumerate(order):
+                self.infoTable.item(row, colorCol).setBackground(
+                    QColor(self.sD.table['color'][spotIdx]))
 
         self.infoTable.blockSignals(False)
 
@@ -205,12 +273,14 @@ class InfoWidget(QWidget):
         print(f'row to select : {idx}')
 
         idx = np.array(idx, ndmin=1)
+        order = self._displayOrder()   # order[row] = spot index shown there
+        rowOfSpot = {spotIdx: row for row, spotIdx in enumerate(order)}
 
         self.infoTable.selectionModel().clear()
         self.infoTable.setSelectionMode(QAbstractItemView.MultiSelection)
         for ii in idx:
-            if ii is not None:
-                self.infoTable.selectRow(ii)
+            if ii is not None and ii in rowOfSpot:
+                self.infoTable.selectRow(rowOfSpot[ii])
         self.infoTable.setSelectionMode(QAbstractItemView.ExtendedSelection)
 
 if __name__ == "__main__":
