@@ -4,6 +4,8 @@ camera based on integral field technology
 '''
 #%%
 
+from viscope.logger.verbosity import setVerbosity
+
 # devices
 from viscope.instrument.virtual.virtualCamera import VirtualCamera
 from spectralCamera.algorithm.calibrateIFImage import CalibrateIFImage
@@ -34,6 +36,9 @@ import numpy as np
 
 
 def main():
+    # log only info and errors (suppress the debug-level per-frame chatter)
+    setVerbosity('INFO')
+
     # some global settings
     viscope.dataFolder = plim.dataFolder
 

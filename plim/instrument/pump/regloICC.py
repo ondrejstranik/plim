@@ -9,10 +9,13 @@ Created on Mon Nov 15 12:08:51 2021
 
 import os
 import time
+import logging
 import numpy as np
 from viscope.instrument.base.basePump import BasePump
 
 import serial
+
+logger = logging.getLogger(__name__)
 
 class RegloICC(BasePump):
     ''' class to control reglo ICC pump'''
@@ -46,15 +49,15 @@ class RegloICC(BasePump):
                 self._cmd('1M', '*')
                 #self._cmd('1~1', '*')
                 if serialnb == self.serialNo:
-                    print(self.name + 'pump with serialNo --' + str(self.serialNo) + '-- opened')
+                    logger.info(self.name + ' pump with serialNo --' + str(self.serialNo) + '-- opened')
                     return
                 else:
-                    print('serial number wrong: ' + str(serialnb) + '!=' + str(self.serialNo))
+                    logger.warning('serial number wrong: ' + str(serialnb) + '!=' + str(self.serialNo))
                     break
             except serial.SerialException:
-                print(self.name + ' serial.SerialException')
+                logger.warning(self.name + ' serial.SerialException')
             time.sleep(0.5)
-        print(self.name + ' not able to open pump')
+        logger.error(self.name + ' not able to open pump')
 
     def _cmd(self, command, response=None, reopen=True):
         ''' send command on the pump via serial port '''
@@ -75,9 +78,9 @@ class RegloICC(BasePump):
                 if reopen:
                     self._device.close()
                     self._open()
-            print(self.name + ' serial cmd error')
+            logger.warning(self.name + ' serial cmd error')
             time.sleep(0.5)
-        print(self.name + ' serial cmd error, command: ' + str(command))
+        logger.error(self.name + ' serial cmd error, command: ' + str(command))
         return 0
 
     def _stop(self):

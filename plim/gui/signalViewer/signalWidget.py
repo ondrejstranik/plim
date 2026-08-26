@@ -2,17 +2,19 @@
 class for viewing signals from spots' plasmon resonance
 '''
 
+import logging
 import pyqtgraph as pg
 from PyQt5.QtGui import QColor, QPen
 from qtpy.QtWidgets import QWidget,QVBoxLayout
 from qtpy import QtCore
 from magicgui import magicgui
 from qtpy.QtCore import Signal
-import traceback
 from timeit import default_timer as timer
 
 import numpy as np
 from plim.algorithm.spotData import SpotData
+
+logger = logging.getLogger(__name__)
 
 
 class SignalWidget(QWidget):
@@ -122,7 +124,7 @@ class SignalWidget(QWidget):
                 self.lineParameter._auto_call = False
                 self.lineParameter.lineIndex.value = lineIndex
                 self.lineParameter._auto_call = True
-                print('index out of line')
+                logger.debug('index out of line')
 
             # line index is changed - resync everything to the new line and
             # stop there: the other parameters below still hold the
@@ -145,7 +147,7 @@ class SignalWidget(QWidget):
                 self.lineParameter.noise.value =  f"{self.sD.noise[lineIndex]:.2E}"
                 self.lineParameter._auto_call = True
                 self.drawGraph()
-                print('change of index')
+                logger.debug('change of index')
 
             else:
                 # each of these is checked independently (not elif) - e.g. if
@@ -159,21 +161,21 @@ class SignalWidget(QWidget):
                 if (self.sD.table['visible'][lineIndex]=='True') != lineVisible:
                     self.sD.table['visible'][lineIndex] = 'True' if lineVisible else 'False'
                     changed = True
-                    print('change of visibility')
-                    print(f"line {lineIndex} is now {self.sD.table['visible'][lineIndex]}")
+                    logger.debug('change of visibility')
+                    logger.debug(f"line {lineIndex} is now {self.sD.table['visible'][lineIndex]}")
 
                 # color is changed
                 if self.sD.table['color'][lineIndex] != lineColor:
                     self.sD.table['color'][lineIndex] = lineColor
                     self.sD.setReference()
                     changed = True
-                    print('change of color')
+                    logger.debug('change of color')
 
                 # name is changed
                 if self.sD.table['name'][lineIndex] != lineName:
                     self.sD.table['name'][lineIndex] = lineName
                     changed = True
-                    print('change of name')
+                    logger.debug('change of name')
 
                 # evaluation time or delta time is changed
                 if (evalTime != self.sD.evalTime) or (dTime != self.sD.dTime):
@@ -182,7 +184,7 @@ class SignalWidget(QWidget):
                     self.lineParameter.dSignal.value = f"{self.sD.dSignal[self.lineIndex]:.2E}"
                     self.lineParameter.noise.value =  f"{self.sD.noise[self.lineIndex]:.2E}"
                     changed = True
-                    print('change of evaluation')
+                    logger.debug('change of evaluation')
 
                 if changed:
                     self.drawGraph()
@@ -260,7 +262,7 @@ class SignalWidget(QWidget):
         ''' find the closest line from the cursor'''
 
         nx = np.argmin(np.abs(self.sD.time -self.sD.time0 - x))
-        print(f'selection at time {self.sD.time[nx]-self.sD.time0}')
+        logger.debug(f'selection at time {self.sD.time[nx]-self.sD.time0}')
 
         # remove the one not visible
         _signalMat, _ = self.sD.getProcessedData()
@@ -289,7 +291,7 @@ class SignalWidget(QWidget):
 
         if nSig > self.DEFAULT['maxNLine']:
             nSig = self.DEFAULT['maxNLine']
-            print(f'Signal Widget: displaying only {self.DEFAULT["maxNLine"]} lines')
+            logger.warning(f'Signal Widget: displaying only {self.DEFAULT["maxNLine"]} lines')
 
 
         self.graph.setUpdatesEnabled(False)
@@ -302,7 +304,7 @@ class SignalWidget(QWidget):
                 else:
                     self.linePlotList[ii].hide()
             except:
-                print('sd table visible not defined')
+                logger.warning('sd table visible not defined')
                 self.linePlotList[ii].show()
             # set dash for selected line
             self.penList[ii].setStyle(2) if ii == self.lineIndex else self.penList[ii].setStyle(1)
@@ -315,13 +317,12 @@ class SignalWidget(QWidget):
                                 1]
                 self.penList[ii].setColor(QColor.fromRgbF(*list(rgbaColor)))
             except:
-                print('sd table color is not defined')
+                logger.warning('sd table color is not defined')
             # update data
             try:
                 self.linePlotList[ii].setData(time, signal[:,ii], pen=self.penList[ii])
             except:
-                print('error occurred in drawGraph - signalWidget')                
-                traceback.print_exc()
+                logger.exception('error occurred in drawGraph - signalWidget')
 
         # hide extra lines
         for ii in np.arange(self.maxNLine - nSig):
@@ -339,7 +340,7 @@ class SignalWidget(QWidget):
             self.infoBox(time[-1] - time[-2])
 
         end = timer()
-        print(f'signal widget evaluation time {end -start} s')
+        logger.debug(f'signal widget evaluation time {end -start} s')
 
            
     def setData(self, signal,time=None):

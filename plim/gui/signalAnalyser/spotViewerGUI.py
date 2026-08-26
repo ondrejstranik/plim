@@ -3,9 +3,11 @@ lightweight, read-only napari viewer for the offline signal analyser
 '''
 #%%
 import numpy as np
-import traceback
+import logging
 from qtpy.QtCore import Signal
 from viscope.gui.napariGUI import NapariGUI
+
+logger = logging.getLogger(__name__)
 
 
 class SpotViewerGUI(NapariGUI):
@@ -136,8 +138,7 @@ class SpotViewerGUI(NapariGUI):
         try:
             self.pointLayer.features = {'names': list(self.table['name'])}
         except Exception:
-            print('error updating point annotations from table')
-            traceback.print_exc()
+            logger.exception('error updating point annotations from table')
 
     def colorChanged(self):
         ''' record a colour picked via napari's own UI into self.table
@@ -152,8 +153,7 @@ class SpotViewerGUI(NapariGUI):
             for ii in idx:
                 self.table['color'][ii] = hexColor
         except Exception:
-            print('error updating table color from current_color')
-            traceback.print_exc()
+            logger.exception('error updating table color from current_color')
 
     def toggleVisibility(self):
         ''' toggle visibility of the currently selected spot(s) - bound to

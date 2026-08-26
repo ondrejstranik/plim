@@ -2,6 +2,7 @@
 class for calculating plasmon peak from a spectra
 '''
 
+import logging
 import numpy as np
 from plim.algorithm.plasmonPeakFit import (fit_polynom, get_peakmax, get_peakcenter)
 from timeit import default_timer as timer
@@ -9,6 +10,8 @@ from numpy.polynomial import polynomial as P
 from numpy.polynomial import Polynomial
 from scipy.optimize import brentq
 from scipy.optimize import newton
+
+logger = logging.getLogger(__name__)
 
 
 class PlasmonFit:
@@ -84,7 +87,7 @@ class PlasmonFit:
             self.peakPosition.append(peakfun(f,**pfvar))
 
         end = timer()
-        print(f'plasmon fit evaluation time {end -start} s')
+        logger.debug(f'plasmon fit evaluation time {end -start} s')
 
     def calculateFit(self):
         ''' parallel least square fitting with polynomial'''
@@ -116,7 +119,7 @@ class PlasmonFit:
         try:
             coeffs = P.polyfit(x, y_datasets, deg=self.orderFit)
         except:
-            print('could not fit polynomials')
+            logger.warning('could not fit polynomials')
             return
 
 
@@ -193,7 +196,7 @@ class PlasmonFit:
 
 
         end = timer()
-        print(f'plasmon fit evaluation time {end -start} s')
+        logger.debug(f'plasmon fit evaluation time {end -start} s')
 
 
     '''

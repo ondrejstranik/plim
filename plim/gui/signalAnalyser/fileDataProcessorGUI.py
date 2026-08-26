@@ -3,11 +3,14 @@ Load/Save/Export panel for the offline signal analyser, paired with a FileDataPr
 '''
 #%%
 from pathlib import Path
+import logging
 
 from qtpy.QtWidgets import QFileDialog, QWidget, QVBoxLayout, QLabel, QPushButton
 import pyqtgraph.exporters
 
 from viscope.gui.baseGUI import BaseGUI
+
+logger = logging.getLogger(__name__)
 
 
 class FileDataProcessorGUI(BaseGUI):
@@ -115,10 +118,10 @@ class FileDataProcessorGUI(BaseGUI):
     def save(self):
         ''' write back to the currently loaded folder/fileMainName, no dialog '''
         if self.fileMainName is None:
-            print('no dataset loaded yet - nothing to save')
+            logger.warning('no dataset loaded yet - nothing to save')
             return
         self.device.fileData.saveAllFile(self.folder, self.fileMainName)
-        print('saving data')
+        logger.info('saving data')
 
     def export(self):
         ''' export a viewer screenshot, the signal/flow graphs and the info table '''
@@ -137,18 +140,18 @@ class FileDataProcessorGUI(BaseGUI):
         viewer.theme = 'light'
         viewer.screenshot(path=folder + '/image.png')
         viewer.theme = 'dark'
-        print('viewer image exported')
+        logger.info('viewer image exported')
 
         exporter = pyqtgraph.exporters.ImageExporter(self.ptGui.positionTrack.graph.plotItem)
         exporter.export(folder + '/signal.png')
-        print('signal graph exported')
+        logger.info('signal graph exported')
 
         exporter = pyqtgraph.exporters.ImageExporter(self.ptGui.flowTrack.graph.plotItem)
         exporter.export(folder + '/flow.png')
-        print('flow graph exported')
+        logger.info('flow graph exported')
 
         self.device.spotData.saveInfoFile(folder, 'infoTable.txt')
-        print('info data exported')
+        logger.info('info data exported')
 
 
 if __name__ == "__main__":

@@ -16,10 +16,12 @@ from qtpy.QtCore import Qt
 from magicgui import magicgui
 from enum import Enum
 from typing import Annotated, Literal
+import logging
 
 import numpy as np
-import traceback
 from timeit import default_timer as timer
+
+logger = logging.getLogger(__name__)
 
 class SpotSpectraViewer(SViewer):
     ''' class for viewing spots spectra'''
@@ -141,7 +143,7 @@ class SpotSpectraViewer(SViewer):
             contrastChannel = None if onSum else int(self.viewer.dims.point[0])
             myPosition = sI.getPosition(contrastChannel=contrastChannel)
             myRadius = sI.getRadius()
-            print(f'detected radius: {myRadius}')
+            logger.info(f'detected radius: {myRadius}')
 
             # restrict the spot on grid
             if onGrid:
@@ -239,8 +241,7 @@ class SpotSpectraViewer(SViewer):
                 self.penList[ii].setColor(QColor.fromRgbF(*list(
                     self.pointLayer.face_color[ii])))
             except:
-                print('error occurred in drawSpectraGraph - could not set color')
-                traceback.print_exc()
+                logger.exception('error occurred in drawSpectraGraph - could not set color')
 
             # show spectra signal and background
             if self.showRawSpectra:
@@ -254,8 +255,7 @@ class SpotSpectraViewer(SViewer):
                                             pen = self.penList[ii])
                     self.linePlotList2[ii].show() if isVisible else self.linePlotList2[ii].hide()
                 except:
-                    print('error occurred in drawSpectraGraph - pointSpectra')
-                    traceback.print_exc()
+                    logger.exception('error occurred in drawSpectraGraph - pointSpectra')
 
             # show processed spectra
             else:
@@ -265,7 +265,7 @@ class SpotSpectraViewer(SViewer):
                                             pen = self.penList[ii])
                     self.linePlotList[ii].show() if isVisible else self.linePlotList[ii].hide()
                 except:
-                    print('error occurred in drawSpectraGraph - pointSpectra')
+                    logger.exception('error occurred in drawSpectraGraph - pointSpectra')
 
         # hide extra lines
         for ii in np.arange(self.maxNLine - nSig):
@@ -303,7 +303,7 @@ class SpotSpectraViewer(SViewer):
             self.maskLayer.data = self.spotSpectra.maskImage            
             self.drawSpectraGraph()
         end = timer()
-        print(f'viewer redraw evaluation time {end -start} s')
+        logger.debug(f'viewer redraw evaluation time {end -start} s')
 
     
 if __name__ == "__main__":

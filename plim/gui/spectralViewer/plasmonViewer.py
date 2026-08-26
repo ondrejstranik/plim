@@ -16,10 +16,12 @@ from PyQt5.QtGui import QColor, QPen
 from magicgui import magicgui
 from enum import Enum
 from typing import Annotated, Literal
-import traceback
+import logging
 from timeit import default_timer as timer
 
 import numpy as np
+
+logger = logging.getLogger(__name__)
 
 class PlasmonViewer(SpotSpectraViewer):
     ''' main viewer for the plasmon resonances of spots'''
@@ -130,8 +132,7 @@ class PlasmonViewer(SpotSpectraViewer):
                     self.penList[ii].setColor(QColor.fromRgbF(*list(
                         self.pointLayer.face_color[ii])))
                 except:
-                    print('error occurred in drawSpectraGraph - could not set color')
-                    traceback.print_exc()
+                    logger.exception('error occurred in drawSpectraGraph - could not set color')
                 try:
                     # fit line
                     self.linePlotList2[ii].setData(w, fitSpectra[ii],
@@ -142,8 +143,7 @@ class PlasmonViewer(SpotSpectraViewer):
                                                    pen = self.penList[ii] )
                     self.linePlotList3[ii].show() if isVisible else self.linePlotList3[ii].hide()
                 except:
-                    print('error occurred in drawSpectraGraph - could not draw')
-                    traceback.print_exc()
+                    logger.exception('error occurred in drawSpectraGraph - could not draw')
 
             self.spectraGraph.setUpdatesEnabled(True)
 

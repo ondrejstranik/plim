@@ -4,11 +4,13 @@ class for calculating spot spectra from 3D spectral cube
 #%%
 
 
+import logging
 import numpy as np
 from skimage.transform import rotate
-import traceback
 from spectralCamera.algorithm.spotSpectraSimple import SpotSpectraSimple
 from scipy.ndimage import gaussian_filter
+
+logger = logging.getLogger(__name__)
 
 class SpotSpectra(SpotSpectraSimple):
     ''' class for calculating spot spectra '''
@@ -183,8 +185,7 @@ class SpotSpectra(SpotSpectraSimple):
                         self.maskBcgIdx[1][~self.outliers,:]] = 2
             
         except:
-            print('error in setting mask')
-            traceback.print_exc()
+            logger.exception('error in setting mask')
 
 
 
@@ -230,8 +231,7 @@ class SpotSpectra(SpotSpectraSimple):
             )
 
         except:
-            print('error in calculateSpectra')
-            traceback.print_exc()
+            logger.exception('error in calculateSpectra')
 
 
         # apply spectral smoothing and background substration

@@ -2,6 +2,7 @@
 class for viewing signals and their Fits
 '''
 
+import logging
 import pyqtgraph as pg
 import pyqtgraph.exporters
 from PyQt5.QtGui import QColor, QPen
@@ -14,6 +15,8 @@ from pathlib import Path
 
 import numpy as np
 from plim.algorithm.kineticFit import KineticFit, FitType
+
+logger = logging.getLogger(__name__)
 
 
 class FitWidget(QWidget):
@@ -64,9 +67,9 @@ class FitWidget(QWidget):
             self.drawGraph()
             self.drawCleanGraph()
 
-            print('fitted the data')
+            logger.info('fitted the data')
 
-            print(f'fitted parameters {self.kF.fittedParam}')
+            logger.debug(f'fitted parameters {self.kF.fittedParam}')
 
 
         @magicgui(layout='horizontal', call_button='fit',
@@ -93,9 +96,9 @@ class FitWidget(QWidget):
             self.drawGraph()
             self.drawCleanGraph()
 
-            print('fitted the data')
+            logger.info('fitted the data')
 
-            print(f'fitted parameters {self.kF.fittedParam}')
+            logger.debug(f'fitted parameters {self.kF.fittedParam}')
 
 
         @magicgui(layout='horizontal', call_button='fit',
@@ -119,9 +122,9 @@ class FitWidget(QWidget):
             self.drawGraph()
             self.drawCleanGraph()
 
-            print('fitted the data')
+            logger.info('fitted the data')
 
-            print(f'fitted parameters {self.kF.fittedParam}')
+            logger.debug(f'fitted parameters {self.kF.fittedParam}')
 
 
         @magicgui(layout='horizontal', call_button='fit',
@@ -154,7 +157,7 @@ class FitWidget(QWidget):
             self.drawGraph()
             self.drawCleanGraph()
 
-            print(f'fitted parameters {self.kF.fittedParam}')
+            logger.debug(f'fitted parameters {self.kF.fittedParam}')
 
 
         @magicgui(layout='horizontal', call_button=False,
@@ -225,10 +228,10 @@ class FitWidget(QWidget):
             if file is not None:
                 myPath = Path(file[0])
                 self.kF.saveFitInfo(str(myPath.parent), str(myPath.name)+r"_data.txt")
-                print('fit info exported')
+                logger.info('fit info exported')
 
                 self.kF.saveFit(str(myPath.parent)+'/'+ str(myPath.name)+r"_fit.pkl")
-                print('fit exported')
+                logger.info('fit exported')
 
 
                 # save signal graph
@@ -236,7 +239,7 @@ class FitWidget(QWidget):
                 # set export parameters if needed
                 #exporter.parameters()['width'] = 100   # (note this also affects height parameter)
                 exporter.export(str(myPath.parent /myPath.name)  +r"_graph.png")
-                print('fit graph exported')
+                logger.info('fit graph exported')
 
 
         # add graph
@@ -592,7 +595,7 @@ class FitWidget(QWidget):
         mypen3.setWidth(0)        
 
         if self.kF.signal is None:
-            print(f'no self.kF.signal')
+            logger.debug('no self.kF.signal')
             return
 
         for ii in range(self.kF.signal.shape[1]):

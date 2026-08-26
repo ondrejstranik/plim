@@ -8,7 +8,7 @@ components: camera
 #%%
 
 import time
-import traceback
+import logging
 
 from viscope.virtualSystem.base.baseSystem import BaseSystem
 from viscope.virtualSystem.component.component import Component
@@ -16,6 +16,8 @@ from plim.virtualSystem.component.sample3 import Sample3
 from spectralCamera.virtualSystem.component.component2 import Component2
 import numpy as np
 import napari
+
+logger = logging.getLogger(__name__)
 
 class PlimMicroscope(BaseSystem):
     ''' class to emulate microscope '''
@@ -173,8 +175,7 @@ class PlimMicroscope(BaseSystem):
                     self.device['camera2'].virtualFrame = self.calculateVirtualFrameCamera2()
                     self.device['camera2'].flagSetParameter.clear()
             except:
-                print(f"An exception occurred in thread of {self.__class__.__name__}:\n")
-                traceback.print_exc()
+                logger.exception(f"An exception occurred in thread of {self.__class__.__name__}")
             time.sleep(self.loopDelay)
 
         

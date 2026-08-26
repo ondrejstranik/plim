@@ -2,12 +2,15 @@
 class for viewing info from spots' plasmon resonance
 '''
 
+import logging
 from qtpy.QtGui import QColor
 from qtpy.QtWidgets import QWidget,QVBoxLayout,QTableWidget,QTableWidgetItem,QAbstractItemView
 from qtpy.QtCore import Signal, Qt, QItemSelectionModel
 
 import numpy as np
 from plim.algorithm.spotData import SpotData
+
+logger = logging.getLogger(__name__)
 
 
 class _InfoTable(QTableWidget):
@@ -270,7 +273,7 @@ class InfoWidget(QWidget):
         self.infoTable.blockSignals(False)
 
     def updateSelect(self,idx):
-        print(f'row to select : {idx}')
+        logger.debug(f'row to select : {idx}')
 
         idx = np.array(idx, ndmin=1)
         order = self._displayOrder()   # order[row] = spot index shown there

@@ -10,6 +10,7 @@ Created on Mon Nov 15 12:08:51 2021
 #TODO: correct time loading !!!!!!!!!!!!
 import os
 import time
+import logging
 import numpy as np
 import pickle
 from pathlib import Path
@@ -20,6 +21,8 @@ from plim.algorithm.spotSpectra import SpotSpectra
 from plim.algorithm.spotData import SpotData
 from plim.algorithm.flowData import FlowData
 from plim.algorithm.injectionData import InjectionData
+
+logger = logging.getLogger(__name__)
 
 
 class FileData:
@@ -57,7 +60,7 @@ class FileData:
 
         _file = Path(folder + '/' + fileMainName + self.DEFAULT['nameSet']['image'])        
         if not _file.is_file():
-            print(f'could not find file {_file}')
+            logger.warning(f'could not find file {_file}')
             return
 
         container1 = np.load(_file)
@@ -96,7 +99,7 @@ class FileData:
 
         _file = Path(folder + '/' + fileMainName + self.DEFAULT['nameSet']['fit'])        
         if not _file.is_file():
-            print(f'could not find file {_file}')
+            logger.warning(f'could not find file {_file}')
             return
 
         container1 = np.load(_file)
@@ -131,7 +134,7 @@ class FileData:
         ''' load spot Data file'''
         _file = Path(folder + '/' + fileMainName + self.DEFAULT['nameSet']['spot'])        
         if not _file.is_file():
-            print(f'could not find file {_file}')
+            logger.warning(f'could not find file {_file}')
             return
 
         container1 = np.load(_file)
@@ -154,7 +157,7 @@ class FileData:
         ''' load flow Data file'''
         _file = Path(folder + '/' + fileMainName + self.DEFAULT['nameSet']['flow'])        
         if not _file.is_file():
-            print(f'could not find file {_file}')
+            logger.warning(f'could not find file {_file}')
             return
 
         container1 = np.load(_file)
@@ -168,7 +171,7 @@ class FileData:
             if 'arr_1' in container1.keys():
                 self.flowData.time = container1['arr_1'] # b-c
         except:
-            print(f'can not read file {_file}')
+            logger.exception(f'can not read file {_file}')
 
     def saveInfoFile(self,folder,fileMainName):
         ''' save Info Data file'''
@@ -184,7 +187,7 @@ class FileData:
         ''' load info into the class from file'''
         _file = Path(folder + '/' + fileMainName + self.DEFAULT['nameSet']['info'])
         if not _file.is_file():
-            print(f'could not find file {_file}')
+            logger.warning(f'could not find file {_file}')
             return
         with open(_file, 'rb') as f:
             (table,
@@ -213,7 +216,7 @@ class FileData:
             # a single 'info.txt' per folder, not prefixed by fileMainName
             _file = Path(folder) / 'info.txt'
         if not _file.is_file():
-            print(f'could not find file {_file}')
+            logger.warning(f'could not find file {_file}')
             return
 
         with open(_file,'r') as f:
@@ -225,7 +228,7 @@ class FileData:
             try:
                 time0 = float(headerLine.split('time0=')[1].split('s')[0].strip())
             except ValueError:
-                print(f'could not parse time0 from header in file {_file}')
+                logger.warning(f'could not parse time0 from header in file {_file}')
             data = rest
         else:
             # no recognised header (e.g. the old info.txt format) - the

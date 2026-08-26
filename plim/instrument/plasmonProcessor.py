@@ -9,6 +9,7 @@ Created on Mon Nov 15 12:08:51 2021
 
 import os
 import time
+import logging
 import numpy as np
 from viscope.instrument.base.baseProcessor import BaseProcessor
 from plim.algorithm.plasmonFit import PlasmonFit
@@ -16,6 +17,8 @@ from plim.algorithm.spotSpectra import SpotSpectra
 from plim.algorithm.spotData import SpotData
 from plim.algorithm.flowData import FlowData
 from plim.algorithm.injectionData import InjectionData
+
+logger = logging.getLogger(__name__)
 
 
 class PlasmonProcessor(BaseProcessor):
@@ -73,7 +76,7 @@ class PlasmonProcessor(BaseProcessor):
 
     def processData(self):
         ''' process newly arrived data '''
-        print(f"processing data from {self.DEFAULT['name']}")
+        logger.debug(f"processing data from {self.DEFAULT['name']}")
         self.spotSpectra.setImage(self.sCamera.sImage)
         self.spotSpectra.setWavelength(self.sCamera.wavelength)
         self.spotSpectra.calculateSpectra()

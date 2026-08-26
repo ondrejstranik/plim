@@ -13,8 +13,11 @@ from qtpy.QtCore import Qt
 from magicgui import magicgui
 from enum import Enum
 from typing import Annotated, Literal
+import logging
 
 import numpy as np
+
+logger = logging.getLogger(__name__)
 
 
 class TransmissionViewer(XYWViewer):
@@ -97,7 +100,7 @@ class TransmissionViewer(XYWViewer):
                 for ii in np.arange(len(self.pointSpectra)):
                     self.pointSpectra[ii] = 1 - self.pointSpectra[ii]/self.bcgSpectra[0]
             except:
-                print('could not normalise the spectra')
+                logger.exception('could not normalise the spectra')
 
     def drawSpectraGraph(self):
         ''' draw all new lines in the spectraGraph '''
@@ -116,7 +119,7 @@ class TransmissionViewer(XYWViewer):
                     lineplot.setData(self.wavelength, self.bcgSpectra[ii])
                     self.lineplotList2.append(lineplot)
             except:
-                print('error occurred in drawSpectraGraph - bcgSpectra')
+                logger.exception('error occurred in drawSpectraGraph - bcgSpectra')
 
         # set Title
         if self.showRawSpectra:
@@ -142,7 +145,7 @@ class TransmissionViewer(XYWViewer):
                     mypen.setWidth(0)
                     myline.setData(self.wavelength,self.bcgSpectra[ii], pen = mypen)
             except:
-                print('error occurred in update_spectraGraph - bcgSpectra')
+                logger.exception('error occurred in update_spectraGraph - bcgSpectra')
 
 
 if __name__ == "__main__":

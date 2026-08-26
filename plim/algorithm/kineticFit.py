@@ -2,6 +2,7 @@
 package to fit binding kinetic data
 '''
 
+import logging
 import numpy as np
 from scipy.optimize import curve_fit
 from scipy.special import erf
@@ -11,6 +12,8 @@ import pickle
 from lmfit import Model
 from enum import Enum
 import inspect
+
+logger = logging.getLogger(__name__)
 
 def functionPFO(x,x0,a,b):
     ''' pseudo first order binding curve'''
@@ -168,8 +171,8 @@ class KineticFit:
                         (self.fittedParam[ii, 1], self.fittedParam[ii, 3]) = (self.fittedParam[ii, 3], self.fittedParam[ii, 1])
                         (self.fittedParam[ii, 2], self.fittedParam[ii, 4]) = (self.fittedParam[ii, 4], self.fittedParam[ii, 2])
             except:
-                print(f'could not fit signal{ii}')
-        print(f'model parameters {self.modelParams}')
+                logger.exception(f'could not fit signal{ii}')
+        logger.debug(f'model parameters {self.modelParams}')
 
 
     def getFittedSignal(self,idx):
@@ -223,7 +226,7 @@ class KineticFit:
             writer = csv.writer(outfile, delimiter=',')
             writer.writerow(_dataDict.keys())
             writer.writerows(zip(*_dataDict.values()))
-        print('fit info exported')
+        logger.info('fit info exported')
 
     def saveFit(self, filePath):
         '''Save the full KineticFit state to a file.'''
