@@ -2,6 +2,9 @@
 script to run analysis of plasmon signals
 '''
 #%%
+
+from viscope.logger.verbosity import setVerbosity
+
 from viscope.main import viscope
 
 from plim.instrument.fileDataProcessor import FileDataProcessor
@@ -9,10 +12,12 @@ from plim.gui.positionTrackGUI import PositionTrackGUI
 from plim.gui.signalAnalyser.spotViewerGUI import SpotViewerGUI
 from plim.gui.signalAnalyser.fitGUI import FitGUI
 from plim.gui.signalAnalyser.fileDataProcessorGUI import FileDataProcessorGUI
-from plim.gui.deltaSignalGUI import DeltaSignalGUI
+from plim.gui.deltaSignal2GUI import DeltaSignal2GUI
 
 
 def main():
+    # log only info and errors (suppress the debug-level per-frame chatter)
+    setVerbosity('INFO')
 
     device = FileDataProcessor()
     device.connect()
@@ -22,7 +27,7 @@ def main():
     spotViewerGui = SpotViewerGUI(viscope, vWindow='new')
     ptGui = PositionTrackGUI(viscope, vWindow='new')
     fitGui = FitGUI(viscope, vWindow=ptGui.vWindow)
-    dsGui = DeltaSignalGUI(viscope, vWindow=ptGui.vWindow)
+    dsGui = DeltaSignal2GUI(viscope, vWindow=ptGui.vWindow)
 
     ptGui.setDevice(device)
     spotViewerGui.setDevice(device)
