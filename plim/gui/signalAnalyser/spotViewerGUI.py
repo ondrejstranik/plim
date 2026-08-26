@@ -77,7 +77,6 @@ class SpotViewerGUI(NapariGUI):
         self.pointLayer._move = lambda *a, **kw: None
         self.pointLayer.remove_selected = lambda *a, **kw: None
 
-        self.viewer.bind_key('d', lambda x: self.addDeltaSignalLayer())
         # 'v' toggles visibility of the currently selected spot(s) - bound
         # on self.viewer, not pointLayer, so it fires regardless of which
         # layer is currently active (see SViewer for the same pattern/the
@@ -91,18 +90,6 @@ class SpotViewerGUI(NapariGUI):
         self.pointLayer._face.events.current_color.connect(lambda: self.sigColorChanged.emit())
         self.pointLayer.selected_data.events.items_changed.connect(
             lambda *_: self.sigSelectionChanged.emit())
-
-    def addDeltaSignalLayer(self):
-        ''' add delta signal layer into napari '''
-        sS = self.device.spotSpectra
-        sD = self.device.spotData
-
-        _image = np.zeros(self.imageLayer.data.shape[1:])
-        _image[sS.maskSpotIdx[0][~sS.outliers, :],
-               sS.maskSpotIdx[1][~sS.outliers, :]] = sD.dSignal[:, None]
-
-        _name = f'delta Signal @ {sD.evalTime + sD.dTime} s '
-        self.viewer.add_image(_image, name=_name)
 
     def updateGui(self):
         ''' update the data in gui '''

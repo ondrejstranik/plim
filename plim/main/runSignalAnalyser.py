@@ -9,6 +9,7 @@ from plim.gui.positionTrackGUI import PositionTrackGUI
 from plim.gui.signalAnalyser.spotViewerGUI import SpotViewerGUI
 from plim.gui.signalAnalyser.fitGUI import FitGUI
 from plim.gui.signalAnalyser.fileDataProcessorGUI import FileDataProcessorGUI
+from plim.gui.deltaSignalGUI import DeltaSignalGUI
 
 
 def main():
@@ -21,15 +22,18 @@ def main():
     spotViewerGui = SpotViewerGUI(viscope, vWindow='new')
     ptGui = PositionTrackGUI(viscope, vWindow='new')
     fitGui = FitGUI(viscope, vWindow=ptGui.vWindow)
+    dsGui = DeltaSignalGUI(viscope, vWindow=ptGui.vWindow)
 
     ptGui.setDevice(device)
     spotViewerGui.setDevice(device)
     fitGui.setDevice(device)
     fileDataGui.setDevice(device)
+    dsGui.setDevice(device)
 
     ptGui.interconnectGui(spotViewerGui)
     fitGui.interconnectGui(ptGui)
     fileDataGui.interconnectGui(ptGui, spotViewerGui)
+    dsGui.interconnectGui(spotViewerGui, ptGui)
 
     # place the windows
     fileDataGui.vWindow.setRegion('top')

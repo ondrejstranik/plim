@@ -392,6 +392,15 @@ class SignalWidget(QWidget):
         # line parameter Widget
         if self.sD.table['name']:
             self._clampLineIndex()
+            # dSignal/noise are only computed on demand (by lineParameter's
+            # own index/evalTime/dTime-change branches, or explicitly) -
+            # nothing populates them as new data streams in (SpotData.
+            # addDataValue() doesn't), so on a session where the user
+            # hasn't touched those fields yet they can still be None here
+            if self.sD.dSignal is None:
+                self.sD.getDSignal()
+            if self.sD.noise is None:
+                self.sD.getNoise()
             self.lineParameter._auto_call = False
             self.lineParameter.lineIndex.value = self.lineIndex
             self.lineParameter.dSignal.value = f"{self.sD.dSignal[self.lineIndex]:.2E}"

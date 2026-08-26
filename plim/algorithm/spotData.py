@@ -220,6 +220,34 @@ class SpotData:
         ''' return the offset'''
         return self.offset
 
+    def computeDSignal(self, evalTime, dTime):
+        ''' pure variant of getDSignal(): returns the delta signal for the
+        given evalTime/dTime without storing them - self.evalTime/self.dTime/
+        self.dSignal are left untouched.
+
+        Use this (instead of getDSignal()) from code that needs a delta-
+        signal snapshot at a specific window without taking ownership of
+        evalTime/dTime - those are shared, UI-bound state that SignalWidget's
+        own evalTime/dTime spinboxes also display: writing to them directly
+        gets silently reverted the next time that widget's auto_call fires
+        for an unrelated reason (its cached, stale widget value looks like
+        a real change and gets written back - see DeltaSignalGUI, which hit
+        exactly this fighting-over-evalTime bug). '''
+        if self.signal is None:
+            return None
+
+        if self.useReference:
+            _signal = self.signal - self.reference[:,None]
+        else:
+            _signal = self.signal
+
+        range1 = self.getRange(evalTime)
+        _signal1 = np.mean(_signal[range1,:],axis=0)
+        range2 = self.getRange(evalTime+dTime)
+        _signal2 = np.mean(_signal[range2,:],axis=0)
+
+        return _signal2 - _signal1
+
     def getDSignal(self,evalTime=None,dTime=None, range=None):
         ''' get the difference value of signal'''
 
@@ -231,17 +259,7 @@ class SpotData:
         if self.signal is None:
             return self.dSignal
 
-        if self.useReference:
-            _signal = self.signal - self.reference[:,None]
-        else:
-            _signal = self.signal
-
-        range = self.getRange(self.evalTime)
-        _signal1 = np.mean(_signal[range,:],axis=0)
-        range = self.getRange(self.evalTime+self.dTime)
-        _signal2 = np.mean(_signal[range,:],axis=0)
-
-        self.dSignal = _signal2 - _signal1
+        self.dSignal = self.computeDSignal(self.evalTime, self.dTime)
 
         return self.dSignal
 

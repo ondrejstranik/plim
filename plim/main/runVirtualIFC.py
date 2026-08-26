@@ -28,6 +28,7 @@ from spectralCamera.gui.saveSIVideoGUI import SaveSIVideoGUI
 from viscope.gui.saveImageGUI import SaveImageGUI
 from viscope.gui.histogramGUI import HistogramGUI
 from plim.gui.signalAnalyser.fitGUI import FitGUI
+from plim.gui.deltaSignalGUI import DeltaSignalGUI
 
 import numpy as np
 
@@ -110,6 +111,10 @@ def main():
     sdGui.setDevice(pP)
     svGui  = SaveSIVideoGUI(viscope)
     svGui.setDevice(sCamera)
+    dsGui  = DeltaSignalGUI(viscope)
+    dsGui.setDevice(pP)
+    dsGui.interconnectGui(pvGui,ptGui)
+
 
     fitGui = FitGUI(viscope, vWindow=ptGui.vWindow)
     fitGui.interconnectGui(ptGui)
