@@ -32,7 +32,13 @@ class PlasmonProcessor(BaseProcessor):
 
         if name== None: name= PlasmonProcessor.DEFAULT['name']
         super().__init__(name=name, **kwargs)
-        
+
+        # base loopDelay as last explicitly requested via setParameter() -
+        # processData() adds to this (rather than overwriting it) once
+        # there are spots to fit, so the user's requested base value is
+        # never lost once the extra throttling kicks in or drops out again
+        self._baseLoopDelay = self.loopDelay
+
         # spectral camera
         self.sCamera = None
         # spectral camera
@@ -56,6 +62,9 @@ class PlasmonProcessor(BaseProcessor):
         ''' set parameter of the spectral camera'''
         super().setParameter(name,value)
 
+        if name== 'loopDelay':
+            self._baseLoopDelay = value
+
         if name== 'sCamera':
             self.sCamera = value
             self.flagToProcess = self.sCamera.flagLoop
@@ -77,6 +86,15 @@ class PlasmonProcessor(BaseProcessor):
     def processData(self):
         ''' process newly arrived data '''
         logger.debug(f"processing data from {self.DEFAULT['name']}")
+
+        # extra throttling once there are spots to fit - fitting is
+        # noticeably heavier than idle polling with no spots yet, so slow
+        # the loop down further to reduce GUI freezing. loopDelay is
+        # re-read fresh by BaseProcessor.loop()'s time.sleep(self.loopDelay)
+        # right after this method returns, so this takes effect immediately
+        hasSpots = self.spotSpectra.spotPosition is not None and len(self.spotSpectra.spotPosition) > 0
+        self.loopDelay = self._baseLoopDelay + 1 if hasSpots else self._baseLoopDelay
+
         self.spotSpectra.setImage(self.sCamera.sImage)
         self.spotSpectra.setWavelength(self.sCamera.wavelength)
         self.spotSpectra.calculateSpectra()
