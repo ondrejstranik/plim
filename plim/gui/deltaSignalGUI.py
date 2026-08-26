@@ -66,15 +66,22 @@ class DeltaSignalGUI(BaseGUI):
             self.device.worker.yielded.connect(self.guiUpdateTimed)
 
     def _buildDeltaImage(self, dSignal):
-        ''' paint the given per-spot dSignal values into their mask pixels '''
+        ''' paint the given per-spot dSignal values into their mask pixels,
+        skipping spots hidden via the 'visible' column (same table SignalWidget
+        uses to show/hide graph lines - see its table['visible'] == 'True'
+        checks) as well as out-of-bounds outlier spots '''
         sS = self.device.spotSpectra
+        sD = self.device.spotData
 
         if sS.image is None or sS.maskSpotIdx is None or dSignal is None:
             return None
 
+        visible = np.array([v == 'True' for v in sD.table['visible']])
+        mask = visible & ~sS.outliers
+
         _image = np.zeros(sS.image.shape[1:])
-        _image[sS.maskSpotIdx[0][~sS.outliers, :],
-               sS.maskSpotIdx[1][~sS.outliers, :]] = dSignal[:, None]
+        _image[sS.maskSpotIdx[0][mask, :],
+               sS.maskSpotIdx[1][mask, :]] = dSignal[mask, None]
         return _image
 
     def plotDeltaSignal(self):

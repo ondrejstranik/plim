@@ -3,6 +3,8 @@ script to run plasmon sensing with real instruments
 camera based on multi filter camera technology
 '''
 #%%
+from viscope.logger.verbosity import setVerbosity
+
 
 # gui must be imported before camera SDK to ensure PyQt5 DLLs are loaded first
 import plim
@@ -19,6 +21,8 @@ from spectralCamera.gui.saveSIVideoGUI import SaveSIVideoGUI
 from viscope.gui.saveImageGUI import SaveImageGUI
 from viscope.gui.histogramGUI import HistogramGUI
 from plim.gui.signalAnalyser.fitGUI import FitGUI
+from plim.gui.deltaSignalGUI import DeltaSignalGUI
+
 
 # devices (imported after GUI to avoid DLL conflicts with camera SDK on Windows)
 from spectralCamera.instrument.camera.pfCamera.pFCamera import PFCamera
@@ -31,6 +35,7 @@ from plim.instrument.plasmonProcessor import PlasmonProcessor
 def main():
     # some global settings
     viscope.dataFolder = plim.dataFolder
+    setVerbosity('INFO')
 
     #spectral camera system
     #camera
@@ -63,7 +68,7 @@ def main():
     # plasmon data processor
     pP = PlasmonProcessor()
     pP.connect(sCamera=sCamera, pump=pump)
-    pP.setParameter('loopDelay',1) # throttle down the fitting loop to reduce GUI freezing
+    #pP.setParameter('loopDelay',1) # throttle down the fitting loop to reduce GUI freezing
     pP.setParameter('threadingNow',True)
 
     # set GUIs
@@ -97,6 +102,10 @@ def main():
     sdGui.setDevice(pP)
     svGui  = SaveSIVideoGUI(viscope)
     svGui.setDevice(sCamera)
+
+    dsGui  = DeltaSignalGUI(viscope,vWindow=ptGui.vWindow)
+    dsGui.setDevice(pP)
+    dsGui.interconnectGui(pvGui,ptGui)
 
     fitGui = FitGUI(viscope, vWindow=ptGui.vWindow)
     fitGui.interconnectGui(ptGui)
