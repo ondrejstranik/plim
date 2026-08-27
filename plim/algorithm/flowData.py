@@ -15,8 +15,9 @@ class FlowData:
         ''' initialization of the parameters '''
 
         self.signal = None # numpy array, each column represent signal from one pump channel
-        
-        if signal is not None: self.signal = np.array(signal)  # flow 
+        self.time = None # corresponding time
+
+        if signal is not None: self.signal = np.array(signal)  # flow
         if time is not None: self.time = np.array(time) # corresponding time
 
         self.time0 = self.time[0] if time is not None else 0 # position of zero time

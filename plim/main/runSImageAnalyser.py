@@ -11,6 +11,7 @@ from plim.gui.plasmonViewerGUI import PlasmonViewerGUI
 from spectralCamera.gui.sCameraFromFileGUI import SCameraFromFileGUI
 from plim.gui.saveDataGUI import SaveDataGUI
 from plim.gui.positionTrackGUI import PositionTrackGUI
+from plim.gui.deltaSignalGUI import DeltaSignalGUI
 
 
 def main():
@@ -42,6 +43,11 @@ def main():
 
     sdGui = SaveDataGUI(viscope,vWindow=scGui.vWindow)
     sdGui.setDevice(pP)
+
+    dsGui  = DeltaSignalGUI(viscope,vWindow=ptGui.vWindow)
+    dsGui.setDevice(pP)
+    dsGui.interconnectGui(pvGui,ptGui)
+
 
     # now that every GUI is wired up (pvGui/ptGui listening to pP), select
     # the folder and load the first image - explicit and independent of

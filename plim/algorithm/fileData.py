@@ -63,7 +63,11 @@ class FileData:
             logger.warning(f'could not find file {_file}')
             return
 
-        container1 = np.load(_file)
+        # allow_pickle=True: a field saved as None (e.g. flowData.signal/
+        # time when a run had no pump/flow tracking) round-trips through
+        # np.savez() as a 0-d object array, which np.load() otherwise
+        # refuses to read back
+        container1 = np.load(_file, allow_pickle=True)
         if 'spotPosition' in container1.keys():
             self.spotSpectra.spotPosition = container1['spotPosition']
         if 'arr_0' in container1.keys():
@@ -102,7 +106,11 @@ class FileData:
             logger.warning(f'could not find file {_file}')
             return
 
-        container1 = np.load(_file)
+        # allow_pickle=True: a field saved as None (e.g. flowData.signal/
+        # time when a run had no pump/flow tracking) round-trips through
+        # np.savez() as a 0-d object array, which np.load() otherwise
+        # refuses to read back
+        container1 = np.load(_file, allow_pickle=True)
         if 'pxBcg' in container1.keys():
             self.spotSpectra.pxBcg = container1['pxBcg']
         if 'pxAve' in container1.keys():
@@ -137,7 +145,11 @@ class FileData:
             logger.warning(f'could not find file {_file}')
             return
 
-        container1 = np.load(_file)
+        # allow_pickle=True: a field saved as None (e.g. flowData.signal/
+        # time when a run had no pump/flow tracking) round-trips through
+        # np.savez() as a 0-d object array, which np.load() otherwise
+        # refuses to read back
+        container1 = np.load(_file, allow_pickle=True)
         if 'signal' in container1.keys():
             self.spotData.signal = container1['signal']
         if 'arr_0' in container1.keys():
@@ -160,7 +172,11 @@ class FileData:
             logger.warning(f'could not find file {_file}')
             return
 
-        container1 = np.load(_file)
+        # allow_pickle=True: a field saved as None (e.g. flowData.signal/
+        # time when a run had no pump/flow tracking) round-trips through
+        # np.savez() as a 0-d object array, which np.load() otherwise
+        # refuses to read back
+        container1 = np.load(_file, allow_pickle=True)
         try:
             if 'signal' in container1.keys():
                 self.flowData.signal = container1['signal']

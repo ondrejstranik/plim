@@ -161,11 +161,23 @@ class InfoWidget(QWidget):
 
         self._sortOrder = sorted(range(nRow), key=sortKey, reverse=not self._sortAscending)
 
-    def _displayOrder(self):
+    def _displayOrder(self, nRow=None):
         ''' current display row -> spot index mapping, falling back to
         natural order if there's no sort yet or the spot count moved on
-        since the last sort (e.g. after spot identification changed it) '''
-        nRow = len(self.sD.table['name']) if self.sD.table.get('name') is not None else 0
+        since the last sort (e.g. after spot identification changed it).
+
+        Pass nRow explicitly when the caller already holds a snapshot of
+        sD.table (e.g. via _displayTable()) - re-reading
+        len(self.sD.table['name']) independently here would reopen a race
+        window against a concurrent table resize on another thread (e.g.
+        SpotData.setTable(), called from the processing thread whenever
+        the spot count changes): _redrawTable() computing nRow from one
+        read and this method computing it from a second, later read could
+        disagree, handing back indices out of range for the caller's own
+        already-snapshotted data - which is exactly what previously
+        crashed the app with an IndexError. '''
+        if nRow is None:
+            nRow = len(self.sD.table['name']) if self.sD.table.get('name') is not None else 0
         if self._sortOrder is not None and len(self._sortOrder) == nRow:
             return self._sortOrder
         self._sortOrder = None
@@ -176,6 +188,18 @@ class InfoWidget(QWidget):
         columns = list(self._displayTable().keys())
         nRow = self.infoTable.rowCount()
         order = self._displayOrder()
+
+        if len(order) != nRow:
+            # sD.table was resized on another thread (e.g. spot count
+            # changed) between the widget being populated and this edit
+            # landing - order no longer maps onto the widget's rows, so
+            # writing back would scramble/IndexError. Discard this edit
+            # and resync the display to the current true state instead
+            logger.warning('info table row count changed mid-edit '
+                            f'(widget has {nRow}, sD.table has {len(order)}) '
+                            '- discarding edit and redrawing')
+            self._redrawTable()
+            return
 
         # non-editable columns hold computed/reference values; the table
         # widget only stores displayed text, so reading them back would
@@ -233,8 +257,12 @@ class InfoWidget(QWidget):
 
         table = self._displayTable()
         columns = list(table.keys())
-        nRow = len(self.sD.table['name'])
-        order = self._displayOrder()   # order[row] = spot index shown there
+        # derive nRow from this snapshot, not a fresh self.sD.table read -
+        # a concurrent SpotData.setTable() on the processing thread could
+        # otherwise resize the live table between the two reads, handing
+        # _displayOrder() a stale nRow that doesn't match `table` below
+        nRow = len(table['name'])
+        order = self._displayOrder(nRow)   # order[row] = spot index shown there
 
         self.infoTable.blockSignals(True)
 
@@ -268,7 +296,7 @@ class InfoWidget(QWidget):
             colorCol = columns.index('color')
             for row, spotIdx in enumerate(order):
                 self.infoTable.item(row, colorCol).setBackground(
-                    QColor(self.sD.table['color'][spotIdx]))
+                    QColor(table['color'][spotIdx]))
 
         self.infoTable.blockSignals(False)
 
