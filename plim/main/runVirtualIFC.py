@@ -141,6 +141,7 @@ def main():
     pvGui.viewer.close()
     cvGui.viewer.close()
 
+    pump.disconnect()
     sCamera.disconnect()
     camera.disconnect()
     camera2.disconnect()

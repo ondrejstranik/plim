@@ -1,6 +1,8 @@
 ''' standalone script version of plim.main.runVirtualIFC for running the
 virtual integral-field-camera plasmon sensing demo on https://mybinder.org/ '''
 
+from viscope.logger.verbosity import setVerbosity
+
 # devices
 from viscope.instrument.virtual.virtualCamera import VirtualCamera
 from spectralCamera.algorithm.calibrateIFImage import CalibrateIFImage
@@ -22,11 +24,15 @@ from spectralCamera.gui.sCameraGUI import SCameraGUI
 from plim.gui.saveDataGUI import SaveDataGUI
 from spectralCamera.gui.saveSIVideoGUI import SaveSIVideoGUI
 from plim.gui.signalAnalyser.fitGUI import FitGUI
+from plim.gui.deltaSignalGUI import DeltaSignalGUI
 
 import numpy as np
 
 
 # some global settings
+
+# log only info and errors (suppress the debug-level per-frame chatter)
+setVerbosity('INFO')
 viscope.dataFolder = plim.dataFolder
 
 #camera
@@ -67,7 +73,7 @@ pump.setParameter('flow',True)
 # plasmon data processor
 pP = PlasmonProcessor()
 pP.connect(sCamera=sCamera, pump=pump)
-pP.setParameter('loopDelay',1) # throttle down the fitting loop to reduce GUI freezing
+#pP.setParameter('loopDelay',1) # throttle down the fitting loop to reduce GUI freezing
 pP.setParameter('threadingNow',True)
 
 # virtual microscope
@@ -93,10 +99,14 @@ ptGui  = PositionTrackGUI(viscope,vWindow='new')
 ptGui.setDevice(pP)
 ptGui.interconnectGui(pvGui)
 ptGui.positionTrack.fitParameter(align=True)
-sdGui = SaveDataGUI(viscope,vWindow=ptGui.vWindow)
+sdGui = SaveDataGUI(viscope,vWindow=adGui.vWindow)
 sdGui.setDevice(pP)
-svGui  = SaveSIVideoGUI(viscope)
+svGui  = SaveSIVideoGUI(viscope,vWindow=adGui.vWindow)
 svGui.setDevice(sCamera)
+dsGui  = DeltaSignalGUI(viscope,vWindow=ptGui.vWindow)
+dsGui.setDevice(pP)
+dsGui.interconnectGui(pvGui,ptGui)
+
 
 fitGui = FitGUI(viscope, vWindow=ptGui.vWindow)
 fitGui.interconnectGui(ptGui)
@@ -119,6 +129,7 @@ viscope.run()
 pvGui.viewer.close()
 cvGui.viewer.close()
 
+pump.disconnect()
 sCamera.disconnect()
 camera.disconnect()
 camera2.disconnect()
