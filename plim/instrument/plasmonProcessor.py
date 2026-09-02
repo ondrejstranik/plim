@@ -87,13 +87,14 @@ class PlasmonProcessor(BaseProcessor):
         ''' process newly arrived data '''
         logger.debug(f"processing data from {self.DEFAULT['name']}")
 
-        # extra throttling once there are spots to fit - fitting is
-        # noticeably heavier than idle polling with no spots yet, so slow
-        # the loop down further to reduce GUI freezing. loopDelay is
-        # re-read fresh by BaseProcessor.loop()'s time.sleep(self.loopDelay)
-        # right after this method returns, so this takes effect immediately
-        hasSpots = self.spotSpectra.spotPosition is not None and len(self.spotSpectra.spotPosition) > 0
-        self.loopDelay = self._baseLoopDelay + 1 if hasSpots else self._baseLoopDelay
+        # extra throttling proportional to the number of spots to fit -
+        # fitting is noticeably heavier than idle polling with no spots
+        # yet, so slow the loop down further to reduce GUI freezing.
+        # loopDelay is re-read fresh by BaseProcessor.loop()'s
+        # time.sleep(self.loopDelay) right after this method returns, so
+        # this takes effect immediately
+        nSpots = len(self.spotSpectra.spotPosition) if self.spotSpectra.spotPosition is not None else 0
+        self.loopDelay = self._baseLoopDelay + 0.04 * nSpots
 
         self.spotSpectra.setImage(self.sCamera.sImage)
         self.spotSpectra.setWavelength(self.sCamera.wavelength)

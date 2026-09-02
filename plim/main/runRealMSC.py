@@ -35,7 +35,7 @@ from plim.instrument.plasmonProcessor import PlasmonProcessor
 def main():
     # some global settings
     viscope.dataFolder = plim.dataFolder
-    setVerbosity('INFO')
+    setVerbosity('DEBUG')
 
     #spectral camera system
     #camera
