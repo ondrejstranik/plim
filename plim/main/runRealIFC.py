@@ -4,6 +4,8 @@ camera based on integral field technology
 '''
 #%%
 
+from viscope.logger.verbosity import setVerbosity
+
 # devices
 from spectralCamera.algorithm.calibrateFrom3Images import CalibrateFrom3Images
 from spectralCamera.instrument.sCamera.sCamera import SCamera
@@ -30,6 +32,8 @@ from viscope.gui.histogramGUI import HistogramGUI
 def main():
     # some global settings
     viscope.dataFolder = plim.dataFolder
+    setVerbosity('INFO')
+
 
     #spectral camera system
     #camera
@@ -90,6 +94,11 @@ def main():
     svGui  = SaveSIVideoGUI(viscope)
     svGui.setDevice(sCamera)
 
+    # place the windows
+    adGui.vWindow.setRegion('right')
+    ptGui.vWindow.setRegion('right')
+    viscope.wManager.setRegionRatio('right', 0.45) 
+    viscope.wManager.setVWindowAlignment('overlap')
 
     # carry out some GUI settings
     #newGUI.plasmonViewer.spotIdentGui()
@@ -97,6 +106,7 @@ def main():
     # main event loop
     viscope.run()
 
+    pump.disconnect()
     sCamera.disconnect()
     camera.disconnect()
     pP.disconnect()
