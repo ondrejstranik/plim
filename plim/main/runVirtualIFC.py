@@ -56,6 +56,7 @@ def main():
     camera.connect()
     camera.setParameter('exposureTime', 300)
     camera.setParameter('nFrame', 3)
+    #camera.electronicNoise = 0
     camera.setParameter('threadingNow',True)
     #spectral camera
     CalibrateIFImage.DEFAULT['position00']= np.array([550,0])
