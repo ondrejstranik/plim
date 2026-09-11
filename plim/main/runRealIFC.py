@@ -28,6 +28,10 @@ from spectralCamera.gui.saveSIVideoGUI import SaveSIVideoGUI
 from viscope.gui.saveImageGUI import SaveImageGUI
 from viscope.gui.histogramGUI import HistogramGUI
 
+from plim.gui.signalAnalyser.fitGUI import FitGUI
+from plim.gui.deltaSignalGUI import DeltaSignalGUI
+
+
 
 def main():
     # some global settings
@@ -86,13 +90,30 @@ def main():
 
     pvGui  = PlasmonViewerGUI(viscope,vWindow='new')
     pvGui.setDevice(pP)
+    pvGui.plasmonViewer.fitParameterGui(peakWidth=80,wavelengthStart=520, wavelengthStop=720)
+    pvGui.plasmonViewer.spectraParameterGui(showRawSpectra=False,
+                                            circle=False,
+                                            spectraSigma=0,
+                                            pxBcg= 4,
+                                            pxSpace=2)
+
     ptGui  = PositionTrackGUI(viscope,vWindow='new')
     ptGui.setDevice(pP)
     ptGui.interconnectGui(pvGui)
-    sdGui = SaveDataGUI(viscope,vWindow=ptGui.vWindow)
+    ptGui.positionTrack.fitParameter(align=True)
+    sdGui = SaveDataGUI(viscope,vWindow=cGui.vWindow)
     sdGui.setDevice(pP)
     svGui  = SaveSIVideoGUI(viscope)
     svGui.setDevice(sCamera)
+
+    dsGui  = DeltaSignalGUI(viscope,vWindow=ptGui.vWindow)
+    dsGui.setDevice(pP)
+    dsGui.interconnectGui(pvGui,ptGui)
+
+    fitGui = FitGUI(viscope, vWindow=ptGui.vWindow)
+    fitGui.interconnectGui(ptGui)
+
+
 
     # place the windows
     adGui.vWindow.setRegion('right')
