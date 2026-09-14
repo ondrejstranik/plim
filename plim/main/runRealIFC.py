@@ -49,7 +49,9 @@ def main():
     
     #spectral camera
     sCal = CalibrateFrom3Images()
-    sCal = sCal.loadClass(classFile = r'C:\Users\ostranik\Documents\GitHub\spectralCamera\spectralCamera\DATA\26-02-11-calibration\CalibrateFrom3Images.obj')
+    #sCal = sCal.loadClass(classFile = r'C:\Users\ostranik\Documents\GitHub\spectralCamera\spectralCamera\DATA\26-02-11-calibration\CalibrateFrom3Images.obj')
+    sCal = sCal.loadClass(classFile = r'C:\Users\ostranik\Documents\GitHub\spectralCamera\spectralCamera\DATA\26-09-14-calibration\CalibrateFrom3Images.obj')
+ 
     # this is necessary, because the saved sCal does not have gridLine.spBlockRowIdx and gridLine.spBlockColumnIdx 
     sCal.gridLine.spBlockRowIdx = None
     sCal.gridLine.spBlockColumnIdx = None
@@ -94,7 +96,8 @@ def main():
     pvGui.plasmonViewer.spectraParameterGui(showRawSpectra=False,
                                             circle=False,
                                             spectraSigma=0,
-                                            pxBcg= 4,
+                                            pxBcg= 5,
+                                            angle= 160,
                                             pxSpace=2)
 
     ptGui  = PositionTrackGUI(viscope,vWindow='new')
