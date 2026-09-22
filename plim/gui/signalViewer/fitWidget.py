@@ -235,10 +235,8 @@ class FitWidget(QWidget):
 
 
                 # save signal graph
-                exporter = pyqtgraph.exporters.ImageExporter(self.cleanGraph.plotItem)
-                # set export parameters if needed
-                #exporter.parameters()['width'] = 100   # (note this also affects height parameter)
-                exporter.export(str(myPath.parent /myPath.name)  +r"_graph.png")
+                exporter = pyqtgraph.exporters.SVGExporter(self.cleanGraph.plotItem)
+                exporter.export(str(myPath.parent /myPath.name)  +r"_graph.svg")
                 logger.info('fit graph exported')
 
 

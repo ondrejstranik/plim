@@ -5,7 +5,8 @@
 from plim.algorithm.rateFit import RateFit
 import matplotlib.pyplot as plt
 
-
+# save text as text
+plt.rcParams['svg.fonttype'] = 'none'
 
 ffolder = r'F:\ondra\LPI\plim\DATA\filterBased\26-05-28 dnaConcentrationRow\fits'
 files   = [
@@ -23,9 +24,16 @@ files   = [
     ('capture_5uM_target_50nM_fit.pkl',   50),
     ('capture_5uM_target_200nM_fit.pkl',   200),
     ('capture_5uM_target_1000nM_fit.pkl',  1000),
-
-
 ]
+
+ffolder = r'F:\ondra\LPI\plim\DATA\filterBased\26-09-18 LPI-DNA\fits'
+files   = [
+    ('fit_20nM_fit.pkl',   20),
+    ('fit_50nM_fit.pkl',  50),
+    ('fit_200nM_fit.pkl', 200),
+    ('fit_500nM_fit.pkl', 500),
+]
+
 
 
 

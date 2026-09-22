@@ -6,8 +6,13 @@ from spectralCamera.algorithm.gridSuperPixel import GridSuperPixel
 import matplotlib.pyplot as plt
 from scipy.ndimage import gaussian_filter
 
-ffolder = r'F:\ondra\LPI\plim\DATA\filterBased\26-04-16 dnaBingingClean\targetDNA2uM'
-ffile = '2uM_fit.pkl'
+# save text as text
+plt.rcParams['svg.fonttype'] = 'none'
+
+
+
+ffolder = r'F:\ondra\LPI\plim\DATA\filterBased\26-04-16 dnaBingingClean\captureDNA'
+ffile = 'binding_fit_fit.pkl'
 #%%
 
 kF = KineticFit.loadFit(filePath=ffolder + '/' + ffile)
@@ -31,6 +36,9 @@ tM = np.full(np.max(gridSP.imIdx, axis=0) + 1, np.nan)
 tM[gridSP.imIdx[:, 0], gridSP.imIdx[:, 1]] = time0.flatten()
 tM = tM - np.nanmin(tM)
 
+spacing_um = 300  # µm between spots
+x_um = np.arange(tM.shape[0]) * spacing_um   # x positions in µm
+y_um = np.arange(tM.shape[1]) * spacing_um   # y positions in µm
 
 sigma  = 1
 _valid = (~np.isnan(tM)).astype(float)
@@ -39,14 +47,29 @@ tM_smooth = gaussian_filter(_filled, sigma=sigma) / gaussian_filter(_valid, sigm
 tM_smooth[_valid == 0] = np.nan
 
 
-#%%
+#%% recreate FitWidget.cleanGraph: background-subtracted signal and fit
+
+clean_signal, clean_fit = kF.getCleanDataFit()
+
+fig_clean, ax_clean = plt.subplots()
+for ii in range(clean_signal.shape[1]):
+    ax_clean.plot(kF.time, clean_signal[:, ii], color='black', linewidth=0.8)
+    ax_clean.plot(kF.time, clean_fit[:, ii],    color='red',   linewidth=0.8)
+ax_clean.set_title('Background subtracted')
+ax_clean.set_xlabel('time / s')
+ax_clean.set_ylabel('R signal / nm')
+plt.tight_layout()
+
+
+#%% original fit - data
 fig, axes = plt.subplots(1, 1, figsize=(16, 5))
 
-im0 = axes.imshow(tM, origin='upper')
-fig.colorbar(im0, ax=axes, label='time0 (s)')
+im0 = axes.imshow(tM, origin='upper',
+                       extent=[y_um[0], y_um[-1], x_um[-1], x_um[0]])
+fig.colorbar(im0, ax=axes, label='arrival time / s')
 axes.set_title('arrival time ')
-axes.set_xlabel('position along channel')
-axes.set_ylabel('position across channel')
+axes.set_xlabel('position along channel / µm')
+axes.set_ylabel('position across channel / µm')
 
 
 plt.tight_layout()
@@ -54,9 +77,7 @@ plt.tight_layout()
 
 
 # %% linear fit per row: for each x position (row i) fit t vs y, speed = 1/|slope|
-spacing_um = 300  # µm between spots
-x_um = np.arange(tM.shape[0]) * spacing_um   # x positions in µm
-y_um = np.arange(tM.shape[1]) * spacing_um   # y positions in µm
+
 
 speed_per_row = np.full(tM.shape[0], np.nan)
 speed_err     = np.full(tM.shape[0], np.nan)
@@ -79,7 +100,7 @@ p           = np.polyfit(x_um[valid_rows], speed_per_row[valid_rows], 2)
 speed_parab = np.polyval(p, x_um)
 print(f'speed parabola: {p[0]:.4g}·x² + {p[1]:.4g}·x + {p[2]:.4g}  [µm/s]')
 
-# figure 1: linear fits + scatter
+# figure: linear fits + scatter
 fig_fits, ax_fits = plt.subplots()
 for i, (m, offset) in fit_lines.items():
     t_line = m * y_um + offset
@@ -87,18 +108,18 @@ for i, (m, offset) in fit_lines.items():
     row    = tM[i, :]
     valid  = np.isfinite(row)
     ax_fits.scatter(y_um[valid], row[valid], color=color, s=20, zorder=5)
-ax_fits.set_xlabel('position along channel (µm)')
-ax_fits.set_ylabel('arrival time (s)')
+ax_fits.set_xlabel('position along channel / µm')
+ax_fits.set_ylabel('arrival time / s')
 ax_fits.set_title('linear fits per row')
 plt.tight_layout()
 
 
-# figure 2: speed profile + parabolic fit
+# figure : speed profile + parabolic fit
 fig_spd, ax_spd = plt.subplots()
 ax_spd.errorbar(x_um, speed_per_row, yerr=speed_err, fmt='o', capsize=4, label='speed per row')
 ax_spd.plot(x_um, speed_parab, '-', label='parabolic fit')
-ax_spd.set_xlabel('position across channel (µm)')
-ax_spd.set_ylabel('speed (µm/s)')
+ax_spd.set_xlabel('position across channel / µm')
+ax_spd.set_ylabel('speed / (µm/s)')
 ax_spd.set_title('flow speed + parabolic fit')
 ax_spd.legend()
 plt.tight_layout()
@@ -113,9 +134,9 @@ for i, (m, offset) in fit_lines.items():
 fig_new, ax_new = plt.subplots()
 im_new = ax_new.imshow(tM_new, origin='upper',
                        extent=[y_um[0], y_um[-1], x_um[-1], x_um[0]])
-fig_new.colorbar(im_new, ax=ax_new, label='arrival time (s)')
-ax_new.set_xlabel('position along channel (µm)')
-ax_new.set_ylabel('position across channel (µm)')
+fig_new.colorbar(im_new, ax=ax_new, label='arrival time / s')
+ax_new.set_xlabel('position along channel / µm')
+ax_new.set_ylabel('position across channel / µm')
 ax_new.set_title('reconstructed time0 (parabolic fit)')
 plt.tight_layout()
 
@@ -125,8 +146,8 @@ col_spread = np.nanmax(tM_new, axis=0) - np.nanmin(tM_new, axis=0)
 
 fig_cs, ax_cs = plt.subplots()
 ax_cs.plot(y_um, col_spread, 'o-')
-ax_cs.set_xlabel('position along channel (µm)')
-ax_cs.set_ylabel('time spread (s)')
+ax_cs.set_xlabel('position along channel / µm')
+ax_cs.set_ylabel('time spread / s')
 ax_cs.set_title('arrival time spread per column (max - min across x)')
 plt.tight_layout()
 
@@ -136,8 +157,39 @@ col_spread_smooth = np.nanmax(tM_smooth, axis=0) - np.nanmin(tM_smooth, axis=0)
 
 fig_rs, ax_rs = plt.subplots()
 ax_rs.plot(y_um, col_spread_smooth, 'o-')
-ax_rs.set_xlabel('position along channel (µm)')
-ax_rs.set_ylabel('time spread (s)')
+ax_rs.set_xlabel('position along channel / µm')
+ax_rs.set_ylabel('time spread / s')
 ax_rs.set_title('arrival time spread per column (max - min across x)')
 plt.tight_layout()
+
+
+#%% combined article figure: (a) fit, (b) arrival-time map, (c) speed profile
+fig_art = plt.figure(figsize=(7, 6))
+gs_art  = fig_art.add_gridspec(2, 2)
+axB = fig_art.add_subplot(gs_art[0, :])
+axA = fig_art.add_subplot(gs_art[1, 0])
+axC = fig_art.add_subplot(gs_art[1, 1])
+
+for ii in range(clean_signal.shape[1]):
+    axA.plot(kF.time, clean_signal[:, ii], color='black', linewidth=0.8)
+    axA.plot(kF.time, clean_fit[:, ii],    color='red',   linewidth=0.8)
+axA.set_xlabel('time / s')
+axA.set_ylabel('R signal / nm')
+
+imB = axB.imshow(tM, origin='upper', extent=[y_um[0], y_um[-1], x_um[-1], x_um[0]])
+fig_art.colorbar(imB, ax=axB, label='arrival time / s', shrink=0.8)
+axB.set_xlabel('position along channel / µm')
+axB.set_ylabel('position across channel / µm')
+
+axC.errorbar(x_um, speed_per_row, yerr=speed_err, fmt='o', capsize=4)
+axC.plot(x_um, speed_parab, '-')
+axC.set_xlabel('position across channel / µm')
+axC.set_ylabel('speed / (µm/s)')
+
+for ax, label in zip((axA, axB, axC), 'abc'):
+    ax.text(-0.15, 1.05, label, transform=ax.transAxes,
+            fontsize=14, fontweight='bold', va='bottom')
+
+fig_art.tight_layout()
+
 plt.show()
