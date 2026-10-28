@@ -494,8 +494,10 @@ class FitWidget(QWidget):
 
         use_median = self.statSelector.currentText() == 'median'
         centre     = median if use_median else mean
+        spread     = (q3 - q1) / 2 if use_median else std
         label      = 'median' if use_median else 'mean'
-        self.statGraph.setTitle(f'{param_name}:  {label}={centre:.4g} ± {std:.4g}')
+        spreadLabel = 'IQR/2' if use_median else 'std'
+        self.statGraph.setTitle(f'{param_name}:  {label}={centre:.4g} ± {spread:.4g} ({spreadLabel})')
         self.statGraph.setLabel('left', param_name)
         self.statGraph.getAxis('bottom').setTicks([[]])
         self.statGraph.setXRange(-0.5, 0.5)
