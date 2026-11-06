@@ -102,6 +102,7 @@ def main():
 
     ptGui  = PositionTrackGUI(viscope,vWindow='new')
     ptGui.setDevice(pP)
+    ptGui.guiUpdateTime = 2 # [s] redraw the signal graphs at most every 2 s (data are still recorded every frame)
     ptGui.interconnectGui(pvGui)
     ptGui.positionTrack.fitParameter(align=True)
     sdGui = SaveDataGUI(viscope,vWindow=cGui.vWindow)
@@ -111,6 +112,7 @@ def main():
 
     dsGui  = DeltaSignalGUI(viscope,vWindow=ptGui.vWindow)
     dsGui.setDevice(pP)
+    dsGui.guiUpdateTime = 2 # [s]
     dsGui.interconnectGui(pvGui,ptGui)
 
     fitGui = FitGUI(viscope, vWindow=ptGui.vWindow)

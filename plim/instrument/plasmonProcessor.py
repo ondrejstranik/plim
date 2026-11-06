@@ -33,12 +33,6 @@ class PlasmonProcessor(BaseProcessor):
         if name== None: name= PlasmonProcessor.DEFAULT['name']
         super().__init__(name=name, **kwargs)
 
-        # base loopDelay as last explicitly requested via setParameter() -
-        # processData() adds to this (rather than overwriting it) once
-        # there are spots to fit, so the user's requested base value is
-        # never lost once the extra throttling kicks in or drops out again
-        self._baseLoopDelay = self.loopDelay
-
         # spectral camera
         self.sCamera = None
         # spectral camera
@@ -62,9 +56,6 @@ class PlasmonProcessor(BaseProcessor):
         ''' set parameter of the spectral camera'''
         super().setParameter(name,value)
 
-        if name== 'loopDelay':
-            self._baseLoopDelay = value
-
         if name== 'sCamera':
             self.sCamera = value
             self.flagToProcess = self.sCamera.flagLoop
@@ -87,24 +78,17 @@ class PlasmonProcessor(BaseProcessor):
         ''' process newly arrived data '''
         logger.debug(f"processing data from {self.DEFAULT['name']}")
 
-        # extra throttling proportional to the number of spots to fit -
-        # fitting is noticeably heavier than idle polling with no spots
-        # yet, so slow the loop down further to reduce GUI freezing.
-        # loopDelay is re-read fresh by BaseProcessor.loop()'s
-        # time.sleep(self.loopDelay) right after this method returns, so
-        # this takes effect immediately
-        nSpots = len(self.spotSpectra.spotPosition) if self.spotSpectra.spotPosition is not None else 0
-        self.loopDelay = self._baseLoopDelay + 0.04 * nSpots
+        # take the image and its acquisition time together - sCamera can
+        # deliver a new image (and t0) while this frame is being processed
+        sImage = self.sCamera.sImage
+        newTime = self.sCamera.t0
 
-        self.spotSpectra.setImage(self.sCamera.sImage)
+        self.spotSpectra.setImage(sImage)
         self.spotSpectra.setWavelength(self.sCamera.wavelength)
         self.spotSpectra.calculateSpectra()
         self.pF.setSpectra(self.spotSpectra.getSpectra())
         self.pF.setWavelength(self.sCamera.wavelength)
         self.pF.calculateFit()
-        # get the time sCamera
-        newTime = self.sCamera.t0
-        #newTime = time.time()
         newFlow = self.pump.getParameter('flowRateReal') if self.pump is not None else None 
         newSignal = self.pF.getPosition()
         if newSignal != []:
