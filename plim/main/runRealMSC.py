@@ -46,7 +46,7 @@ def main():
 
     camera.setParameter('threadingNow',True)
 
-    sCal = CalibratePFImage()
+    sCal = CalibratePFImage(excludeWavelength=[700]) # 700 nm filter of the chip is strongly non-homogeneous
     
     sCamera = SCamera(name='spectralCamera')
     sCamera.connect()
