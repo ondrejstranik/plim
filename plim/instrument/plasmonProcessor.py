@@ -33,6 +33,10 @@ class PlasmonProcessor(BaseProcessor):
         if name== None: name= PlasmonProcessor.DEFAULT['name']
         super().__init__(name=name, **kwargs)
 
+        # sleep at least as long as the last processing took (max ~50 % load)
+        # - keeps the GUI responsive with many spots and short exposure
+        self.idleRatio = 1
+
         # spectral camera
         self.sCamera = None
         # spectral camera
@@ -103,6 +107,6 @@ class PlasmonProcessor(BaseProcessor):
 
 #%%
 
-# TODO: test it!
 if __name__ == '__main__':
     pass
+

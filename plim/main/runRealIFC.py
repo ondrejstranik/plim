@@ -61,6 +61,7 @@ def main():
     sCamera.aberrationCorrection = True
     sCamera.setParameter('camera',camera)
     sCamera.setParameter('calibrationData',sCal)
+    sCamera.setParameter('idleRatio',1) # sleep >= processing time - leaves time for the GUI
     sCamera.setParameter('threadingNow',True)
 
     # pump
@@ -92,6 +93,7 @@ def main():
 
     pvGui  = PlasmonViewerGUI(viscope,vWindow='new')
     pvGui.setDevice(pP)
+    pvGui.guiUpdateTime = 0.5 # [s] the spot spectra redraw takes ~70 ms - not every frame
     pvGui.plasmonViewer.fitParameterGui(peakWidth=80,wavelengthStart=520, wavelengthStop=720)
     pvGui.plasmonViewer.spectraParameterGui(showRawSpectra=False,
                                             circle=False,
