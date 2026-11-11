@@ -49,6 +49,9 @@ class PlasmonProcessor(BaseProcessor):
         self.flowData = FlowData()
         self.injectionData = InjectionData()
 
+        # wavelength (object) of the camera, for which the band offset was set
+        self._bandOffsetWavelength = None
+
 
     def connect(self,sCamera=None,pump=None):
         ''' connect data processor with the camera, pump '''
@@ -63,6 +66,7 @@ class PlasmonProcessor(BaseProcessor):
         if name== 'sCamera':
             self.sCamera = value
             self.flagToProcess = self.sCamera.flagLoop
+            self.setBandOffset()
 
         if name== 'pump':
             self.pump = value
@@ -78,9 +82,27 @@ class PlasmonProcessor(BaseProcessor):
         if name== 'pump':
             return self.pump
 
+    def setBandOffset(self):
+        ''' set the sub-pixel offset of the band images from the spectral camera
+        (band dependent fractional mask in spotSpectra), None if the camera does not provide it '''
+        if self.sCamera is None: return
+        self._bandOffsetWavelength = self.sCamera.wavelength
+        getOffset = getattr(self.sCamera, 'getBandOffset', None)
+        try:
+            bandOffset = getOffset() if getOffset is not None else None
+        except:
+            logger.exception('could not get the band offset from the spectral camera')
+            bandOffset = None
+        logger.info(f'band offset of the spectral image: {"none" if bandOffset is None else "set"}')
+        self.spotSpectra.setBandOffset(bandOffset)
+
     def processData(self):
         ''' process newly arrived data '''
         logger.debug(f"processing data from {self.DEFAULT['name']}")
+
+        # new calibration / new folder of recorded images -> update the band offset
+        if self.sCamera.wavelength is not self._bandOffsetWavelength:
+            self.setBandOffset()
 
         # take the image and its acquisition time together - sCamera can
         # deliver a new image (and t0) while this frame is being processed

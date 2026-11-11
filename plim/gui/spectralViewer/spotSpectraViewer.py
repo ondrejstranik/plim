@@ -143,6 +143,16 @@ class SpotSpectraViewer(SViewer):
             contrastChannel = None if onSum else int(self.viewer.dims.point[0])
             myPosition = sI.getPosition(contrastChannel=contrastChannel)
             myRadius = sI.getRadius()
+
+            # mosaic filter camera: the band images are sub-pixel shifted (a band sampled
+            # at +offset shows the spots at -offset) -> convert the position found in the
+            # band image (or the sum = mean offset) to the common position of the masks
+            bandOffset = self.spotSpectra.bandOffset
+            if bandOffset is not None and len(myPosition) > 0:
+                if contrastChannel is None:
+                    myPosition = myPosition + bandOffset.mean(axis=0)
+                elif contrastChannel < len(bandOffset):
+                    myPosition = myPosition + bandOffset[contrastChannel]
             logger.info(f'detected radius: {myRadius}')
 
             # restrict the spot on grid

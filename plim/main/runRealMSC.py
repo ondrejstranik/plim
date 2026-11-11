@@ -46,7 +46,7 @@ def main():
 
     camera.setParameter('threadingNow',True)
 
-    sCal = CalibratePFImage(excludeWavelength=[700]) # 700 nm filter of the chip is strongly non-homogeneous
+    sCal = CalibratePFImage() # excludeWavelength=[700] gave no improvement (26-10-27 cabraDNA, 26-10-08 SAM_DNA)
     
     sCamera = SCamera(name='spectralCamera')
     sCamera.connect()

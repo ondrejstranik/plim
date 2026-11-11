@@ -9,6 +9,7 @@ import numpy as np
 from skimage.transform import rotate
 from spectralCamera.algorithm.spotSpectraSimple import SpotSpectraSimple
 from scipy.ndimage import gaussian_filter
+from scipy.ndimage import shift as ndShift
 
 logger = logging.getLogger(__name__)
 
@@ -51,6 +52,16 @@ class SpotSpectra(SpotSpectraSimple):
         self.maskBcg = None # weight for calculation of background spectra
         self.maskBcgIdx = None # indexes of of the mask
 
+        # band dependent fractional mask (mosaic filter cameras, e.g. photonfocus)
+        # each band image samples the scene with a sub-pixel offset [dy, dx];
+        # the spot/background mask is shifted accordingly for each band
+        self.bandOffset = kwarg['bandOffset'] if 'bandOffset' in kwarg else None # (nBand, 2) [px], None = standard mask
+        self.maskSpotW = None # (nBand, ny, nx) normalised weights of the spot
+        self.maskBcgW = None # (nBand, ny, nx) normalised weights of the background
+        self.patchSpotIdx = None # (nSpot, ny, nx) image indexes of the patch around the spots
+        self.patchBcgIdx = None # (nSpot, ny, nx) image indexes of the patch for the background
+        self._bandMaskOffset = None # bandOffset, for which the weights were calculated
+
         self.maskImage = None # for visualisation
         self.outliers = None # bool vector with spotPosition, which are outside the image
 
@@ -58,7 +69,61 @@ class SpotSpectra(SpotSpectraSimple):
         self.spectraRawBcg = []
 
         SpotSpectra.setMask(self)
-        
+
+    def setBandOffset(self, bandOffset):
+        ''' set sub-pixel offset [dy, dx] of each band image (nBand, 2) in pixels
+        None ... standard mask (the same for all bands) '''
+        self.bandOffset = None if bandOffset is None else np.asarray(bandOffset, dtype=float)
+        self.setMask()
+
+    def _setBandMask(self):
+        ''' calculate the band dependent fractional masks
+        weight of a pixel = binary mask shifted (bilinear) by the band offset,
+        i.e. the fraction of the shifted pixel cell inside the mask
+        (for zero offset identical to the standard mask) '''
+
+        self._bandMaskOffset = self.bandOffset
+        self.patchSpotIdx = self.patchBcgIdx = None
+        if self.bandOffset is None:
+            self.maskSpotW = self.maskBcgW = None
+            return
+
+        # shifted masks, padded so that the shift stays inside
+        pad = int(np.ceil(np.abs(self.bandOffset).max())) + 1
+        spot = np.pad((self.maskSpot != 0).astype(float), pad)
+        bcg = np.pad((self.maskBcg != 0).astype(float), pad)
+        # value at x is taken from the mask at x + offset
+        maskSpotW = np.array([ndShift(spot, -d, order=1) for d in self.bandOffset])
+        maskBcgW = np.array([ndShift(bcg, -d, order=1) for d in self.bandOffset])
+
+        # crop to the area with non-zero weights
+        nz = np.any(maskSpotW > 0, axis=0) | np.any(maskBcgW > 0, axis=0)
+        rows, cols = np.where(nz.any(axis=1))[0], np.where(nz.any(axis=0))[0]
+        rs, cs = slice(rows[0], rows[-1] + 1), slice(cols[0], cols[-1] + 1)
+        maskSpotW, maskBcgW = maskSpotW[:, rs, cs], maskBcgW[:, rs, cs]
+        self.maskSpotW = maskSpotW / maskSpotW.sum(axis=(1, 2), keepdims=True)
+        self.maskBcgW = maskBcgW / maskBcgW.sum(axis=(1, 2), keepdims=True)
+
+        # pixel offsets of the patch relative to the spot position
+        centre = spot.shape[0] // 2
+        self._patchOffset = (np.arange(rows[0], rows[-1] + 1) - centre,
+                             np.arange(cols[0], cols[-1] + 1) - centre)
+
+    def _setPatchIdx(self, spotPosition):
+        ''' image indexes of the patches around the spots (for the fractional mask)'''
+        if self.maskSpotW is None:
+            self.patchSpotIdx = self.patchBcgIdx = None
+            return
+        oy, ox = self._patchOffset
+        self.patchSpotIdx = (spotPosition[:, 0, None, None] + oy[None, :, None],
+                             spotPosition[:, 1, None, None] + ox[None, None, :])
+        if self.concentric:
+            self.patchBcgIdx = self.patchSpotIdx
+        else:
+            # background for all spots from the first one
+            self.patchBcgIdx = (np.broadcast_to(self.patchSpotIdx[0][:1], self.patchSpotIdx[0].shape),
+                                np.broadcast_to(self.patchSpotIdx[1][:1], self.patchSpotIdx[1].shape))
+
     def setMask(self,pxAve=None,pxBcg= None, pxSpace = None, 
                 circle= None, ratio = None, angle = None, concentric = None):
         ''' set the geometry of spots and bcg mask 
@@ -123,6 +188,9 @@ class SpotSpectra(SpotSpectraSimple):
             self.maskSpot = maskR<self.pxAve
             self.maskBcg = maskR<self.pxBcg
 
+        # band dependent fractional masks
+        self._setBandMask()
+
         # return if there is no image
         if not hasattr(self,'image'):
             return
@@ -176,6 +244,17 @@ class SpotSpectra(SpotSpectraSimple):
 
             self.outliers = np.any([np.any(_olm,axis=1), np.any(_olb,axis=1)], axis=0)
 
+            # patches for the fractional mask (slightly larger than the mask)
+            self._setPatchIdx(_spotPosition)
+            if self.patchSpotIdx is not None:
+                for _idx in (self.patchSpotIdx, self.patchBcgIdx):
+                    self.outliers |= np.any((
+                        _idx[0].min(axis=(1,2))<0,
+                        _idx[0].max(axis=(1,2))>self.maskImage.shape[0]-1,
+                        _idx[1].min(axis=(1,2))<0,
+                        _idx[1].max(axis=(1,2))>self.maskImage.shape[1]-1,
+                        ),axis=0)
+
             # set mask to one
             self.maskImage[self.maskSpotIdx[0][~self.outliers,:],
                         self.maskSpotIdx[1][~self.outliers,:]] = 1
@@ -208,27 +287,47 @@ class SpotSpectra(SpotSpectraSimple):
         if not hasattr(self,'image') or self.image is None:
             return
 
+        # bandOffset was set directly (not by setBandOffset) - update the masks
+        if self._bandMaskOffset is not self.bandOffset:
+            self.setMask()
+
         _spectraRawSpot = np.ones((nSpot,self.image.shape[0]))
         _spectraRawBcg = np.ones((nSpot,self.image.shape[0]))
 
-        try:
-            _spectraRawSpot[~self.outliers,:] = np.sum(
-                self.image[:,
-                            self.maskSpotIdx[0][~self.outliers,:],
-                            self.maskSpotIdx[1][~self.outliers,:]
-                            ],axis=2).T
-            _spectraRawSpot[~self.outliers,:] = (
-                _spectraRawSpot[~self.outliers,:] / self.maskSpotIdx[0].shape[1]
-            )
+        # band dependent fractional mask
+        useBandMask = self.patchSpotIdx is not None
+        if useBandMask and self.maskSpotW.shape[0] != self.image.shape[0]:
+            logger.warning(f'number of band offsets ({self.maskSpotW.shape[0]}) is not equal '
+                           f'to image spectral channels ({self.image.shape[0]}) - standard mask used')
+            useBandMask = False
 
-            _spectraRawBcg[~self.outliers,:] = np.sum(
-                self.image[:,
-                            self.maskBcgIdx[0][~self.outliers,:],
-                            self.maskBcgIdx[1][~self.outliers,:]
-                            ],axis=2).T
-            _spectraRawBcg[~self.outliers,:] = (
-                 _spectraRawBcg[~self.outliers,:] / self.maskBcgIdx[0].shape[1]
-            )
+        try:
+            if useBandMask:
+                # weighted sum over the patch around each spot, own weights per band
+                ok = ~self.outliers
+                _patch = self.image[:, self.patchSpotIdx[0][ok], self.patchSpotIdx[1][ok]]
+                _spectraRawSpot[ok,:] = np.einsum('wsij,wij->sw', _patch, self.maskSpotW)
+                if self.patchBcgIdx is not self.patchSpotIdx:
+                    _patch = self.image[:, self.patchBcgIdx[0][ok], self.patchBcgIdx[1][ok]]
+                _spectraRawBcg[ok,:] = np.einsum('wsij,wij->sw', _patch, self.maskBcgW)
+            else:
+                _spectraRawSpot[~self.outliers,:] = np.sum(
+                    self.image[:,
+                                self.maskSpotIdx[0][~self.outliers,:],
+                                self.maskSpotIdx[1][~self.outliers,:]
+                                ],axis=2).T
+                _spectraRawSpot[~self.outliers,:] = (
+                    _spectraRawSpot[~self.outliers,:] / self.maskSpotIdx[0].shape[1]
+                )
+
+                _spectraRawBcg[~self.outliers,:] = np.sum(
+                    self.image[:,
+                                self.maskBcgIdx[0][~self.outliers,:],
+                                self.maskBcgIdx[1][~self.outliers,:]
+                                ],axis=2).T
+                _spectraRawBcg[~self.outliers,:] = (
+                     _spectraRawBcg[~self.outliers,:] / self.maskBcgIdx[0].shape[1]
+                )
 
         except:
             logger.exception('error in calculateSpectra')

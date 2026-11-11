@@ -91,6 +91,7 @@ class FileData:
         pxSpace = self.spotSpectra.pxSpace,
         concentric = self.spotSpectra.concentric,
         darkCount = self.spotSpectra.darkCount,
+        bandOffset = getattr(self.spotSpectra, 'bandOffset', None),
         wavelengthStartFit = self.pF.wavelengthStartFit,
         wavelengthStopFit = self.pF.wavelengthStopFit,
         orderFit = self.pF.orderFit,
@@ -120,7 +121,11 @@ class FileData:
         if 'concentric' in container1.keys():
             self.spotSpectra.concentric = container1['concentric']
         if 'darkCount' in container1.keys():
-            self.spotSpectra.darkCount = container1['darkCount'] 
+            self.spotSpectra.darkCount = container1['darkCount']
+        if 'bandOffset' in container1.keys():
+            _bandOffset = container1['bandOffset']
+            # None is saved as 0-d object array
+            self.spotSpectra.bandOffset = None if _bandOffset.ndim == 0 else _bandOffset
         if 'wavelengthStartFit' in container1.keys():      
             self.pF.wavelengthStartFit = container1['wavelengthStartFit']
         if 'wavelengthStopFit' in container1.keys():      
