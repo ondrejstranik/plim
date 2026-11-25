@@ -191,6 +191,11 @@ class FileData:
                 self.flowData.time = container1['time']
             if 'arr_1' in container1.keys():
                 self.flowData.time = container1['arr_1'] # b-c
+            # None (no pump) is saved as 0-d object array - get None back
+            if self.flowData.signal is not None and self.flowData.signal.ndim == 0:
+                self.flowData.signal = None
+            if self.flowData.time is not None and self.flowData.time.ndim == 0:
+                self.flowData.time = None
         except:
             logger.exception(f'can not read file {_file}')
 
