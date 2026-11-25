@@ -78,6 +78,10 @@ class SpotSpectraViewer(SViewer):
         # select spectraLayer back so its controls stay in view
         self.viewer.layers.selection.active = self.spectraLayer
 
+        # the spectra cube, the spot (point) and the spot mask layers are
+        # core to the viewer - protect them from being deleted by the user
+        self._protectLayers([self.spectraLayer, self.pointLayer, self.maskLayer])
+
         # set pyqt
         @magicgui(auto_call= 'True', 
                   pxAve={'min':1},
@@ -226,6 +230,38 @@ class SpotSpectraViewer(SViewer):
             self.linePlotList2[-1].hide()
             self._speedUpLineDrawing(self.linePlotList2[-1])
 
+
+    def _protectLayers(self, layers):
+        ''' make the given napari layers non-deletable by the user
+        napari's delete-layer button and the Delete/Backspace key in the layer
+        list both call viewer.layers.remove_selected() - wrap it so that the
+        protected layers are dropped from the selection before removal.
+        (programmatic removal, e.g. on closing the viewer, is not affected)
+        '''
+        layerList = self.viewer.layers
+        protected = getattr(layerList, '_protectedLayers', None)
+        if protected is None:
+            protected = []
+            layerList._protectedLayers = protected
+            _removeSelected = layerList.remove_selected
+
+            def remove_selected(*args, **kwargs):
+                blocked = [l for l in layerList.selection if l in protected]
+                if blocked:
+                    logger.info(f'layer(s) {[l.name for l in blocked]} can not be deleted')
+                    for l in blocked:
+                        layerList.selection.discard(l)
+                if len(layerList.selection) > 0:
+                    _removeSelected(*args, **kwargs)
+                # keep a sensible active layer
+                if layerList.selection.active is None and len(blocked) > 0:
+                    layerList.selection.active = blocked[0]
+
+            layerList.remove_selected = remove_selected
+
+        for l in layers:
+            if l is not None and l not in protected:
+                protected.append(l)
 
     def drawSpectraGraph(self):
         ''' draw all new lines in the spectraGraph
